@@ -73,3 +73,30 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Phase 186 additions
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Coverage / build
+coverage/
+*.tsbuildinfo
+
+# Python leakage
+__pycache__/
+*.pyc
+.venv/
