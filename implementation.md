@@ -1,6 +1,6 @@
 # MotoDiag Mobile — Project Implementation
 
-**Version:** 0.0.1 | **Date:** 2026-04-23
+**Version:** 0.0.3 | **Date:** 2026-04-23
 **Package version:** 0.0.1 (see `package.json` — bumps on feature milestones, independent of doc version)
 **Repo:** https://github.com/Kubanjaze/moto-diag-mobile
 **Backend:** https://github.com/Kubanjaze/moto-diag (moto-diag platform, Track H = v0.13.1+)
