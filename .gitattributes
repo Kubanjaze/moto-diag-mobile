@@ -1,0 +1,11 @@
+# Phase 187: force LF on patch files.
+# patch-package requires Unix-style line endings to apply cleanly;
+# committing .patch files with CRLF breaks postinstall on clean
+# checkouts (even on Windows, because patch-package's underlying
+# GNU patch binary expects LF). Narrow scope to *.patch only —
+# see ADR-005 context + Kerwyn's guidance on avoiding preemptive
+# .gitattributes entries for general *.ts output.
+*.patch text eol=lf
+
+# Shell scripts: LF always.
+*.sh text eol=lf

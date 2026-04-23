@@ -1,0 +1,29 @@
+diff --git a/node_modules/react-native-keychain/android/build.gradle b/node_modules/react-native-keychain/android/build.gradle
+--- a/node_modules/react-native-keychain/android/build.gradle
++++ b/node_modules/react-native-keychain/android/build.gradle
+@@ -23,9 +23,7 @@ apply plugin: 'com.android.library'
+ apply plugin: 'kotlin-android'
+ apply from: "$projectDir/react-native-helpers.gradle"
+
+-if (isNewArchitectureEnabled()) {
+-  apply plugin: "com.facebook.react"
+-}
++apply plugin: "com.facebook.react"
+
+ android {
+   def agpVersion = com.android.Version.ANDROID_GRADLE_PLUGIN_VERSION
+@@ -97,10 +95,8 @@ dependencies {
+   implementation("androidx.datastore:datastore-preferences:1.1.1")
+ }
+
+-if (isNewArchitectureEnabled()) {
+-  react {
+-    jsRootDir = file("../src/")
+-    libraryName = "RNKeychain"
+-    codegenJavaPackageName = "com.oblador.keychain"
+-  }
++react {
++  jsRootDir = file("../src/")
++  libraryName = "RNKeychain"
++  codegenJavaPackageName = "com.oblador.keychain"
+ }

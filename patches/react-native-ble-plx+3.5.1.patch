@@ -1,0 +1,29 @@
+diff --git a/node_modules/react-native-ble-plx/android/build.gradle b/node_modules/react-native-ble-plx/android/build.gradle
+--- a/node_modules/react-native-ble-plx/android/build.gradle
++++ b/node_modules/react-native-ble-plx/android/build.gradle
+@@ -18,9 +18,7 @@ apply plugin: "com.android.library"
+
+ def appProject = rootProject.allprojects.find { it.plugins.hasPlugin('com.android.application') }
+
+-if (isNewArchitectureEnabled()) {
+-  apply plugin: "com.facebook.react"
+-}
++apply plugin: "com.facebook.react"
+
+ def getExtOrDefault(name) {
+   return rootProject.ext.has(name) ? rootProject.ext.get(name) : project.properties["BlePlx_" + name]
+@@ -99,10 +97,8 @@ dependencies {
+   implementation "com.polidea.rxandroidble2:rxandroidble:1.17.2"
+ }
+
+-if (isNewArchitectureEnabled()) {
+-  react {
+-    jsRootDir = file("../src/")
+-    libraryName = "BlePlx"
+-    codegenJavaPackageName = "com.bleplx"
+-  }
++react {
++  jsRootDir = file("../src/")
++  libraryName = "BlePlx"
++  codegenJavaPackageName = "com.bleplx"
+ }
