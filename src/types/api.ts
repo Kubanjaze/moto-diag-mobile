@@ -24,6 +24,21 @@ export type VersionResponse =
 export type VehicleListResponse =
   paths['/v1/vehicles']['get']['responses']['200']['content']['application/json'];
 
+/** Single vehicle response (used by GET /v1/vehicles/{id} + as an
+ *  element of VehicleListResponse.items). */
+export type VehicleResponse = components['schemas']['VehicleResponse'];
+
+/** POST /v1/vehicles request body. */
+export type VehicleCreateRequest = components['schemas']['VehicleCreateRequest'];
+
+/** PATCH /v1/vehicles/{id} request body (all fields optional). */
+export type VehicleUpdateRequest = components['schemas']['VehicleUpdateRequest'];
+
+/** Enum unions exposed for Literal-typed form dropdowns. */
+export type ProtocolLiteral = NonNullable<VehicleCreateRequest['protocol']>;
+export type PowertrainLiteral = NonNullable<VehicleCreateRequest['powertrain']>;
+export type EngineTypeLiteral = NonNullable<VehicleCreateRequest['engine_type']>;
+
 /** Generated VersionInfo schema (shape: api_version, package, schema_version). */
 export type VersionInfo = components['schemas']['VersionInfo'];
 
