@@ -1,45 +1,389 @@
-// Phase 188 — New vehicle (add bike) form (stub; fills in Commit 4).
+// Phase 188 commit 4 — NewVehicleScreen form + POST /v1/vehicles.
 //
-// Commit 1 ships a placeholder to unblock the "Add bike" navigation
-// link from VehiclesScreen. Commit 4 replaces with the full form
-// using Field / SelectField components, required-field validation,
-// POST /v1/vehicles, and tier-aware 402 quota handling.
+// Form with required fields (make, model, year) + optional
+// (engine_cc, vin, mileage, notes) + Literal-typed dropdowns
+// (protocol, powertrain, engine_type). Submits via typed
+// api.POST('/v1/vehicles', {body: ...}). Handles 402 quota-
+// exceeded with tier-aware copy + generic 422 for other
+// validation failures.
 
-import React from 'react';
+import React, {useCallback, useState} from 'react';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {StyleSheet, Text, View} from 'react-native';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
+import {api, describeError, isProblemDetail} from '../api';
 import {Button} from '../components/Button';
+import {
+  Field,
+  parseOptionalFloat,
+  parseOptionalInt,
+  validateOptionalFloat,
+  validateOptionalInt,
+  validateRequired,
+  validateYear,
+} from '../components/Field';
+import {SelectField} from '../components/SelectField';
 import type {RootStackParamList} from '../navigation/RootNavigator';
+import type {
+  EngineTypeLiteral,
+  PowertrainLiteral,
+  ProtocolLiteral,
+  VehicleCreateRequest,
+} from '../types/api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NewVehicle'>;
 
+// Option lists track the backend ProtocolLiteral etc. unions
+// (Phase 177). If the backend adds an enum value, `npm run
+// generate-api-types` regenerates the union; TypeScript then flags
+// this list as incomplete until a new option + label is added.
+const PROTOCOL_OPTIONS: readonly ProtocolLiteral[] = [
+  'none',
+  'obd2',
+  'can',
+  'k_line',
+  'j1850_pwm',
+  'j1850_vpw',
+  'iso9141',
+  'iso14230',
+  'iso15765',
+  'ford_msc',
+  'kawasaki_kds',
+  'suzuki_sds',
+  'yamaha_yds',
+];
+
+const PROTOCOL_LABELS: Partial<Record<ProtocolLiteral, string>> = {
+  none: 'None (no OBD)',
+  obd2: 'OBD-II',
+  can: 'CAN',
+  k_line: 'K-Line',
+  j1850_pwm: 'J1850 PWM',
+  j1850_vpw: 'J1850 VPW',
+  iso9141: 'ISO 9141',
+  iso14230: 'ISO 14230 (KWP2000)',
+  iso15765: 'ISO 15765 (CAN-OBD)',
+  ford_msc: 'Ford MSC',
+  kawasaki_kds: 'Kawasaki KDS',
+  suzuki_sds: 'Suzuki SDS',
+  yamaha_yds: 'Yamaha YDS',
+};
+
+const POWERTRAIN_OPTIONS: readonly PowertrainLiteral[] = [
+  'ice',
+  'electric',
+  'hybrid_parallel',
+  'hybrid_series',
+];
+
+const POWERTRAIN_LABELS: Partial<Record<PowertrainLiteral, string>> = {
+  ice: 'Internal combustion',
+  electric: 'Electric',
+  hybrid_parallel: 'Hybrid (parallel)',
+  hybrid_series: 'Hybrid (series)',
+};
+
+const ENGINE_TYPE_OPTIONS: readonly EngineTypeLiteral[] = [
+  'four_stroke',
+  'two_stroke',
+  'rotary',
+  'diesel',
+  'none',
+];
+
+const ENGINE_TYPE_LABELS: Partial<Record<EngineTypeLiteral, string>> = {
+  four_stroke: '4-stroke',
+  two_stroke: '2-stroke',
+  rotary: 'Rotary',
+  diesel: 'Diesel',
+  none: 'N/A',
+};
+
+interface Errors {
+  make?: string | null;
+  model?: string | null;
+  year?: string | null;
+  engine_cc?: string | null;
+  mileage?: string | null;
+  motor_kw?: string | null;
+}
+
 export function NewVehicleScreen({navigation}: Props) {
+  // Required text fields
+  const [make, setMake] = useState<string>('');
+  const [model, setModel] = useState<string>('');
+  const [year, setYear] = useState<string>('');
+
+  // Optional text fields
+  const [engineCc, setEngineCc] = useState<string>('');
+  const [vin, setVin] = useState<string>('');
+  const [mileage, setMileage] = useState<string>('');
+  const [motorKw, setMotorKw] = useState<string>('');
+  const [batteryChem, setBatteryChem] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
+
+  // Literal dropdowns
+  const [protocol, setProtocol] = useState<ProtocolLiteral>('none');
+  const [powertrain, setPowertrain] = useState<PowertrainLiteral>('ice');
+  const [engineType, setEngineType] =
+    useState<EngineTypeLiteral>('four_stroke');
+
+  const [errors, setErrors] = useState<Errors>({});
+  const [submitting, setSubmitting] = useState<boolean>(false);
+
+  const validate = useCallback((): Errors | null => {
+    const next: Errors = {
+      make: validateRequired(make),
+      model: validateRequired(model),
+      year: validateRequired(year) ?? validateYear(year),
+      engine_cc: validateOptionalInt(engineCc),
+      mileage: validateOptionalInt(mileage),
+      motor_kw: validateOptionalFloat(motorKw),
+    };
+    const hasError = Object.values(next).some(v => v !== null && v !== undefined);
+    return hasError ? next : null;
+  }, [make, model, year, engineCc, mileage, motorKw]);
+
+  const handleSubmit = useCallback(async () => {
+    const validationErrors = validate();
+    if (validationErrors) {
+      setErrors(validationErrors);
+      return;
+    }
+    setErrors({});
+    setSubmitting(true);
+    try {
+      const body: VehicleCreateRequest = {
+        make: make.trim(),
+        model: model.trim(),
+        year: Number.parseInt(year, 10),
+        engine_cc: parseOptionalInt(engineCc),
+        vin: vin.trim() || undefined,
+        protocol,
+        powertrain,
+        engine_type: engineType,
+        battery_chemistry: batteryChem.trim() || undefined,
+        motor_kw: parseOptionalFloat(motorKw),
+        bms_present: false,
+        mileage: parseOptionalInt(mileage),
+        notes: notes.trim() || undefined,
+      };
+
+      const {data, error: apiError} = await api.POST('/v1/vehicles', {body});
+
+      if (apiError) {
+        handleApiError(apiError);
+        return;
+      }
+      if (!data) {
+        Alert.alert('Save failed', 'Empty response body.');
+        return;
+      }
+      navigation.goBack();
+    } catch (err) {
+      Alert.alert('Save failed', describeError(err));
+    } finally {
+      setSubmitting(false);
+    }
+  }, [
+    validate,
+    make,
+    model,
+    year,
+    engineCc,
+    vin,
+    protocol,
+    powertrain,
+    engineType,
+    batteryChem,
+    motorKw,
+    mileage,
+    notes,
+    navigation,
+  ]);
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.placeholder}>Add bike (Commit 1 stub)</Text>
-        <Text style={styles.subtle}>
-          Form with Field / SelectField components + validation + POST lands
-          in Commit 4.
-        </Text>
-        <View style={styles.spacer} />
-        <Button
-          title="Back"
-          variant="secondary"
-          onPress={() => navigation.goBack()}
-          testID="new-vehicle-back-button"
-        />
-      </View>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+      <KeyboardAvoidingView
+        style={styles.kav}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled">
+          <Text style={styles.sectionTitle}>Bike</Text>
+          <Field
+            label="Make"
+            value={make}
+            onChangeText={setMake}
+            placeholder="Honda"
+            required
+            error={errors.make}
+            autoCapitalize="words"
+            testID="new-vehicle-make"
+          />
+          <Field
+            label="Model"
+            value={model}
+            onChangeText={setModel}
+            placeholder="CBR600"
+            required
+            error={errors.model}
+            autoCapitalize="none"
+            testID="new-vehicle-model"
+          />
+          <Field
+            label="Year"
+            value={year}
+            onChangeText={setYear}
+            placeholder="2005"
+            keyboardType="numeric"
+            required
+            error={errors.year}
+            testID="new-vehicle-year"
+          />
+          <Field
+            label="Engine CC"
+            value={engineCc}
+            onChangeText={setEngineCc}
+            placeholder="599"
+            keyboardType="numeric"
+            error={errors.engine_cc}
+            testID="new-vehicle-engine-cc"
+          />
+          <Field
+            label="VIN"
+            value={vin}
+            onChangeText={setVin}
+            placeholder="17 chars"
+            maxLength={30}
+            autoCapitalize="characters"
+            testID="new-vehicle-vin"
+          />
+          <Field
+            label="Mileage"
+            value={mileage}
+            onChangeText={setMileage}
+            placeholder="35000"
+            keyboardType="numeric"
+            error={errors.mileage}
+            testID="new-vehicle-mileage"
+          />
+
+          <Text style={styles.sectionTitle}>OBD + powertrain</Text>
+          <SelectField<ProtocolLiteral>
+            label="Protocol"
+            value={protocol}
+            options={PROTOCOL_OPTIONS}
+            labels={PROTOCOL_LABELS}
+            onChange={setProtocol}
+            testID="new-vehicle-protocol"
+          />
+          <SelectField<PowertrainLiteral>
+            label="Powertrain"
+            value={powertrain}
+            options={POWERTRAIN_OPTIONS}
+            labels={POWERTRAIN_LABELS}
+            onChange={setPowertrain}
+            testID="new-vehicle-powertrain"
+          />
+          <SelectField<EngineTypeLiteral>
+            label="Engine type"
+            value={engineType}
+            options={ENGINE_TYPE_OPTIONS}
+            labels={ENGINE_TYPE_LABELS}
+            onChange={setEngineType}
+            testID="new-vehicle-engine-type"
+          />
+          <Field
+            label="Battery chemistry (EV/hybrid only)"
+            value={batteryChem}
+            onChangeText={setBatteryChem}
+            placeholder="lithium-ion"
+            testID="new-vehicle-battery-chem"
+          />
+          <Field
+            label="Motor kW (EV/hybrid only)"
+            value={motorKw}
+            onChangeText={setMotorKw}
+            placeholder="6.5"
+            keyboardType="numeric"
+            error={errors.motor_kw}
+            testID="new-vehicle-motor-kw"
+          />
+
+          <Text style={styles.sectionTitle}>Notes</Text>
+          <Field
+            label="Notes"
+            value={notes}
+            onChangeText={setNotes}
+            placeholder="Quirks, mods, previous work…"
+            multiline
+            numberOfLines={3}
+            autoCapitalize="sentences"
+            testID="new-vehicle-notes"
+          />
+
+          <View style={styles.spacer} />
+          <Button
+            title={submitting ? 'Saving…' : 'Save bike'}
+            variant="primary"
+            disabled={submitting}
+            onPress={handleSubmit}
+            testID="new-vehicle-save-button"
+          />
+          <View style={styles.gap} />
+          <Button
+            title="Cancel"
+            variant="secondary"
+            disabled={submitting}
+            onPress={() => navigation.goBack()}
+            testID="new-vehicle-cancel-button"
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
+function handleApiError(error: unknown): void {
+  if (!isProblemDetail(error)) {
+    Alert.alert('Save failed', describeError(error));
+    return;
+  }
+  if (error.status === 402) {
+    Alert.alert(
+      'Upgrade needed',
+      error.detail
+        ? `${error.title}\n\n${error.detail}\n\nUpgrade your subscription tier to add more bikes, or delete one first.`
+        : `${error.title}\n\nUpgrade your subscription tier to add more bikes, or delete one first.`,
+    );
+    return;
+  }
+  Alert.alert(error.title, describeError(error));
+}
+
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#f5f5f7'},
-  content: {flex: 1, padding: 16, alignItems: 'stretch'},
-  placeholder: {fontSize: 18, fontWeight: '700', color: '#333', marginTop: 24},
-  subtle: {fontSize: 13, color: '#888', marginTop: 8},
-  spacer: {flex: 1},
+  kav: {flex: 1},
+  scroll: {padding: 16, paddingBottom: 40},
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#888',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  spacer: {height: 20},
+  gap: {height: 10},
 });
