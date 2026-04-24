@@ -33,13 +33,19 @@ import {
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 import {api, describeError} from '../api';
 import {bleService} from '../ble/BleService';
+import {Button} from '../components/Button';
 import {useApiKey} from '../hooks/useApiKey';
 import {version as appVersion} from '../../package.json';
+import type {RootStackParamList} from '../navigation/RootNavigator';
 import type {VehicleListResponse, VersionResponse} from '../types/api';
 import {ApiKeyModal} from './ApiKeyModal';
+
+type HomeNav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
 // Async-fetch state machine. `idle` is the initial state for
 // user-triggered fetches; `loading` is during in-flight calls;
@@ -54,6 +60,7 @@ type FetchState<T> =
 const SCAN_DURATION_MS = 10_000;
 
 export function HomeScreen() {
+  const navigation = useNavigation<HomeNav>();
   const {apiKey, isLoading: keyLoading, setApiKey, clearApiKey} = useApiKey();
 
   const [versionState, setVersionState] = useState<FetchState<VersionResponse>>(
@@ -208,7 +215,19 @@ export function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         contentInsetAdjustmentBehavior="automatic">
         <Text style={styles.title}>MotoDiag</Text>
-        <Text style={styles.subtitle}>v{appVersion} · Phase 187 scaffold</Text>
+        <Text style={styles.subtitle}>v{appVersion} · Phase 188 scaffold</Text>
+
+        <Section title="My garage">
+          <Text style={styles.sectionHelp}>
+            Add and manage the bikes you diagnose.
+          </Text>
+          <Button
+            title="Open garage"
+            variant="primary"
+            onPress={() => navigation.navigate('Vehicles')}
+            testID="home-open-garage-button"
+          />
+        </Section>
 
         <Section title="Backend">
           <BackendBlock
@@ -445,6 +464,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionBody: {},
+  sectionHelp: {fontSize: 14, color: '#555', marginBottom: 12, lineHeight: 20},
   statusLine: {fontSize: 14, color: '#333', marginBottom: 4, lineHeight: 20},
   successText: {color: '#1b7c2f', fontWeight: '600'},
   errorText: {color: '#b00020', fontWeight: '600'},
