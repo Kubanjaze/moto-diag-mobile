@@ -1,7 +1,7 @@
 # MotoDiag Mobile — Project Implementation
 
-**Version:** 0.0.3 | **Date:** 2026-04-23
-**Package version:** 0.0.1 (see `package.json` — bumps on feature milestones, independent of doc version)
+**Version:** 0.0.4 | **Date:** 2026-04-24
+**Package version:** 0.0.2 (see `package.json` — bumps on feature milestones, independent of doc version)
 **Repo:** https://github.com/Kubanjaze/moto-diag-mobile
 **Backend:** https://github.com/Kubanjaze/moto-diag (moto-diag platform, Track H = v0.13.1+)
 **Local:** `C:\Users\Kerwyn\PycharmProjects\moto-diag-mobile\`
@@ -36,11 +36,17 @@ MotoDiag Mobile is the React Native client for the [moto-diag](https://github.co
 
 | Package | Phase | Status | Description |
 |---------|-------|--------|-------------|
-| `src/api/` | 186 | Scaffold (stub) | Will become real backend client in Phase 187 (openapi-fetch + react-native-keychain) |
-| `src/ble/` | 186 | Singleton wrapper | `BleService` around `react-native-ble-plx` BleManager; tested via scan smoke test |
-| `src/navigation/` | 186 | Native stack | React Navigation; single Home screen currently |
-| `src/screens/` | 186 | Placeholder | `HomeScreen` with BLE scan button; expands through Track I |
-| `src/types/` | 186 | Placeholder | Shared TS types (will include generated `api-types.ts` in Phase 187) |
+| `src/api/` | 187 | Active | Real `openapi-fetch` client over committed OpenAPI snapshot (ADR-005). `client.ts` with `makeClient()` + `api` singleton + test seams. `auth.ts` with Keychain-backed `getApiKey`/`setApiKey`/`clearApiKey` + sync `applyAuth(headers, apiKey?)`. `errors.ts` with `ProblemDetail` + `isProblemDetail`/`formatProblemDetail`/`describeError`. Barrel `index.ts`. |
+| `src/api-types.ts` | 187 | Generated | 3946 lines, emitted by `openapi-typescript` from `api-schema/openapi.json`. Committed. Regenerate via `npm run generate-api-types`. |
+| `api-schema/` | 187 | Active | `openapi.json` — 219.7 KB committed snapshot of moto-diag Phase 183 enriched spec. Refresh via `npm run refresh-api-schema`. |
+| `src/ble/` | 186 | Singleton wrapper | `BleService` around `react-native-ble-plx` BleManager; tested via scan smoke test. |
+| `src/contexts/` | 187 | Active | `ApiKeyProvider` React Context provider; hydrates from Keychain on mount; exposes key state + mutators. |
+| `src/hooks/` | 187 | Active | `useApiKey()` — THE public surface for API key state. Hides Context vs Zustand implementation choice from call sites (ADR-003 swap invisible). |
+| `src/navigation/` | 186 | Native stack | React Navigation; single Home screen currently. |
+| `src/screens/` | 187 | Active | `HomeScreen` rewritten with 4 sections (Backend / Auth / Authed smoke / BLE scan). `ApiKeyModal` pure presentational paste-key modal. |
+| `src/types/` | 187 | Active | Phase 186 ad-hoc stubs replaced with `VersionResponse`/`VehicleListResponse`/`VersionInfo` aliases + re-exports from generated `api-types.ts`. |
+| `scripts/` | 187 | Active | `refresh-api-schema.js` — Node script curls backend `/openapi.json`, sanity-checks shape, logs path diffs. |
+| `patches/` | 187 | Active | `react-native-ble-plx+3.5.1.patch` + `react-native-keychain+10.0.0.patch` applied on every install via `postinstall: patch-package`. Both remove `if (isNewArchitectureEnabled())` guards; see `patches/README.md`. |
 
 ---
 
@@ -56,9 +62,9 @@ Reference of npm scripts wired into the project:
 | `npm test` | Jest unit tests (no tests yet; added in Phase 187) |
 | `npm run lint` | ESLint across `src/` and `App.tsx` |
 
-Phase-specific scripts will be added as they land:
-- `npm run generate-api-types` — Phase 187: generate `src/api-types.ts` from `api-schema/openapi.json`
-- `npm run refresh-api-schema` — Phase 187: curl a running backend's `/openapi.json` to update the snapshot
+Phase-specific scripts (active as of Phase 187):
+- `npm run generate-api-types` — generate `src/api-types.ts` from `api-schema/openapi.json` (via `openapi-typescript`).
+- `npm run refresh-api-schema` — curl a running backend's `/openapi.json` to update the snapshot. Requires backend running at `$API_BASE_URL` (default `http://localhost:8000` from dev host).
 
 ---
 
@@ -87,7 +93,8 @@ Phase-specific scripts will be added as they land:
 | Phase | Title | Date | Key Changes |
 |-------|-------|------|-------------|
 | 185 | Mobile architecture decision (ADR-001) | 2026-04-23 | In moto-diag backend repo (`docs/mobile/ADR-001-framework-choice.md`). Track I opens. Locked 7 framework + architecture decisions. |
-| 186 | Mobile project scaffold + ADRs 001-004 + src stubs | 2026-04-23 | RN 0.85.2 bare init with bundle ID `com.bandithero.motodiag`; TypeScript strict; newArchEnabled=false; Android BLE permissions + `<uses-feature bluetooth_le>`; 7 source-file stubs (`src/{api,ble,navigation,screens,types}/`); MIT LICENSE; 4 ADRs (repo location / New Arch disabled / state deferred / CI deferred); `.env.example`; Android smoke test green on Pixel 7 API 35 — "Test BLE scan" cycles through `requesting permissions → waiting for BLE adapter → scanning → scan complete` without crashing. Build deviation: ble-plx 3.5.1's `android/build.gradle` gates `com.facebook.react` plugin application on `isNewArchitectureEnabled()`, but RN 0.85's app-level autolinking emits `add_subdirectory(.../codegen/jni/)` + `react_codegen_BlePlx` refs unconditionally — resulting in CMake failure looking for a directory ble-plx's gradle never created. Fix: in-place edit to remove the `if (isNewArchitectureEnabled())` guards in `node_modules/react-native-ble-plx/android/build.gradle` (Phase 187 will formalize this via `patch-package`). iOS distribution deferred (Apple Developer account exists but no Mac access yet). First commit `1c3b165` pushed to `main`. |
+| 186 | Mobile project scaffold + ADRs 001-004 + src stubs | 2026-04-23 | RN 0.85.2 bare init with bundle ID `com.bandithero.motodiag`; TypeScript strict; newArchEnabled=false; Android BLE permissions + `<uses-feature bluetooth_le>`; 7 source-file stubs (`src/{api,ble,navigation,screens,types}/`); MIT LICENSE; 4 ADRs (repo location / New Arch disabled / state deferred / CI deferred); `.env.example`; Android smoke test green on Pixel 7 API 35 — "Test BLE scan" cycles through `requesting permissions → waiting for BLE adapter → scanning → scan complete` without crashing. Build deviation: ble-plx 3.5.1's `android/build.gradle` gates `com.facebook.react` plugin application on `isNewArchitectureEnabled()`, but RN 0.85's app-level autolinking emits `add_subdirectory(.../codegen/jni/)` + `react_codegen_BlePlx` refs unconditionally — resulting in CMake failure looking for a directory ble-plx's gradle never created. Fix: in-place edit to remove the `if (isNewArchitectureEnabled())` guards in `node_modules/react-native-ble-plx/android/build.gradle` (Phase 187 formalized this via `patch-package`). iOS distribution deferred (Apple Developer account exists but no Mac access yet). First commit `1c3b165` pushed to `main`. |
+| 187 | Auth + API client library | 2026-04-24 | First real backend integration. **5-commit feature branch** (`phase-187-auth-api`) → rebase-merge to main: Commit 1 (`b425e94`) deps + 2 patches + ADR-005 + `.gitattributes` + refresh-api-schema script; Commit 2 (`3362e8b`) `src/api/auth.ts` Keychain-backed + `ApiKeyProvider` + `useApiKey` hook + `ApiKeyModal` + 15 auth tests; Commit 3 (`d82a91b`) real `openapi-fetch` client + committed `api-schema/openapi.json` snapshot (219.7 KB, 48 paths, Phase 183 enriched) + `src/api-types.ts` (3946 generated lines) + `src/api/errors.ts` ProblemDetail helpers + 26 tests; Commit 4 (`b13ebfd`) HomeScreen 4-section rewrite (Backend connectivity + Auth status + Authed /v1/vehicles smoke + Phase 186 BLE preserved) + Phase 186 PermissionsAndroid type fix; Commit 5 (`f30246d`) README overhaul + version bump 0.0.1 → 0.0.2. **Pre-flight finding:** `react-native-keychain@10.0.0` has the identical `isNewArchitectureEnabled()` gradle bug as ble-plx — second patch added, Option A (pin + patch) approved. **New ADR-005:** commit OpenAPI spec snapshot rather than live-fetch at build time; rationale + reversal triggers captured. **Architect gate GREEN (2026-04-24):** HomeScreen shows `✓ Connected · package v0.1.0 · schema v38 · api v1` + `✓ Authenticated · mdk_live_NF2a•••` + `✓ 0 vehicles · individual tier · 5/5 quota remaining` (full happy path, not just clean-error minimum); Keychain cold-relaunch persistence verified (killed via recent-apps swipe, reopened, still authed); Phase 186 BLE regression clean (same state cycle, 0 devices as expected on emulator). Patches 1016B (ble-plx) + 986B (keychain), gradle-only, architect-approved. `.env.example` intact from Phase 186. **Tests: 41 passed (3 suites, 0.44s) — 15 auth + 8 client + 18 errors.** `tsc --noEmit` clean. Subscription CLI finding logged for Track J: `motodiag subscription` has no dev `create`/`grant` subcommand (all Stripe routing) — future phases with fresh users need a seed-subscription fixture or direct DB insert. Project `implementation.md` version 0.0.3 → 0.0.4; `package.json` version 0.0.1 → 0.0.2 (first working-auth-against-backend milestone). iOS build deferred. **Key finding: the OpenAPI contract is now executable, not descriptive.** Backend Pydantic change → `npm run refresh-api-schema` → `npm run generate-api-types` → TypeScript errors flag every mobile screen that needs to refactor. Coordination becomes propagation. |
 
 ---
 
