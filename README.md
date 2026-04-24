@@ -105,10 +105,11 @@ moto-diag-mobile/
 │   ├── api/                 openapi-fetch client + auth + errors
 │   ├── api-types.ts         generated from openapi.json (committed)
 │   ├── ble/                 react-native-ble-plx singleton wrapper
+│   ├── components/          Button / Field / SelectField — reusable UI primitives
 │   ├── contexts/            React Context providers (ApiKeyProvider)
-│   ├── hooks/               React hooks (useApiKey)
+│   ├── hooks/               React hooks (useApiKey / useVehicles / useVehicle)
 │   ├── navigation/          React Navigation stacks
-│   ├── screens/             Home + ApiKeyModal
+│   ├── screens/             Home + ApiKeyModal + Vehicles + VehicleDetail + NewVehicle
 │   └── types/               shared TypeScript types (convenience shims)
 ├── scripts/
 │   └── refresh-api-schema.js   curls backend /openapi.json
