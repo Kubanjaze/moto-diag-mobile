@@ -56,12 +56,32 @@ export function makeClient(options: ApiClientOptions = {}): MotoDiagApi {
   const customFetch: typeof fetch = async (input, init) => {
     const apiKey = await resolveKey();
 
-    // Merge: framework defaults < caller-supplied init.headers < auth.
-    const incoming = init?.headers
+    // openapi-fetch wraps the request as a Request object passed
+    // as `input` — the body + Content-Type live there, NOT in
+    // `init`. Per fetch spec, if we set `init.headers`, those
+    // REPLACE the Request's headers entirely. So we must read the
+    // Request's headers FIRST (capturing Content-Type), then
+    // overlay caller-supplied init.headers, then add auth on top.
+    //
+    // Phase 188 commit-6 root-cause fix: the prior implementation
+    // only read init.headers (always undefined when openapi-fetch
+    // bundles the Request) → Content-Type was stripped from POST/
+    // PATCH → backend returned 422 HTTPValidationError. GET / DELETE
+    // worked because they have no body and no Content-Type
+    // requirement. See Phase 188 phase_log for full diagnosis.
+    const requestHeaders =
+      input instanceof Request
+        ? Object.fromEntries(input.headers.entries())
+        : {};
+    const initHeaders = init?.headers
       ? Object.fromEntries(new Headers(init.headers).entries())
       : {};
     const finalHeaders = applyAuth(
-      {Accept: 'application/json', ...incoming},
+      {
+        Accept: 'application/json',
+        ...requestHeaders,
+        ...initHeaders,
+      },
       apiKey,
     );
 

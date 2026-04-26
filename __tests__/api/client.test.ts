@@ -135,6 +135,83 @@ describe('makeClient — auth header injection', () => {
     expect(headers['accept']).toBe('application/json');
   });
 
+  // Phase 188 commit-6 regression guard: customFetch must preserve
+  // the Request's Content-Type header. openapi-fetch wraps body +
+  // Content-Type into the Request passed as `input`; if customFetch
+  // overrides init.headers without copying Request headers first,
+  // POST bodies get sent with Content-Type stripped → backend 422.
+  it('preserves Content-Type from Request on POST (commit-6 regression)', async () => {
+    const fetchMock = jest.fn<
+      Promise<Response>,
+      [input: RequestInfo, init?: RequestInit]
+    >(async () =>
+      new Response('{"id":1}', {
+        status: 201,
+        headers: {'content-type': 'application/json'},
+      }),
+    );
+    const client = makeClient({
+      baseUrl: 'http://x',
+      resolveApiKey: async () => 'mdk_live_test',
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+
+    await client.POST('/v1/vehicles', {
+      body: {
+        make: 'Honda',
+        model: 'CBR600',
+        year: 2005,
+        protocol: 'none',
+        powertrain: 'ice',
+        engine_type: 'four_stroke',
+        bms_present: false,
+      },
+    });
+
+    const callArgs = fetchMock.mock.calls[0];
+    const callInput = callArgs[0];
+    const callInit = callArgs[1] as RequestInit | undefined;
+
+    // openapi-fetch passes a Request as input; the Request carries
+    // the body + Content-Type. The init.headers we pass downstream
+    // must include Content-Type or fetch strips it (per spec, init
+    // headers REPLACE the Request's headers entirely).
+    expect(callInput).toBeInstanceOf(Request);
+    const initHeaders = headersToObject(
+      callInit?.headers as HeadersLike | undefined,
+    );
+    expect(initHeaders['content-type']).toMatch(/^application\/json/);
+    expect(initHeaders['x-api-key']).toBe('mdk_live_test');
+  });
+
+  it('preserves Content-Type from Request on PATCH (commit-6 regression)', async () => {
+    const fetchMock = jest.fn<
+      Promise<Response>,
+      [input: RequestInfo, init?: RequestInit]
+    >(async () =>
+      new Response('{"id":1}', {
+        status: 200,
+        headers: {'content-type': 'application/json'},
+      }),
+    );
+    const client = makeClient({
+      baseUrl: 'http://x',
+      resolveApiKey: async () => null,
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+
+    await client.PATCH('/v1/vehicles/{vehicle_id}', {
+      params: {path: {vehicle_id: 1}},
+      body: {year: 2006},
+    });
+
+    const callInit = fetchMock.mock.calls[0][1] as RequestInit | undefined;
+    const initHeaders = headersToObject(
+      callInit?.headers as HeadersLike | undefined,
+    );
+    expect(initHeaders['content-type']).toMatch(/^application\/json/);
+  });
+
   it('resolves the key on every request (not cached)', async () => {
     const resolver = jest.fn(async () => 'k');
     const fetchMock = jest.fn<
