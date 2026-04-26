@@ -41,68 +41,17 @@ import type {
   VehicleResponse,
   VehicleUpdateRequest,
 } from '../types/api';
+import {
+  ENGINE_TYPE_LABELS,
+  ENGINE_TYPE_OPTIONS,
+  labelFor,
+  POWERTRAIN_LABELS,
+  POWERTRAIN_OPTIONS,
+  PROTOCOL_LABELS,
+  PROTOCOL_OPTIONS,
+} from '../types/vehicleEnums';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'VehicleDetail'>;
-
-// Same option lists as NewVehicleScreen. Exported from a shared
-// enums module would be cleaner — deferred until Phase 189+ also
-// needs them. Duplication cost is ~60 lines.
-const PROTOCOL_OPTIONS: readonly ProtocolLiteral[] = [
-  'none',
-  'obd2',
-  'can',
-  'k_line',
-  'j1850_pwm',
-  'j1850_vpw',
-  'iso9141',
-  'iso14230',
-  'iso15765',
-  'ford_msc',
-  'kawasaki_kds',
-  'suzuki_sds',
-  'yamaha_yds',
-];
-const PROTOCOL_LABELS: Partial<Record<ProtocolLiteral, string>> = {
-  none: 'None (no OBD)',
-  obd2: 'OBD-II',
-  can: 'CAN',
-  k_line: 'K-Line',
-  j1850_pwm: 'J1850 PWM',
-  j1850_vpw: 'J1850 VPW',
-  iso9141: 'ISO 9141',
-  iso14230: 'ISO 14230 (KWP2000)',
-  iso15765: 'ISO 15765 (CAN-OBD)',
-  ford_msc: 'Ford MSC',
-  kawasaki_kds: 'Kawasaki KDS',
-  suzuki_sds: 'Suzuki SDS',
-  yamaha_yds: 'Yamaha YDS',
-};
-const POWERTRAIN_OPTIONS: readonly PowertrainLiteral[] = [
-  'ice',
-  'electric',
-  'hybrid_parallel',
-  'hybrid_series',
-];
-const POWERTRAIN_LABELS: Partial<Record<PowertrainLiteral, string>> = {
-  ice: 'Internal combustion',
-  electric: 'Electric',
-  hybrid_parallel: 'Hybrid (parallel)',
-  hybrid_series: 'Hybrid (series)',
-};
-const ENGINE_TYPE_OPTIONS: readonly EngineTypeLiteral[] = [
-  'four_stroke',
-  'two_stroke',
-  'rotary',
-  'diesel',
-  'none',
-];
-const ENGINE_TYPE_LABELS: Partial<Record<EngineTypeLiteral, string>> = {
-  four_stroke: '4-stroke',
-  two_stroke: '2-stroke',
-  rotary: 'Rotary',
-  diesel: 'Diesel',
-  none: 'N/A',
-};
 
 interface EditErrors {
   make?: string | null;
@@ -226,14 +175,17 @@ export function VehicleDetailScreen({navigation, route}: Props) {
         </DetailCard>
 
         <DetailCard title="OBD + powertrain">
-          <DetailRow label="Protocol" value={vehicle.protocol} />
+          <DetailRow
+            label="Protocol"
+            value={labelFor(vehicle.protocol, 'protocol') ?? '—'}
+          />
           <DetailRow
             label="Powertrain"
-            value={formatOptional(vehicle.powertrain)}
+            value={labelFor(vehicle.powertrain, 'powertrain') ?? '—'}
           />
           <DetailRow
             label="Engine type"
-            value={formatOptional(vehicle.engine_type)}
+            value={labelFor(vehicle.engine_type, 'engine_type') ?? '—'}
           />
           <DetailRow
             label="Battery chem"

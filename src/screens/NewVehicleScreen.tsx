@@ -39,74 +39,16 @@ import type {
   ProtocolLiteral,
   VehicleCreateRequest,
 } from '../types/api';
+import {
+  ENGINE_TYPE_LABELS,
+  ENGINE_TYPE_OPTIONS,
+  POWERTRAIN_LABELS,
+  POWERTRAIN_OPTIONS,
+  PROTOCOL_LABELS,
+  PROTOCOL_OPTIONS,
+} from '../types/vehicleEnums';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NewVehicle'>;
-
-// Option lists track the backend ProtocolLiteral etc. unions
-// (Phase 177). If the backend adds an enum value, `npm run
-// generate-api-types` regenerates the union; TypeScript then flags
-// this list as incomplete until a new option + label is added.
-const PROTOCOL_OPTIONS: readonly ProtocolLiteral[] = [
-  'none',
-  'obd2',
-  'can',
-  'k_line',
-  'j1850_pwm',
-  'j1850_vpw',
-  'iso9141',
-  'iso14230',
-  'iso15765',
-  'ford_msc',
-  'kawasaki_kds',
-  'suzuki_sds',
-  'yamaha_yds',
-];
-
-const PROTOCOL_LABELS: Partial<Record<ProtocolLiteral, string>> = {
-  none: 'None (no OBD)',
-  obd2: 'OBD-II',
-  can: 'CAN',
-  k_line: 'K-Line',
-  j1850_pwm: 'J1850 PWM',
-  j1850_vpw: 'J1850 VPW',
-  iso9141: 'ISO 9141',
-  iso14230: 'ISO 14230 (KWP2000)',
-  iso15765: 'ISO 15765 (CAN-OBD)',
-  ford_msc: 'Ford MSC',
-  kawasaki_kds: 'Kawasaki KDS',
-  suzuki_sds: 'Suzuki SDS',
-  yamaha_yds: 'Yamaha YDS',
-};
-
-const POWERTRAIN_OPTIONS: readonly PowertrainLiteral[] = [
-  'ice',
-  'electric',
-  'hybrid_parallel',
-  'hybrid_series',
-];
-
-const POWERTRAIN_LABELS: Partial<Record<PowertrainLiteral, string>> = {
-  ice: 'Internal combustion',
-  electric: 'Electric',
-  hybrid_parallel: 'Hybrid (parallel)',
-  hybrid_series: 'Hybrid (series)',
-};
-
-const ENGINE_TYPE_OPTIONS: readonly EngineTypeLiteral[] = [
-  'four_stroke',
-  'two_stroke',
-  'rotary',
-  'diesel',
-  'none',
-];
-
-const ENGINE_TYPE_LABELS: Partial<Record<EngineTypeLiteral, string>> = {
-  four_stroke: '4-stroke',
-  two_stroke: '2-stroke',
-  rotary: 'Rotary',
-  diesel: 'Diesel',
-  none: 'N/A',
-};
 
 interface Errors {
   make?: string | null;
