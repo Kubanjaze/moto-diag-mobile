@@ -115,14 +115,13 @@ moto-diag-mobile/
 │   └── refresh-api-schema.js   curls backend /openapi.json
 ├── patches/                 patch-package workarounds (ble-plx + keychain)
 ├── docs/
-│   ├── adr/                 architecture decision records
-│   ├── phases/              per-phase implementation.md + phase_log.md
-│   └── ROADMAP.md           Track I roadmap
+│   ├── adr/                 mobile-specific architecture decision records
+│   ├── FOLLOWUPS.md         cross-phase polish backlog
+│   └── ROADMAP.md           Track I roadmap (mirrors backend ROADMAP for mobile-only view)
 ├── __tests__/               Jest unit tests (api/)
 ├── .env.example
 ├── App.tsx
-├── implementation.md        project-level overview
-├── phase_log.md             project-level change log
+├── implementation.md        project-level overview (per-phase docs live in backend repo)
 └── package.json
 ```
 

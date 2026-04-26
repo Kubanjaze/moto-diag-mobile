@@ -1,7 +1,7 @@
 # MotoDiag Mobile — Project Implementation
 
-**Version:** 0.0.4 | **Date:** 2026-04-24
-**Package version:** 0.0.2 (see `package.json` — bumps on feature milestones, independent of doc version)
+**Version:** 0.0.5 | **Date:** 2026-04-26
+**Package version:** 0.0.3 (see `package.json` — bumps on feature milestones, independent of doc version)
 **Repo:** https://github.com/Kubanjaze/moto-diag-mobile
 **Backend:** https://github.com/Kubanjaze/moto-diag (moto-diag platform, Track H = v0.13.1+)
 **Local:** `C:\Users\Kerwyn\PycharmProjects\moto-diag-mobile\`
@@ -90,11 +90,17 @@ Phase-specific scripts (active as of Phase 187):
 
 ## Phase History
 
-| Phase | Title | Date | Key Changes |
-|-------|-------|------|-------------|
-| 185 | Mobile architecture decision (ADR-001) | 2026-04-23 | In moto-diag backend repo (`docs/mobile/ADR-001-framework-choice.md`). Track I opens. Locked 7 framework + architecture decisions. |
-| 186 | Mobile project scaffold + ADRs 001-004 + src stubs | 2026-04-23 | RN 0.85.2 bare init with bundle ID `com.bandithero.motodiag`; TypeScript strict; newArchEnabled=false; Android BLE permissions + `<uses-feature bluetooth_le>`; 7 source-file stubs (`src/{api,ble,navigation,screens,types}/`); MIT LICENSE; 4 ADRs (repo location / New Arch disabled / state deferred / CI deferred); `.env.example`; Android smoke test green on Pixel 7 API 35 — "Test BLE scan" cycles through `requesting permissions → waiting for BLE adapter → scanning → scan complete` without crashing. Build deviation: ble-plx 3.5.1's `android/build.gradle` gates `com.facebook.react` plugin application on `isNewArchitectureEnabled()`, but RN 0.85's app-level autolinking emits `add_subdirectory(.../codegen/jni/)` + `react_codegen_BlePlx` refs unconditionally — resulting in CMake failure looking for a directory ble-plx's gradle never created. Fix: in-place edit to remove the `if (isNewArchitectureEnabled())` guards in `node_modules/react-native-ble-plx/android/build.gradle` (Phase 187 formalized this via `patch-package`). iOS distribution deferred (Apple Developer account exists but no Mac access yet). First commit `1c3b165` pushed to `main`. |
-| 187 | Auth + API client library | 2026-04-24 | First real backend integration. **5-commit feature branch** (`phase-187-auth-api`) → rebase-merge to main: Commit 1 (`b425e94`) deps + 2 patches + ADR-005 + `.gitattributes` + refresh-api-schema script; Commit 2 (`3362e8b`) `src/api/auth.ts` Keychain-backed + `ApiKeyProvider` + `useApiKey` hook + `ApiKeyModal` + 15 auth tests; Commit 3 (`d82a91b`) real `openapi-fetch` client + committed `api-schema/openapi.json` snapshot (219.7 KB, 48 paths, Phase 183 enriched) + `src/api-types.ts` (3946 generated lines) + `src/api/errors.ts` ProblemDetail helpers + 26 tests; Commit 4 (`b13ebfd`) HomeScreen 4-section rewrite (Backend connectivity + Auth status + Authed /v1/vehicles smoke + Phase 186 BLE preserved) + Phase 186 PermissionsAndroid type fix; Commit 5 (`f30246d`) README overhaul + version bump 0.0.1 → 0.0.2. **Pre-flight finding:** `react-native-keychain@10.0.0` has the identical `isNewArchitectureEnabled()` gradle bug as ble-plx — second patch added, Option A (pin + patch) approved. **New ADR-005:** commit OpenAPI spec snapshot rather than live-fetch at build time; rationale + reversal triggers captured. **Architect gate GREEN (2026-04-24):** HomeScreen shows `✓ Connected · package v0.1.0 · schema v38 · api v1` + `✓ Authenticated · mdk_live_NF2a•••` + `✓ 0 vehicles · individual tier · 5/5 quota remaining` (full happy path, not just clean-error minimum); Keychain cold-relaunch persistence verified (killed via recent-apps swipe, reopened, still authed); Phase 186 BLE regression clean (same state cycle, 0 devices as expected on emulator). Patches 1016B (ble-plx) + 986B (keychain), gradle-only, architect-approved. `.env.example` intact from Phase 186. **Tests: 41 passed (3 suites, 0.44s) — 15 auth + 8 client + 18 errors.** `tsc --noEmit` clean. Subscription CLI finding logged for Track J: `motodiag subscription` has no dev `create`/`grant` subcommand (all Stripe routing) — future phases with fresh users need a seed-subscription fixture or direct DB insert. Project `implementation.md` version 0.0.3 → 0.0.4; `package.json` version 0.0.1 → 0.0.2 (first working-auth-against-backend milestone). iOS build deferred. **Key finding: the OpenAPI contract is now executable, not descriptive.** Backend Pydantic change → `npm run refresh-api-schema` → `npm run generate-api-types` → TypeScript errors flag every mobile screen that needs to refactor. Coordination becomes propagation. |
+**Phase docs live in the backend repo's centralized ledger** at [`Kubanjaze/moto-diag/docs/phases/completed/`](https://github.com/Kubanjaze/moto-diag/tree/master/docs/phases/completed) — sequentially numbered alongside Phases 01-184 (no split between backend and mobile). Track I phases shipped so far:
+
+| Phase | Title | Status | Backend doc path |
+|------:|-------|:------:|:-----------------|
+| 185 | Mobile architecture decision (ADR-001) | ✅ | `185_implementation.md` + `185_phase_log.md` (also `docs/mobile/ADR-001-framework-choice.md` for the ADR itself) |
+| 186 | Mobile project scaffold + ADRs 001-004 + src stubs | ✅ | `186_*.md` |
+| 187 | Auth + API client library | ✅ | `187_*.md` |
+| 188 | Vehicle garage CRUD | ✅ | `188_*.md` |
+| 189-204 | (remaining Track I) | 🔲 | (will land in backend `completed/` as they ship) |
+
+Up-to-date status table in [`docs/ROADMAP.md`](./docs/ROADMAP.md). Cross-phase follow-ups in [`docs/FOLLOWUPS.md`](./docs/FOLLOWUPS.md).
 
 ---
 
