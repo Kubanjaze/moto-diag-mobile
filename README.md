@@ -4,7 +4,7 @@ React Native client for the [moto-diag](https://github.com/Kubanjaze/moto-diag) 
 
 ## Status
 
-Phase 189 (diagnostic session UI + bottom-tab nav: Home / Garage / Sessions). Android-only smoke tested. iOS builds deferred until Mac access (Apple Developer account enrolled; not blocking Android development). Track I roadmap in [`docs/ROADMAP.md`](./docs/ROADMAP.md).
+Phase 190 (DTC code lookup screen + tap-from-SessionDetail cross-link; debounced search-as-you-type with race cancellation). Android-only smoke tested. iOS builds deferred until Mac access (Apple Developer account enrolled; not blocking Android development). Track I roadmap in [`docs/ROADMAP.md`](./docs/ROADMAP.md).
 
 ## Tech stack
 
@@ -107,11 +107,11 @@ moto-diag-mobile/
 │   ├── ble/                 react-native-ble-plx singleton wrapper
 │   ├── components/          Button / Field (forwardRef) / SelectField (nullable + allowCustom variants)
 │   ├── contexts/            React Context providers (ApiKeyProvider)
-│   ├── hooks/               React hooks (useApiKey / useVehicles / useVehicle / useSessions / useSession)
-│   ├── navigation/          RootNavigator (bottom-tabs) + HomeStack / GarageStack / SessionsStack + types.ts
-│   ├── screens/             Home + ApiKeyModal + Vehicles + VehicleDetail + NewVehicle + Sessions + SessionDetail + NewSession
+│   ├── hooks/               React hooks (useApiKey / useVehicles / useVehicle / useSessions / useSession / useDTC / useDTCSearch)
+│   ├── navigation/          RootNavigator (bottom-tabs) + HomeStack (Home/DTCSearch/DTCDetail) / GarageStack / SessionsStack (+ DTCDetail) + types.ts
+│   ├── screens/             Home + ApiKeyModal + Vehicles + VehicleDetail + NewVehicle + Sessions + SessionDetail + NewSession + DTCSearch + DTCDetail
 │   │   └── sessionFormHelpers.ts   pure helpers (packSymptoms / packFaultCodes)
-│   └── types/               api.ts (openapi-fetch shim) + vehicleEnums.ts + sessionEnums.ts (severity helpers)
+│   └── types/               api.ts (openapi-fetch shim, includes DTC type aliases) + vehicleEnums.ts + sessionEnums.ts (severity helpers, also reused by DTCDetail / DTCSearch)
 ├── scripts/
 │   └── refresh-api-schema.js   curls backend /openapi.json
 ├── patches/                 patch-package workarounds (ble-plx + keychain)
@@ -134,7 +134,7 @@ npm run lint                 # ESLint
 npx tsc --noEmit             # TypeScript typecheck
 ```
 
-Unit tests only for now — Jest covers API client header injection + Keychain round-trip + ProblemDetail / HTTPValidationError narrowing + hook state transitions (useApiKey / useVehicles / useVehicle / useSessions / useSession) + pure helpers (Field validators, vehicleEnums + sessionEnums labelFor / round-trip helpers, NewSessionScreen pack helpers, SelectField buildSelectRows + getTriggerDisplay). 162 tests as of Phase 189 commit 6. Two transport-regression guards pin Content-Type preservation on body-bearing POST/PATCH (Phase 188 commit-6 lesson) plus X-API-Key propagation on empty-body POST (Phase 189 commit-6 lifecycle path). No component-level render tests yet (Phase 187 Q3 decision — component tests on RN are brittle + expensive to maintain; revisit at a later phase if regression pressure justifies).
+Unit tests only for now — Jest covers API client header injection + Keychain round-trip + ProblemDetail / HTTPValidationError narrowing + hook state transitions (useApiKey / useVehicles / useVehicle / useSessions / useSession / useDTC / useDTCSearch including a deterministic race-cancellation test) + pure helpers (Field validators, vehicleEnums + sessionEnums labelFor / round-trip helpers, NewSessionScreen pack helpers, SelectField buildSelectRows + getTriggerDisplay). 177 tests as of Phase 190 commit 5. Two transport-regression guards pin Content-Type preservation on body-bearing POST/PATCH (Phase 188 commit-6 lesson) plus X-API-Key propagation on empty-body POST (Phase 189 commit-6 lifecycle path). useDTCSearch tests use jest.useFakeTimers() to control the 300ms debounce timer deterministically. No component-level render tests yet (Phase 187 Q3 decision — component tests on RN are brittle + expensive to maintain; revisit at a later phase if regression pressure justifies).
 
 ## Patches
 
