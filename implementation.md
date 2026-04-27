@@ -1,7 +1,7 @@
 # MotoDiag Mobile — Project Implementation
 
-**Version:** 0.0.5 | **Date:** 2026-04-26
-**Package version:** 0.0.3 (see `package.json` — bumps on feature milestones, independent of doc version)
+**Version:** 0.0.6 | **Date:** 2026-04-27
+**Package version:** 0.0.4 (see `package.json` — bumps on feature milestones, independent of doc version)
 **Repo:** https://github.com/Kubanjaze/moto-diag-mobile
 **Backend:** https://github.com/Kubanjaze/moto-diag (moto-diag platform, Track H = v0.13.1+)
 **Local:** `C:\Users\Kerwyn\PycharmProjects\moto-diag-mobile\`
@@ -19,7 +19,7 @@ MotoDiag Mobile is the React Native client for the [moto-diag](https://github.co
 - **React Native 0.85.x** (bare workflow, not Expo managed)
 - **TypeScript** with `strict: true`
 - **New Architecture DISABLED** pending [`react-native-ble-plx#1277`](https://github.com/dotintent/react-native-ble-plx/issues/1277)
-- **React Navigation** (native stack)
+- **React Navigation** bottom-tabs (Home / Garage / Sessions) with per-tab native-stacks (introduced Phase 189)
 - **react-native-ble-plx** for OBD-II BLE
 - **react-native-config** for env vars
 - State management deferred (ADR-003) — component-local `useState` + React Context for singletons
@@ -42,9 +42,11 @@ MotoDiag Mobile is the React Native client for the [moto-diag](https://github.co
 | `src/ble/` | 186 | Singleton wrapper | `BleService` around `react-native-ble-plx` BleManager; tested via scan smoke test. |
 | `src/contexts/` | 187 | Active | `ApiKeyProvider` React Context provider; hydrates from Keychain on mount; exposes key state + mutators. |
 | `src/hooks/` | 187 | Active | `useApiKey()` — THE public surface for API key state. Hides Context vs Zustand implementation choice from call sites (ADR-003 swap invisible). |
-| `src/navigation/` | 186 | Native stack | React Navigation; single Home screen currently. |
-| `src/screens/` | 187 | Active | `HomeScreen` rewritten with 4 sections (Backend / Auth / Authed smoke / BLE scan). `ApiKeyModal` pure presentational paste-key modal. |
-| `src/types/` | 187 | Active | Phase 186 ad-hoc stubs replaced with `VersionResponse`/`VehicleListResponse`/`VersionInfo` aliases + re-exports from generated `api-types.ts`. |
+| `src/navigation/` | 189 | Bottom-tabs + per-tab native-stacks | `RootNavigator` is `createBottomTabNavigator` (Home / Garage / Sessions). Three per-tab stacks (`HomeStack` / `GarageStack` / `SessionsStack`) keep back-nav state independent. Param-list types in `types.ts`. |
+| `src/screens/` | 189 | Active | Home + ApiKeyModal + Vehicles + VehicleDetail + NewVehicle (Phase 188) + Sessions + SessionDetail + NewSession (Phase 189). `sessionFormHelpers.ts` exports pure `packSymptoms` / `packFaultCodes` for unit testing. |
+| `src/components/` | 189 | Active | `Button` / `Field` (forwardRef in Phase 189) / `SelectField` (Phase 189: discriminated-union with `nullable` discriminator, opt-in `allowNull` + `allowCustom` for severity Other… escape hatch; pure helpers `buildSelectRows` + `getTriggerDisplay` exported). |
+| `src/hooks/` | 189 | Active | `useApiKey` (Phase 187) + `useVehicles` / `useVehicle(id)` (Phase 188) + `useSessions` / `useSession(id)` (Phase 189; sessions list uses session-shaped quota keys `total_this_month` / `monthly_quota_*`, NOT vehicle parity). |
+| `src/types/` | 189 | Active | `api.ts` with all openapi-fetch shims (vehicle + session types + `BatteryChemistryLiteral` manually defined). `vehicleEnums.ts` with PROTOCOL/POWERTRAIN/ENGINE_TYPE/BATTERY_CHEMISTRY options + labels + `labelFor()`. `sessionEnums.ts` (Phase 189) with `SeverityLiteral` + `SEVERITY_OPTIONS` + `SEVERITY_LABELS` + 3 helpers (`deriveSeverityState` / `packSeverityForSubmit` / `renderSeverityForView`) for the severity Other… round-trip. |
 | `scripts/` | 187 | Active | `refresh-api-schema.js` — Node script curls backend `/openapi.json`, sanity-checks shape, logs path diffs. |
 | `patches/` | 187 | Active | `react-native-ble-plx+3.5.1.patch` + `react-native-keychain+10.0.0.patch` applied on every install via `postinstall: patch-package`. Both remove `if (isNewArchitectureEnabled())` guards; see `patches/README.md`. |
 
@@ -98,7 +100,8 @@ Phase-specific scripts (active as of Phase 187):
 | 186 | Mobile project scaffold + ADRs 001-004 + src stubs | ✅ | `186_*.md` |
 | 187 | Auth + API client library | ✅ | `187_*.md` |
 | 188 | Vehicle garage CRUD | ✅ | `188_*.md` |
-| 189-204 | (remaining Track I) | 🔲 | (will land in backend `completed/` as they ship) |
+| 189 | Diagnostic session UI + first bottom-tab nav | ✅ | `189_*.md` |
+| 190-204 | (remaining Track I) | 🔲 | (will land in backend `completed/` as they ship) |
 
 Up-to-date status table in [`docs/ROADMAP.md`](./docs/ROADMAP.md). Cross-phase follow-ups in [`docs/FOLLOWUPS.md`](./docs/FOLLOWUPS.md).
 
