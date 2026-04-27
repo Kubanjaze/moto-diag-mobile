@@ -69,6 +69,24 @@ export type NoteRequest = components['schemas']['NoteRequest'];
 /** Session lifecycle status. Closed enum from Phase 178 backend. */
 export type SessionStatusLiteral = NonNullable<SessionUpdateRequest['status']>;
 
+// ---------------------------------------------------------------
+// Knowledge base — DTCs (Phase 179 / mobile Phase 190)
+// ---------------------------------------------------------------
+
+/** Single DTC response (used by GET /v1/kb/dtc/{code} + as an
+ *  element of DTCListResponse.items). All non-`code` fields are
+ *  Optional[str] / list[str] — KB content quality varies by code.
+ *  No tier-gating; backend uses require_api_key only. */
+export type DTCResponse = components['schemas']['DTCResponse'];
+
+/** GET /v1/kb/dtc list response body. `total` is the unfiltered
+ *  match count; `items` is capped at the requested `limit`. */
+export type DTCListResponse = components['schemas']['DTCListResponse'];
+
+/** DTC category — used by GET /v1/kb/dtc/categories. Phase 190
+ *  ships the alias for future filter-chip work; not consumed yet. */
+export type DTCCategoryResponse = components['schemas']['DTCCategoryResponse'];
+
 /** Enum unions exposed for Literal-typed form dropdowns. */
 export type ProtocolLiteral = NonNullable<VehicleCreateRequest['protocol']>;
 export type PowertrainLiteral = NonNullable<VehicleCreateRequest['powertrain']>;

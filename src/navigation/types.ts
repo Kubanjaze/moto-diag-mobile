@@ -17,8 +17,18 @@ export type RootTabParamList = {
   SessionsTab: undefined;
 };
 
+/** DTC detail route params. Same shape registered in both
+ *  HomeStack (general lookup) and SessionsStack (cross-link from
+ *  SessionDetail fault-code tap). `sourceSessionId` is a render
+ *  hint for the screen — when present, footer reads "Opened from
+ *  session #N". When absent (general lookup), footer is omitted.
+ *  Phase 190 commit 1. */
+export type DTCDetailParams = {code: string; sourceSessionId?: number};
+
 export type HomeStackParamList = {
   Home: undefined;
+  DTCSearch: undefined;
+  DTCDetail: DTCDetailParams;
 };
 
 export type GarageStackParamList = {
@@ -31,4 +41,5 @@ export type SessionsStackParamList = {
   Sessions: undefined;
   SessionDetail: {sessionId: number};
   NewSession: undefined;
+  DTCDetail: DTCDetailParams;
 };

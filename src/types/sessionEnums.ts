@@ -1,5 +1,12 @@
 // Phase 189 commit 6 — session-side enum bindings + severity
 // edit-mode state helpers.
+// Phase 190 commit 1 — also reused by DTCDetailScreen +
+// DTCSearchScreen for DTC severity badge rendering. Both backend
+// `Session.severity` and `DTC.severity` are `Optional[str]`, so
+// `renderSeverityForView` + `SEVERITY_LABELS` apply to both. The
+// file name is a slight inaccuracy (severity helpers now serve
+// DTC too) but per Phase 190 plan sign-off we accept the drift
+// over the churn of renaming + updating every existing import.
 //
 // Mirrors the vehicleEnums.ts pattern. Severity is a backend
 // `Optional[str]` field — there's no closed enum at the Pydantic
