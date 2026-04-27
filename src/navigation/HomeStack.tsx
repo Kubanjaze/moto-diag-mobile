@@ -10,6 +10,7 @@ import React from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
 import {DTCDetailScreen} from '../screens/DTCDetailScreen';
+import {DTCSearchScreen} from '../screens/DTCSearchScreen';
 import {HomeScreen} from '../screens/HomeScreen';
 import type {HomeStackParamList} from './types';
 
@@ -22,6 +23,11 @@ export function HomeStack() {
         name="Home"
         component={HomeScreen}
         options={{title: 'MotoDiag'}}
+      />
+      <Stack.Screen
+        name="DTCSearch"
+        component={DTCSearchScreen}
+        options={{title: 'DTC lookup'}}
       />
       <Stack.Screen
         name="DTCDetail"
