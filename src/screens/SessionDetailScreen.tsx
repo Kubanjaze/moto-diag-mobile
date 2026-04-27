@@ -25,6 +25,7 @@ import {
   StyleSheet,
   Text,
   type TextInput as RNTextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -238,6 +239,12 @@ export function SessionDetailScreen({navigation, route}: Props) {
           <FaultCodesCard
             session={session}
             onAppend={handleAppendFaultCode}
+            onCodePress={(code) =>
+              navigation.navigate('DTCDetail', {
+                code,
+                sourceSessionId: session.id,
+              })
+            }
           />
           <DiagnosisCard session={session} onPatch={handlePatchDiagnosis} />
           <NotesCard session={session} onAppend={handleAppendNote} />
@@ -329,9 +336,15 @@ function SymptomsCard({
 function FaultCodesCard({
   session,
   onAppend,
+  onCodePress,
 }: {
   session: SessionResponse;
   onAppend: (text: string) => Promise<void>;
+  /** Phase 190 commit 2 — when provided, fault-code rows become
+   *  tappable (push to DTCDetail). Symptoms intentionally do NOT
+   *  get this — there's no DTC-equivalent screen for natural-
+   *  language symptoms. */
+  onCodePress?: (code: string) => void;
 }) {
   return (
     <AppendListCard
@@ -342,6 +355,7 @@ function FaultCodesCard({
       mono
       autoCapitalize="characters"
       onAppend={onAppend}
+      onItemPress={onCodePress}
       testIDPrefix="session-fault-codes"
     />
   );
@@ -385,6 +399,7 @@ function AppendListCard({
   mono,
   autoCapitalize,
   onAppend,
+  onItemPress,
   testIDPrefix,
 }: {
   title: string;
@@ -394,6 +409,11 @@ function AppendListCard({
   mono?: boolean;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   onAppend: (text: string) => Promise<void>;
+  /** Phase 190 commit 2 — when provided, items render as tappable
+   *  rows with a chevron `›` affordance. Used by FaultCodesCard to
+   *  push to DTCDetail. SymptomsCard / NotesCard leave this unset
+   *  so their items stay read-only. */
+  onItemPress?: (item: string, idx: number) => void;
   testIDPrefix: string;
 }) {
   return (
@@ -403,15 +423,31 @@ function AppendListCard({
         <Text style={styles.emptyListText}>{emptyText}</Text>
       ) : (
         <View style={styles.listBody}>
-          {items.map((item, idx) => (
-            <View key={`${idx}-${item}`} style={styles.listItem}>
-              <Text style={styles.listBullet}>·</Text>
-              <Text
-                style={mono ? styles.listItemTextMono : styles.listItemText}>
-                {item}
-              </Text>
-            </View>
-          ))}
+          {items.map((item, idx) =>
+            onItemPress ? (
+              <TouchableOpacity
+                key={`${idx}-${item}`}
+                style={styles.listItemTappable}
+                onPress={() => onItemPress(item, idx)}
+                accessibilityRole="button"
+                testID={`${testIDPrefix}-row-${idx}`}>
+                <Text style={styles.listBullet}>·</Text>
+                <Text
+                  style={mono ? styles.listItemTextMono : styles.listItemText}>
+                  {item}
+                </Text>
+                <Text style={styles.listItemChevron}>›</Text>
+              </TouchableOpacity>
+            ) : (
+              <View key={`${idx}-${item}`} style={styles.listItem}>
+                <Text style={styles.listBullet}>·</Text>
+                <Text
+                  style={mono ? styles.listItemTextMono : styles.listItemText}>
+                  {item}
+                </Text>
+              </View>
+            ),
+          )}
         </View>
       )}
       <View style={styles.appendDivider} />
@@ -830,6 +866,19 @@ const styles = StyleSheet.create({
   notesText: {fontSize: 14, color: '#222', lineHeight: 20},
   listBody: {marginTop: 2},
   listItem: {flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 2},
+  // Phase 190 commit 2 — tappable variant for fault-code rows
+  // (fat-finger touch target met by minHeight 44; chevron `›` is
+  // the visual affordance).
+  listItemTappable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    minHeight: 44,
+    borderBottomColor: '#f3f3f3',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  listItemChevron: {fontSize: 22, color: '#bbb', marginLeft: 8, fontWeight: '500'},
   listBullet: {fontSize: 14, color: '#888', width: 14},
   listItemText: {fontSize: 14, color: '#222', flex: 1, lineHeight: 20},
   listItemTextMono: {
