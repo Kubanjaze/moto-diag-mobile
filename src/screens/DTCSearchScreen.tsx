@@ -36,6 +36,7 @@ import {useDTCSearch} from '../hooks/useDTCSearch';
 import type {HomeStackParamList} from '../navigation/types';
 import type {DTCResponse} from '../types/api';
 import {renderSeverityForView} from '../types/sessionEnums';
+import {dtcResultKey} from './dtcSearchHelpers';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'DTCSearch'>;
 
@@ -116,7 +117,7 @@ export function DTCSearchScreen({navigation}: Props) {
       ) : (
         <FlatList
           data={results}
-          keyExtractor={keyExtractor}
+          keyExtractor={dtcResultKey}
           renderItem={renderItem}
           contentContainerStyle={styles.listContainer}
           ListHeaderComponent={
@@ -145,9 +146,6 @@ export function DTCSearchScreen({navigation}: Props) {
   );
 }
 
-function keyExtractor(item: DTCResponse): string {
-  return item.code;
-}
 
 function DTCRow({
   dtc,
