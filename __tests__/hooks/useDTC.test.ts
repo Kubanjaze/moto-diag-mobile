@@ -1,22 +1,15 @@
 // Phase 190 commit 1 — useDTC(code) hook unit tests.
-// Mirrors useSession.test.ts. Single-row fetch via path-param.
+// Phase 190 commit 7 (Bug 2 fix) — error type changed from string
+// to DTCError discriminated union; tests assert .kind directly.
+// The 404 test in commit 1 used the wrong error body shape
+// ({title: 'Not Found', ...} — Phase 175 envelope) which does NOT
+// match the FastAPI HTTPException default the KB endpoint actually
+// returns. Replaced with the real shape ({detail: string}) +
+// extended with 5xx and network-failure coverage.
 
 jest.mock('../../src/api', () => {
-  const describeError = (err: unknown): string => {
-    if (typeof err === 'object' && err !== null) {
-      const r = err as Record<string, unknown>;
-      if (typeof r.title === 'string') {
-        return typeof r.detail === 'string'
-          ? `${r.title}: ${r.detail}`
-          : r.title;
-      }
-    }
-    if (err instanceof Error) return err.message;
-    return String(err);
-  };
   return {
     api: {GET: jest.fn()},
-    describeError,
   };
 });
 
@@ -83,9 +76,13 @@ async function waitFor(
 }
 
 const okResponse = (data: unknown) =>
-  Promise.resolve({data, error: undefined, response: {} as Response});
-const errResponse = (error: unknown) =>
-  Promise.resolve({data: undefined, error, response: {} as Response});
+  Promise.resolve({data, error: undefined, response: {status: 200} as Response});
+const errResponse = (error: unknown, status: number) =>
+  Promise.resolve({
+    data: undefined,
+    error,
+    response: {status} as Response,
+  });
 
 const sampleDTC = {
   code: 'P0171',
@@ -134,25 +131,53 @@ describe('useDTC', () => {
     expect(result.current.dtc?.common_causes).toHaveLength(3);
   });
 
-  it('surfaces 404 ProblemDetail (DTC not found)', async () => {
-    // Backend Phase 179: GET /v1/kb/dtc/{code} returns
-    // raise HTTPException(404, detail=f"DTC code {code!r} not found")
-    // FastAPI's default 404 handler renders that as ProblemDetail.
+  it('classifies a FastAPI 404 (the actual KB endpoint shape) as not_found', async () => {
+    // Phase 190 Bug 2 reproduction. KB endpoints raise
+    // HTTPException(404, detail=...) — body is `{detail: string}`,
+    // NOT Phase 175's ProblemDetail envelope. Pre-fix this slipped
+    // past isProblemDetail and rendered "[object Object]".
     getMock.mockImplementation(() =>
-      errResponse({
-        title: 'Not Found',
-        status: 404,
-        detail: "DTC code 'BOGUS' not found",
-      }),
+      errResponse({detail: "DTC code 'BOGUS' not found"}, 404),
     );
     const {result} = renderHook<UseDTCResult>(() => useDTC('BOGUS'));
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
     expect(result.current.dtc).toBeNull();
-    expect(result.current.error).toBe(
-      "Not Found: DTC code 'BOGUS' not found",
+    expect(result.current.error).toEqual({
+      kind: 'not_found',
+      code: 'BOGUS',
+      message: "DTC code 'BOGUS' not found",
+    });
+  });
+
+  it('classifies a 500 server error as kind=server', async () => {
+    getMock.mockImplementation(() =>
+      errResponse({detail: 'database temporarily unavailable'}, 500),
     );
+    const {result} = renderHook<UseDTCResult>(() => useDTC('P0171'));
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+    expect(result.current.error).toEqual({
+      kind: 'server',
+      status: 500,
+      message: 'database temporarily unavailable',
+    });
+  });
+
+  it('classifies a thrown network error as kind=network', async () => {
+    getMock.mockImplementation(() =>
+      Promise.reject(new Error('Network request failed')),
+    );
+    const {result} = renderHook<UseDTCResult>(() => useDTC('P0171'));
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+    expect(result.current.error).toEqual({
+      kind: 'network',
+      message: 'Network request failed',
+    });
   });
 
   it('refetch re-invokes api.GET', async () => {

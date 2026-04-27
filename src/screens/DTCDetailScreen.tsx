@@ -26,6 +26,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {Button} from '../components/Button';
+import type {DTCError} from '../hooks/dtcErrors';
 import {useDTC} from '../hooks/useDTC';
 import type {
   HomeStackParamList,
@@ -61,20 +62,26 @@ export function DTCDetailScreen({navigation, route}: Props) {
   }
 
   if (error && !dtc) {
-    // Distinguish 404 (DTC not found) from generic errors. Backend
-    // returns RFC 7807 ProblemDetail for 404 with the code in the
-    // detail field; describeError concatenates title + detail. We
-    // just render whatever describeError produced.
-    const isNotFound =
-      error.toLowerCase().includes('not found') ||
-      error.toLowerCase().includes('404');
+    // Phase 190 commit 7 (Bug 2 fix) — switch on the typed error
+    // kind instead of substring-matching the message text. Each
+    // kind maps to a distinct UX:
+    //   not_found → "DTC code not found", spelling-check hint, no
+    //               Retry (retrying won't make the catalog grow)
+    //   network   → "No connection", Retry
+    //   server    → "Server error (5xx)", Retry
+    //   unknown   → fallback "Couldn't load DTC", Retry
+    const isNotFound = error.kind === 'not_found';
+    const titleByKind: Record<DTCError['kind'], string> = {
+      not_found: 'DTC code not found',
+      network: 'No connection to backend',
+      server: "Server error",
+      unknown: "Couldn't load DTC",
+    };
     return (
       <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
         <View style={styles.errorPane}>
-          <Text style={styles.errorTitle}>
-            {isNotFound ? 'DTC code not found' : "Couldn't load DTC"}
-          </Text>
-          <Text style={styles.errorBody}>{error}</Text>
+          <Text style={styles.errorTitle}>{titleByKind[error.kind]}</Text>
+          <Text style={styles.errorBody}>{error.message}</Text>
           {isNotFound ? (
             <Text style={styles.errorHint}>
               Check the code spelling, or try the search if you're not
