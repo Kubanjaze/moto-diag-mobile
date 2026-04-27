@@ -33,7 +33,7 @@ import {
 } from '../components/Field';
 import {SelectField} from '../components/SelectField';
 import {useVehicle} from '../hooks/useVehicle';
-import type {RootStackParamList} from '../navigation/RootNavigator';
+import type {GarageStackParamList} from '../navigation/types';
 import type {
   BatteryChemistryLiteral,
   EngineTypeLiteral,
@@ -54,7 +54,7 @@ import {
   PROTOCOL_OPTIONS,
 } from '../types/vehicleEnums';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'VehicleDetail'>;
+type Props = NativeStackScreenProps<GarageStackParamList, 'VehicleDetail'>;
 
 interface EditErrors {
   make?: string | null;

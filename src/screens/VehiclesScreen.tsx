@@ -23,10 +23,10 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {Button} from '../components/Button';
 import {useVehicles} from '../hooks/useVehicles';
-import type {RootStackParamList} from '../navigation/RootNavigator';
+import type {GarageStackParamList} from '../navigation/types';
 import type {VehicleResponse} from '../types/api';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Vehicles'>;
+type Props = NativeStackScreenProps<GarageStackParamList, 'Vehicles'>;
 
 export function VehiclesScreen({navigation}: Props) {
   const {vehicles, listResponse, isLoading, error, refetch} = useVehicles();
