@@ -212,6 +212,76 @@ describe('makeClient — auth header injection', () => {
     expect(initHeaders['content-type']).toMatch(/^application\/json/);
   });
 
+  // Phase 189 commit-6 regression guards: every new body-bearing
+  // POST surface (session symptoms / fault codes / notes) implicitly
+  // re-tests Phase 187's customFetch. Plus the empty-body POST path
+  // (session close/reopen) — it has no Content-Type to preserve, but
+  // it must still propagate the API key via X-API-Key.
+  it('preserves Content-Type on POST /v1/sessions/{id}/symptoms (Phase 189 body-bearing append)', async () => {
+    const fetchMock = jest.fn<
+      Promise<Response>,
+      [input: RequestInfo, init?: RequestInit]
+    >(async () =>
+      new Response('{"id":7}', {
+        status: 200,
+        headers: {'content-type': 'application/json'},
+      }),
+    );
+    const client = makeClient({
+      baseUrl: 'http://x',
+      resolveApiKey: async () => 'mdk_live_test',
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+
+    await client.POST('/v1/sessions/{session_id}/symptoms', {
+      params: {path: {session_id: 7}},
+      body: {symptom: 'idle bog at 4500 rpm'},
+    });
+
+    const callInit = fetchMock.mock.calls[0][1] as RequestInit | undefined;
+    const initHeaders = headersToObject(
+      callInit?.headers as HeadersLike | undefined,
+    );
+    expect(initHeaders['content-type']).toMatch(/^application\/json/);
+    expect(initHeaders['x-api-key']).toBe('mdk_live_test');
+  });
+
+  it('propagates X-API-Key on empty-body POST /v1/sessions/{id}/close (Phase 189 lifecycle)', async () => {
+    // Empty-body POST: openapi-fetch likely doesn't set Content-Type
+    // (no body to declare). The transport guard here is that the
+    // auth header still propagates and the URL hits the right path.
+    // This protects against any future customFetch refactor that
+    // breaks empty-body POST plumbing.
+    const fetchMock = jest.fn<
+      Promise<Response>,
+      [input: RequestInfo, init?: RequestInit]
+    >(async () =>
+      new Response('{"id":7,"status":"closed"}', {
+        status: 200,
+        headers: {'content-type': 'application/json'},
+      }),
+    );
+    const client = makeClient({
+      baseUrl: 'http://x',
+      resolveApiKey: async () => 'mdk_live_test',
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+
+    await client.POST('/v1/sessions/{session_id}/close', {
+      params: {path: {session_id: 7}},
+    });
+
+    const callArgs = fetchMock.mock.calls[0];
+    const callUrl = extractUrl(callArgs[0]);
+    const callInit = callArgs[1] as RequestInit | undefined;
+    const initHeaders = headersToObject(
+      callInit?.headers as HeadersLike | undefined,
+    );
+    expect(callUrl).toMatch(/\/v1\/sessions\/7\/close$/);
+    expect(initHeaders['x-api-key']).toBe('mdk_live_test');
+    expect(initHeaders['accept']).toBe('application/json');
+  });
+
   it('resolves the key on every request (not cached)', async () => {
     const resolver = jest.fn(async () => 'k');
     const fetchMock = jest.fn<

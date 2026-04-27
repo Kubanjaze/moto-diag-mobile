@@ -7,7 +7,7 @@
 // Keeps props close to TextInput — extra props are spread through
 // so callers can pass keyboardType/autoCapitalize/etc. directly.
 
-import React, {useCallback} from 'react';
+import React, {forwardRef, useCallback} from 'react';
 import {
   StyleSheet,
   Text,
@@ -24,7 +24,13 @@ interface Props extends Omit<TextInputProps, 'style'> {
   required?: boolean;
 }
 
-export function Field({label, error, required, ...inputProps}: Props) {
+// forwardRef so callers can imperatively focus the underlying
+// TextInput (e.g., the severity custom-value Field after picking
+// "Other…" in the SelectField). Phase 189 commit 6.
+export const Field = forwardRef<TextInput, Props>(function Field(
+  {label, error, required, ...inputProps},
+  ref,
+) {
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>
@@ -32,6 +38,7 @@ export function Field({label, error, required, ...inputProps}: Props) {
         {required ? <Text style={styles.requiredMark}> *</Text> : null}
       </Text>
       <TextInput
+        ref={ref}
         style={[styles.input, error ? styles.inputError : null]}
         placeholderTextColor="#999"
         autoCapitalize="none"
@@ -41,7 +48,7 @@ export function Field({label, error, required, ...inputProps}: Props) {
       {error ? <Text style={styles.errorLine}>{error}</Text> : null}
     </View>
   );
-}
+});
 
 /** Validation helpers — pure + testable. */
 
