@@ -33,13 +33,18 @@ import {
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 import {api, describeError} from '../api';
 import {bleService} from '../ble/BleService';
 import {useApiKey} from '../hooks/useApiKey';
 import {version as appVersion} from '../../package.json';
+import type {HomeStackParamList} from '../navigation/types';
 import type {VehicleListResponse, VersionResponse} from '../types/api';
 import {ApiKeyModal} from './ApiKeyModal';
+
+type HomeNav = NativeStackNavigationProp<HomeStackParamList, 'Home'>;
 
 // Async-fetch state machine. `idle` is the initial state for
 // user-triggered fetches; `loading` is during in-flight calls;
@@ -54,6 +59,7 @@ type FetchState<T> =
 const SCAN_DURATION_MS = 10_000;
 
 export function HomeScreen() {
+  const navigation = useNavigation<HomeNav>();
   const {apiKey, isLoading: keyLoading, setApiKey, clearApiKey} = useApiKey();
 
   const [versionState, setVersionState] = useState<FetchState<VersionResponse>>(
@@ -232,6 +238,18 @@ export function HomeScreen() {
             onTest={testVehicles}
             disabled={apiKey === null}
           />
+        </Section>
+
+        <Section title="DTC lookup">
+          <Text style={styles.sectionHelp}>
+            Look up DTC codes in the catalog. Search by code or description.
+          </Text>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.navigate('DTCSearch')}
+            testID="home-dtc-lookup-button">
+            <Text style={styles.buttonText}>Look up a DTC</Text>
+          </TouchableOpacity>
         </Section>
 
         <Section title="BLE scan (Phase 186)">
