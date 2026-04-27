@@ -208,7 +208,7 @@ export function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         contentInsetAdjustmentBehavior="automatic">
         <Text style={styles.title}>MotoDiag</Text>
-        <Text style={styles.subtitle}>v{appVersion} · Phase 189 scaffold</Text>
+        <Text style={styles.subtitle}>v{appVersion} · Phase 189</Text>
 
         <Section title="Backend">
           <BackendBlock

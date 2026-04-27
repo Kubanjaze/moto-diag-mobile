@@ -4,14 +4,14 @@ React Native client for the [moto-diag](https://github.com/Kubanjaze/moto-diag) 
 
 ## Status
 
-Phase 187 (auth + API client). Android-only smoke tested. iOS builds deferred until Mac access (Apple Developer account enrolled; not blocking Android development). Track I roadmap in [`docs/ROADMAP.md`](./docs/ROADMAP.md).
+Phase 189 (diagnostic session UI + bottom-tab nav: Home / Garage / Sessions). Android-only smoke tested. iOS builds deferred until Mac access (Apple Developer account enrolled; not blocking Android development). Track I roadmap in [`docs/ROADMAP.md`](./docs/ROADMAP.md).
 
 ## Tech stack
 
 - **React Native 0.85.x** bare workflow (not Expo managed; see [ADR-002](./docs/adr/002-new-arch-disabled-pending-ble-plx.md))
 - **TypeScript** strict
 - **New Architecture DISABLED** pending [`react-native-ble-plx#1277`](https://github.com/dotintent/react-native-ble-plx/issues/1277)
-- **React Navigation** native stack
+- **React Navigation** bottom-tabs (Home / Garage / Sessions) with per-tab native-stacks (introduced Phase 189)
 - **`openapi-fetch`** typed client against a committed OpenAPI 3.1 snapshot of the moto-diag backend ([ADR-005](./docs/adr/005-openapi-spec-snapshot.md))
 - **`react-native-keychain`** for API key storage (Android Keystore, iOS Keychain)
 - **`react-native-ble-plx`** for OBD-II BLE (Phase 196)
@@ -105,12 +105,13 @@ moto-diag-mobile/
 │   ├── api/                 openapi-fetch client + auth + errors
 │   ├── api-types.ts         generated from openapi.json (committed)
 │   ├── ble/                 react-native-ble-plx singleton wrapper
-│   ├── components/          Button / Field / SelectField — reusable UI primitives
+│   ├── components/          Button / Field (forwardRef) / SelectField (nullable + allowCustom variants)
 │   ├── contexts/            React Context providers (ApiKeyProvider)
-│   ├── hooks/               React hooks (useApiKey / useVehicles / useVehicle)
-│   ├── navigation/          React Navigation stacks
-│   ├── screens/             Home + ApiKeyModal + Vehicles + VehicleDetail + NewVehicle
-│   └── types/               shared TypeScript types (convenience shims)
+│   ├── hooks/               React hooks (useApiKey / useVehicles / useVehicle / useSessions / useSession)
+│   ├── navigation/          RootNavigator (bottom-tabs) + HomeStack / GarageStack / SessionsStack + types.ts
+│   ├── screens/             Home + ApiKeyModal + Vehicles + VehicleDetail + NewVehicle + Sessions + SessionDetail + NewSession
+│   │   └── sessionFormHelpers.ts   pure helpers (packSymptoms / packFaultCodes)
+│   └── types/               api.ts (openapi-fetch shim) + vehicleEnums.ts + sessionEnums.ts (severity helpers)
 ├── scripts/
 │   └── refresh-api-schema.js   curls backend /openapi.json
 ├── patches/                 patch-package workarounds (ble-plx + keychain)
@@ -133,7 +134,7 @@ npm run lint                 # ESLint
 npx tsc --noEmit             # TypeScript typecheck
 ```
 
-Unit tests only for now — Jest covers API client header injection + Keychain round-trip + ProblemDetail narrowing. No component tests yet (Phase 187 Q3 decision — component tests on RN are brittle + expensive to maintain; revisit at a later phase if regression pressure justifies).
+Unit tests only for now — Jest covers API client header injection + Keychain round-trip + ProblemDetail / HTTPValidationError narrowing + hook state transitions (useApiKey / useVehicles / useVehicle / useSessions / useSession) + pure helpers (Field validators, vehicleEnums + sessionEnums labelFor / round-trip helpers, NewSessionScreen pack helpers, SelectField buildSelectRows + getTriggerDisplay). 162 tests as of Phase 189 commit 6. Two transport-regression guards pin Content-Type preservation on body-bearing POST/PATCH (Phase 188 commit-6 lesson) plus X-API-Key propagation on empty-body POST (Phase 189 commit-6 lifecycle path). No component-level render tests yet (Phase 187 Q3 decision — component tests on RN are brittle + expensive to maintain; revisit at a later phase if regression pressure justifies).
 
 ## Patches
 
