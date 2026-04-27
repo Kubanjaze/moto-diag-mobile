@@ -35,6 +35,7 @@ import {SelectField} from '../components/SelectField';
 import {useVehicle} from '../hooks/useVehicle';
 import type {RootStackParamList} from '../navigation/RootNavigator';
 import type {
+  BatteryChemistryLiteral,
   EngineTypeLiteral,
   PowertrainLiteral,
   ProtocolLiteral,
@@ -42,6 +43,8 @@ import type {
   VehicleUpdateRequest,
 } from '../types/api';
 import {
+  BATTERY_CHEMISTRY_LABELS,
+  BATTERY_CHEMISTRY_OPTIONS,
   ENGINE_TYPE_LABELS,
   ENGINE_TYPE_OPTIONS,
   labelFor,
@@ -189,7 +192,9 @@ export function VehicleDetailScreen({navigation, route}: Props) {
           />
           <DetailRow
             label="Battery chem"
-            value={formatOptional(vehicle.battery_chemistry)}
+            value={
+              labelFor(vehicle.battery_chemistry, 'battery_chemistry') ?? '—'
+            }
           />
           <DetailRow
             label="Motor kW"
@@ -255,9 +260,14 @@ function EditPane({
   const [motorKw, setMotorKw] = useState<string>(
     vehicle.motor_kw != null ? String(vehicle.motor_kw) : '',
   );
-  const [batteryChem, setBatteryChem] = useState<string>(
-    vehicle.battery_chemistry ?? '',
-  );
+  // battery_chemistry: cast through BatteryChemistryLiteral. Legacy
+  // seeded data MAY contain off-enum values (pre-Phase-189 free-text
+  // entries); SelectField's getTriggerDisplay falls through to the
+  // raw value, and the user's first save snaps it back to the closed
+  // set.
+  const [batteryChem, setBatteryChem] = useState<
+    BatteryChemistryLiteral | null
+  >((vehicle.battery_chemistry as BatteryChemistryLiteral | null) ?? null);
   const [notes, setNotes] = useState<string>(vehicle.notes ?? '');
   const [protocol, setProtocol] = useState<ProtocolLiteral>(
     vehicle.protocol as ProtocolLiteral,
@@ -302,7 +312,7 @@ function EditPane({
         protocol,
         powertrain,
         engine_type: engineType,
-        battery_chemistry: batteryChem.trim() || undefined,
+        battery_chemistry: batteryChem ?? undefined,
         motor_kw: parseOptionalFloat(motorKw),
         mileage: parseOptionalInt(mileage),
         notes: notes.trim() || undefined,
@@ -433,10 +443,16 @@ function EditPane({
             onChange={setEngineType}
             testID="edit-vehicle-engine-type"
           />
-          <Field
+          <SelectField<BatteryChemistryLiteral>
             label="Battery chemistry"
             value={batteryChem}
-            onChangeText={setBatteryChem}
+            options={BATTERY_CHEMISTRY_OPTIONS}
+            labels={BATTERY_CHEMISTRY_LABELS}
+            onChange={setBatteryChem}
+            nullable
+            allowNull
+            nullLabel="—"
+            placeholder="—"
             testID="edit-vehicle-battery-chem"
           />
           <Field

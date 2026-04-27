@@ -34,12 +34,15 @@ import {
 import {SelectField} from '../components/SelectField';
 import type {RootStackParamList} from '../navigation/RootNavigator';
 import type {
+  BatteryChemistryLiteral,
   EngineTypeLiteral,
   PowertrainLiteral,
   ProtocolLiteral,
   VehicleCreateRequest,
 } from '../types/api';
 import {
+  BATTERY_CHEMISTRY_LABELS,
+  BATTERY_CHEMISTRY_OPTIONS,
   ENGINE_TYPE_LABELS,
   ENGINE_TYPE_OPTIONS,
   POWERTRAIN_LABELS,
@@ -70,7 +73,8 @@ export function NewVehicleScreen({navigation}: Props) {
   const [vin, setVin] = useState<string>('');
   const [mileage, setMileage] = useState<string>('');
   const [motorKw, setMotorKw] = useState<string>('');
-  const [batteryChem, setBatteryChem] = useState<string>('');
+  const [batteryChem, setBatteryChem] =
+    useState<BatteryChemistryLiteral | null>(null);
   const [notes, setNotes] = useState<string>('');
 
   // Literal dropdowns
@@ -113,7 +117,7 @@ export function NewVehicleScreen({navigation}: Props) {
         protocol,
         powertrain,
         engine_type: engineType,
-        battery_chemistry: batteryChem.trim() || undefined,
+        battery_chemistry: batteryChem ?? undefined,
         motor_kw: parseOptionalFloat(motorKw),
         bms_present: false,
         mileage: parseOptionalInt(mileage),
@@ -245,11 +249,16 @@ export function NewVehicleScreen({navigation}: Props) {
             onChange={setEngineType}
             testID="new-vehicle-engine-type"
           />
-          <Field
+          <SelectField<BatteryChemistryLiteral>
             label="Battery chemistry (EV/hybrid only)"
             value={batteryChem}
-            onChangeText={setBatteryChem}
-            placeholder="lithium-ion"
+            options={BATTERY_CHEMISTRY_OPTIONS}
+            labels={BATTERY_CHEMISTRY_LABELS}
+            onChange={setBatteryChem}
+            nullable
+            allowNull
+            nullLabel="—"
+            placeholder="—"
             testID="new-vehicle-battery-chem"
           />
           <Field

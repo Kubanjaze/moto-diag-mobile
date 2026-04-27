@@ -1,5 +1,9 @@
 // Phase 188 commit 8 — single source of truth for vehicle enum
 // options + display labels.
+// Phase 189 commit 1 — extended with battery_chemistry options/
+// labels (resolves Phase 188 follow-up F1: battery_chemistry was
+// a free-text Field that round-tripped 422 when users entered
+// "lithium-ion" / similar non-enum values).
 //
 // Phase 187 + commits 1-5 had the protocol/powertrain/engine_type
 // option lists + label maps duplicated across NewVehicleScreen and
@@ -9,14 +13,20 @@
 // labels to consult.
 //
 // This module centralizes everything:
-// - PROTOCOL_OPTIONS / PROTOCOL_LABELS (and similar for the 3 enums)
+// - PROTOCOL_OPTIONS / PROTOCOL_LABELS (and similar for the 4 enums)
 // - labelFor(value, kind) helper for view-mode rendering
 //
 // If the backend adds an enum value, openapi-typescript regenerates
-// the union; TypeScript then flags this list as incomplete until
-// a new option + label is added.
+// the union (for protocol/powertrain/engine_type); TypeScript then
+// flags this list as incomplete until a new option + label is added.
+// Battery chemistry is the exception: it's a manually-typed Literal
+// in api.ts because the backend exposes the field as bare `str` in
+// OpenAPI even though `BatteryChemistry(value)` enforces it at the
+// route handler. Keep BATTERY_CHEMISTRY_OPTIONS in sync with
+// `motodiag/core/models.py::BatteryChemistry`.
 
 import type {
+  BatteryChemistryLiteral,
   EngineTypeLiteral,
   PowertrainLiteral,
   ProtocolLiteral,
@@ -97,6 +107,26 @@ export const ENGINE_TYPE_LABELS: Record<EngineTypeLiteral, string> = {
 };
 
 // ---------------------------------------------------------------
+// Battery chemistry (Phase 189 commit 1 — F1 fix)
+// ---------------------------------------------------------------
+
+export const BATTERY_CHEMISTRY_OPTIONS: readonly BatteryChemistryLiteral[] = [
+  'li_ion',
+  'lfp',
+  'nmc',
+  'nca',
+  'lead_acid',
+];
+
+export const BATTERY_CHEMISTRY_LABELS: Record<BatteryChemistryLiteral, string> = {
+  li_ion: 'Lithium-ion',
+  lfp: 'LFP (LiFePO₄)',
+  nmc: 'NMC (Nickel Mn Co)',
+  nca: 'NCA (Nickel Co Al)',
+  lead_acid: 'Lead-acid',
+};
+
+// ---------------------------------------------------------------
 // View-mode label lookup
 // ---------------------------------------------------------------
 
@@ -106,7 +136,10 @@ export const ENGINE_TYPE_LABELS: Record<EngineTypeLiteral, string> = {
  * Used by VehicleDetailScreen view mode (and any future read-only
  * surface). Falls back to the raw value if the kind/value pair
  * isn't recognized — defense against backend adding a new enum
- * value before mobile picks up regenerated types.
+ * value before mobile picks up regenerated types, AND defense
+ * against legacy seeded data with off-enum strings (e.g., a
+ * pre-Phase-189 battery_chemistry of "lithium-ion" before the
+ * F1 fix shipped).
  *
  * Accepts string|null|undefined for ergonomic call sites that
  * read directly from the API response (where optional fields
@@ -114,7 +147,7 @@ export const ENGINE_TYPE_LABELS: Record<EngineTypeLiteral, string> = {
  */
 export function labelFor(
   value: string | null | undefined,
-  kind: 'protocol' | 'powertrain' | 'engine_type',
+  kind: 'protocol' | 'powertrain' | 'engine_type' | 'battery_chemistry',
 ): string | null {
   if (value === null || value === undefined || value === '') return null;
   switch (kind) {
@@ -129,6 +162,10 @@ export function labelFor(
     case 'engine_type':
       return (
         ENGINE_TYPE_LABELS[value as EngineTypeLiteral] ?? value
+      );
+    case 'battery_chemistry':
+      return (
+        BATTERY_CHEMISTRY_LABELS[value as BatteryChemistryLiteral] ?? value
       );
   }
 }

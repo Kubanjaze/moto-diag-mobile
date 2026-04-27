@@ -39,6 +39,23 @@ export type ProtocolLiteral = NonNullable<VehicleCreateRequest['protocol']>;
 export type PowertrainLiteral = NonNullable<VehicleCreateRequest['powertrain']>;
 export type EngineTypeLiteral = NonNullable<VehicleCreateRequest['engine_type']>;
 
+/**
+ * Battery chemistry — manually defined because the backend Pydantic
+ * exposes this field as `Optional[str]` in the OpenAPI schema, even
+ * though the route handler enforces a closed enum at the boundary
+ * (`BatteryChemistry(req.battery_chemistry)` in vehicles.py raises
+ * 422 on unknown values).
+ *
+ * Keep this in sync with `motodiag/core/models.py::BatteryChemistry`.
+ * Last verified against backend at Phase 189 plan time (2026-04-27).
+ */
+export type BatteryChemistryLiteral =
+  | 'li_ion'
+  | 'lfp'
+  | 'nmc'
+  | 'nca'
+  | 'lead_acid';
+
 /** Generated VersionInfo schema (shape: api_version, package, schema_version). */
 export type VersionInfo = components['schemas']['VersionInfo'];
 
