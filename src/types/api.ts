@@ -34,6 +34,41 @@ export type VehicleCreateRequest = components['schemas']['VehicleCreateRequest']
 /** PATCH /v1/vehicles/{id} request body (all fields optional). */
 export type VehicleUpdateRequest = components['schemas']['VehicleUpdateRequest'];
 
+// ---------------------------------------------------------------
+// Sessions (Phase 178 / mobile Phase 189)
+// ---------------------------------------------------------------
+
+/** GET /v1/sessions list response body — items + monthly quota metadata.
+ *
+ *  IMPORTANT: shape is NOT parity with VehicleListResponse:
+ *  - vehicles uses {total, tier, quota_limit, quota_remaining}
+ *  - sessions uses {total_this_month, tier, monthly_quota_limit,
+ *    monthly_quota_remaining}
+ *  Sessions quota resets monthly; vehicles quota is active count.
+ *  Don't copy-paste the vehicles hook for sessions — keys differ. */
+export type SessionListResponse =
+  paths['/v1/sessions']['get']['responses']['200']['content']['application/json'];
+
+/** Single session response (used by GET /v1/sessions/{id} +
+ *  as an element of SessionListResponse.items, plus the return
+ *  shape of every mutation route — backend returns full session
+ *  on append/close/reopen/PATCH for trivial caller refresh). */
+export type SessionResponse = components['schemas']['SessionResponse'];
+
+/** POST /v1/sessions request body. */
+export type SessionCreateRequest = components['schemas']['SessionCreateRequest'];
+
+/** PATCH /v1/sessions/{id} request body (all fields optional). */
+export type SessionUpdateRequest = components['schemas']['SessionUpdateRequest'];
+
+/** Append-only journal request bodies. */
+export type SymptomRequest = components['schemas']['SymptomRequest'];
+export type FaultCodeRequest = components['schemas']['FaultCodeRequest'];
+export type NoteRequest = components['schemas']['NoteRequest'];
+
+/** Session lifecycle status. Closed enum from Phase 178 backend. */
+export type SessionStatusLiteral = NonNullable<SessionUpdateRequest['status']>;
+
 /** Enum unions exposed for Literal-typed form dropdowns. */
 export type ProtocolLiteral = NonNullable<VehicleCreateRequest['protocol']>;
 export type PowertrainLiteral = NonNullable<VehicleCreateRequest['powertrain']>;
