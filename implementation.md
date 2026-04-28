@@ -1,7 +1,7 @@
 # MotoDiag Mobile — Project Implementation
 
-**Version:** 0.0.6 | **Date:** 2026-04-27
-**Package version:** 0.0.4 (see `package.json` — bumps on feature milestones, independent of doc version)
+**Version:** 0.0.7 | **Date:** 2026-04-28
+**Package version:** 0.0.5 (see `package.json` — bumps on feature milestones, independent of doc version)
 **Repo:** https://github.com/Kubanjaze/moto-diag-mobile
 **Backend:** https://github.com/Kubanjaze/moto-diag (moto-diag platform, Track H = v0.13.1+)
 **Local:** `C:\Users\Kerwyn\PycharmProjects\moto-diag-mobile\`
@@ -42,11 +42,11 @@ MotoDiag Mobile is the React Native client for the [moto-diag](https://github.co
 | `src/ble/` | 186 | Singleton wrapper | `BleService` around `react-native-ble-plx` BleManager; tested via scan smoke test. |
 | `src/contexts/` | 187 | Active | `ApiKeyProvider` React Context provider; hydrates from Keychain on mount; exposes key state + mutators. |
 | `src/hooks/` | 187 | Active | `useApiKey()` — THE public surface for API key state. Hides Context vs Zustand implementation choice from call sites (ADR-003 swap invisible). |
-| `src/navigation/` | 189 | Bottom-tabs + per-tab native-stacks | `RootNavigator` is `createBottomTabNavigator` (Home / Garage / Sessions). Three per-tab stacks (`HomeStack` / `GarageStack` / `SessionsStack`) keep back-nav state independent. Param-list types in `types.ts`. |
-| `src/screens/` | 189 | Active | Home + ApiKeyModal + Vehicles + VehicleDetail + NewVehicle (Phase 188) + Sessions + SessionDetail + NewSession (Phase 189). `sessionFormHelpers.ts` exports pure `packSymptoms` / `packFaultCodes` for unit testing. |
+| `src/navigation/` | 190 | Bottom-tabs + per-tab native-stacks | `RootNavigator` is `createBottomTabNavigator` (Home / Garage / Sessions). Per-tab stacks: `HomeStack` (Home / DTCSearch / DTCDetail), `GarageStack` (Phase 188 unchanged), `SessionsStack` (Sessions / SessionDetail / NewSession / DTCDetail — registered for tap-from-fault-code via cross-stack same-route-name). Param-list types + shared `DTCDetailParams` in `types.ts`. |
+| `src/screens/` | 190 | Active | Home + ApiKeyModal + Vehicles + VehicleDetail + NewVehicle (Phase 188) + Sessions + SessionDetail + NewSession (Phase 189) + DTCSearch + DTCDetail (Phase 190). Pure-helper modules: `sessionFormHelpers.ts` (Phase 189) + `dtcSearchHelpers.ts` (Phase 190 — composite `dtcResultKey` for FlatList). |
 | `src/components/` | 189 | Active | `Button` / `Field` (forwardRef in Phase 189) / `SelectField` (Phase 189: discriminated-union with `nullable` discriminator, opt-in `allowNull` + `allowCustom` for severity Other… escape hatch; pure helpers `buildSelectRows` + `getTriggerDisplay` exported). |
-| `src/hooks/` | 189 | Active | `useApiKey` (Phase 187) + `useVehicles` / `useVehicle(id)` (Phase 188) + `useSessions` / `useSession(id)` (Phase 189; sessions list uses session-shaped quota keys `total_this_month` / `monthly_quota_*`, NOT vehicle parity). |
-| `src/types/` | 189 | Active | `api.ts` with all openapi-fetch shims (vehicle + session types + `BatteryChemistryLiteral` manually defined). `vehicleEnums.ts` with PROTOCOL/POWERTRAIN/ENGINE_TYPE/BATTERY_CHEMISTRY options + labels + `labelFor()`. `sessionEnums.ts` (Phase 189) with `SeverityLiteral` + `SEVERITY_OPTIONS` + `SEVERITY_LABELS` + 3 helpers (`deriveSeverityState` / `packSeverityForSubmit` / `renderSeverityForView`) for the severity Other… round-trip. |
+| `src/hooks/` | 190 | Active | `useApiKey` (Phase 187) + `useVehicles` / `useVehicle(id)` (Phase 188) + `useSessions` / `useSession(id)` (Phase 189) + `useDTC` / `useDTCSearch` (Phase 190; useDTCSearch implements debounced 300ms search-as-you-type with race cancellation via requestId counter; useDTC returns typed `DTCError` discriminated union via `dtcErrors.ts`). |
+| `src/types/` | 189 | Active | `api.ts` with all openapi-fetch shims (vehicle + session + DTC type aliases + `BatteryChemistryLiteral` manually defined). `vehicleEnums.ts` with PROTOCOL/POWERTRAIN/ENGINE_TYPE/BATTERY_CHEMISTRY options + labels + `labelFor()`. `sessionEnums.ts` with severity helpers (Phase 189; also reused by Phase 190 DTCDetail / DTCSearch for severity badge rendering — top comment documents the cross-use). |
 | `scripts/` | 187 | Active | `refresh-api-schema.js` — Node script curls backend `/openapi.json`, sanity-checks shape, logs path diffs. |
 | `patches/` | 187 | Active | `react-native-ble-plx+3.5.1.patch` + `react-native-keychain+10.0.0.patch` applied on every install via `postinstall: patch-package`. Both remove `if (isNewArchitectureEnabled())` guards; see `patches/README.md`. |
 
@@ -101,7 +101,8 @@ Phase-specific scripts (active as of Phase 187):
 | 187 | Auth + API client library | ✅ | `187_*.md` |
 | 188 | Vehicle garage CRUD | ✅ | `188_*.md` |
 | 189 | Diagnostic session UI + first bottom-tab nav | ✅ | `189_*.md` |
-| 190-204 | (remaining Track I) | 🔲 | (will land in backend `completed/` as they ship) |
+| 190 | DTC code lookup screen + SessionDetail cross-link | ✅ | `190_*.md` |
+| 191-204 | (remaining Track I) | 🔲 | (will land in backend `completed/` as they ship) |
 
 Up-to-date status table in [`docs/ROADMAP.md`](./docs/ROADMAP.md). Cross-phase follow-ups in [`docs/FOLLOWUPS.md`](./docs/FOLLOWUPS.md).
 
