@@ -22,9 +22,12 @@
     "react-native": "0.85.2",
     "react-native-ble-plx": "^3.5.1",
     "react-native-config": "^1.6.1",
+    "react-native-fs": "^2.20.0",
     "react-native-keychain": "10.0.0",
     "react-native-safe-area-context": "^5.7.0",
-    "react-native-screens": "^4.24.0"
+    "react-native-screens": "^4.24.0",
+    "react-native-video": "^6.19.2",
+    "react-native-vision-camera": "^4.7.3"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

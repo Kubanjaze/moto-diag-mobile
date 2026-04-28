@@ -12,6 +12,18 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
 
+    <!-- Phase 191: Camera + microphone for video diagnostic capture
+         (react-native-vision-camera).
+         Permission flow: src/hooks/useCameraPermissions.ts wraps
+         Camera.requestCameraPermission() + requestMicrophonePermission()
+         from vision-camera. Files stay in app-private DocumentDirectoryPath
+         so READ_MEDIA_* perms are NOT required for Phase 191
+         (Phase 192 share-sheet integration will need them). -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
     <application
       android:name=".MainApplication"
       android:label="@string/app_name"
