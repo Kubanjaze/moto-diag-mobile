@@ -4,7 +4,7 @@ React Native client for the [moto-diag](https://github.com/Kubanjaze/moto-diag) 
 
 ## Status
 
-Phase 190 (DTC code lookup screen + tap-from-SessionDetail cross-link; debounced search-as-you-type with race cancellation). Android-only smoke tested. iOS builds deferred until Mac access (Apple Developer account enrolled; not blocking Android development). Track I roadmap in [`docs/ROADMAP.md`](./docs/ROADMAP.md).
+Phase 191 (video diagnostic capture — mobile-only substrate; record + local FS storage + SessionDetail VideosCard + playback). Backend upload + Claude Vision AI analysis pipeline deferred to Phase 191B. Android-only smoke tested. iOS builds deferred until Mac access (Apple Developer account enrolled; not blocking Android development). Track I roadmap in [`docs/ROADMAP.md`](./docs/ROADMAP.md).
 
 ## Tech stack
 
@@ -15,6 +15,9 @@ Phase 190 (DTC code lookup screen + tap-from-SessionDetail cross-link; debounced
 - **`openapi-fetch`** typed client against a committed OpenAPI 3.1 snapshot of the moto-diag backend ([ADR-005](./docs/adr/005-openapi-spec-snapshot.md))
 - **`react-native-keychain`** for API key storage (Android Keystore, iOS Keychain)
 - **`react-native-ble-plx`** for OBD-II BLE (Phase 196)
+- **`react-native-vision-camera`** for video recording (Phase 191; CameraX on Android, AVFoundation on iOS; H.264/MP4 codec)
+- **`react-native-fs`** for local video storage in `DocumentDirectoryPath` (Phase 191; Phase 198 will add SQLite-backed offline cache)
+- **`react-native-video`** for video playback (Phase 191; ExoPlayer on Android)
 - **`react-native-config`** for env vars — note the rebuild gotcha below
 
 Minimum OS: iOS 15.1 · Android API 24 (Android 7.0) · captures devices from ~late-2016 onward.
@@ -107,11 +110,15 @@ moto-diag-mobile/
 │   ├── ble/                 react-native-ble-plx singleton wrapper
 │   ├── components/          Button / Field (forwardRef) / SelectField (nullable + allowCustom variants)
 │   ├── contexts/            React Context providers (ApiKeyProvider)
-│   ├── hooks/               React hooks (useApiKey / useVehicles / useVehicle / useSessions / useSession / useDTC / useDTCSearch)
-│   ├── navigation/          RootNavigator (bottom-tabs) + HomeStack (Home/DTCSearch/DTCDetail) / GarageStack / SessionsStack (+ DTCDetail) + types.ts
-│   ├── screens/             Home + ApiKeyModal + Vehicles + VehicleDetail + NewVehicle + Sessions + SessionDetail + NewSession + DTCSearch + DTCDetail
-│   │   └── sessionFormHelpers.ts   pure helpers (packSymptoms / packFaultCodes)
-│   └── types/               api.ts (openapi-fetch shim, includes DTC type aliases) + vehicleEnums.ts + sessionEnums.ts (severity helpers, also reused by DTCDetail / DTCSearch)
+│   ├── hooks/               useApiKey / useVehicles / useVehicle / useSessions / useSession / useDTC / useDTCSearch / useCameraPermissions / useSessionVideos
+│   ├── navigation/          RootNavigator (bottom-tabs) + HomeStack (Home/DTCSearch/DTCDetail) / GarageStack / SessionsStack (+ DTCDetail/VideoCapture/VideoPlayback) + types.ts
+│   ├── screens/             Home + ApiKeyModal + Vehicles + VehicleDetail + NewVehicle + Sessions + SessionDetail + NewSession + DTCSearch + DTCDetail + VideoCapture + VideoPlayback
+│   │   ├── sessionFormHelpers.ts   pure helpers (packSymptoms / packFaultCodes)
+│   │   ├── dtcSearchHelpers.ts     pure helper (dtcResultKey composite key)
+│   │   ├── videoCaptureMachine.ts  pure reducer (RecordingState + recordingTransition)
+│   │   └── videoCaptureHelpers.ts  pure helpers (formatElapsed / formatFileSize / generateShortId / classifyVisionCameraError)
+│   ├── services/            videoStorage.ts (RNFS-backed file-system policy: paths, caps, save, delete, orphan cleanup)
+│   └── types/               api.ts (openapi-fetch shim, includes DTC type aliases) + vehicleEnums.ts + sessionEnums.ts (severity helpers, also reused by DTCDetail / DTCSearch) + video.ts (SessionVideo, NewRecording, RecordingError)
 ├── scripts/
 │   └── refresh-api-schema.js   curls backend /openapi.json
 ├── patches/                 patch-package workarounds (ble-plx + keychain)
@@ -134,7 +141,7 @@ npm run lint                 # ESLint
 npx tsc --noEmit             # TypeScript typecheck
 ```
 
-Unit tests only for now — Jest covers API client header injection + Keychain round-trip + ProblemDetail / HTTPValidationError narrowing + hook state transitions (useApiKey / useVehicles / useVehicle / useSessions / useSession / useDTC / useDTCSearch including a deterministic race-cancellation test) + pure helpers (Field validators, vehicleEnums + sessionEnums labelFor / round-trip helpers, NewSessionScreen pack helpers, SelectField buildSelectRows + getTriggerDisplay). 177 tests as of Phase 190 commit 5. Two transport-regression guards pin Content-Type preservation on body-bearing POST/PATCH (Phase 188 commit-6 lesson) plus X-API-Key propagation on empty-body POST (Phase 189 commit-6 lifecycle path). useDTCSearch tests use jest.useFakeTimers() to control the 300ms debounce timer deterministically. No component-level render tests yet (Phase 187 Q3 decision — component tests on RN are brittle + expensive to maintain; revisit at a later phase if regression pressure justifies).
+Unit tests only for now — Jest covers API client header injection + Keychain round-trip + ProblemDetail / HTTPValidationError narrowing + hook state transitions (useApiKey / useVehicles / useVehicle / useSessions / useSession / useDTC / useDTCSearch including a deterministic race-cancellation test / useSessionVideos including the Phase 191B handoff regression guard) + pure helpers (Field validators, vehicleEnums + sessionEnums labelFor / round-trip helpers, NewSessionScreen pack helpers, SelectField buildSelectRows + getTriggerDisplay, videoCaptureMachine reducer with all transitions + auto-keep-on-background per Kerwyn fold, videoStorage path math + EXDEV cross-volume save fallback + cap evaluation + orphan cleanup, videoCaptureHelpers formatFileSize unit-switching + classifyVisionCameraError + dtcErrors narrowing). 301 tests as of Phase 191 commit 5. Two transport-regression guards pin Content-Type preservation on body-bearing POST/PATCH (Phase 188 commit-6 lesson) plus X-API-Key propagation on empty-body POST (Phase 189 commit-6 lifecycle path). useDTCSearch tests use jest.useFakeTimers() to control the 300ms debounce timer deterministically. No component-level render tests yet (Phase 187 Q3 decision — component tests on RN are brittle + expensive to maintain; revisit at a later phase if regression pressure justifies).
 
 ## Patches
 
