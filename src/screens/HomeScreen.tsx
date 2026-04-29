@@ -39,7 +39,6 @@ import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {api, describeError} from '../api';
 import {bleService} from '../ble/BleService';
 import {useApiKey} from '../hooks/useApiKey';
-import {useCameraPermissions} from '../hooks/useCameraPermissions';
 import {version as appVersion} from '../../package.json';
 import type {HomeStackParamList} from '../navigation/types';
 import type {VehicleListResponse, VersionResponse} from '../types/api';
@@ -264,9 +263,13 @@ export function HomeScreen() {
           <Text style={styles.statusLine}>Devices seen: {deviceCount}</Text>
         </Section>
 
-        <Section title="Camera (Phase 191 commit 1)">
-          <CameraSmokeBlock />
-        </Section>
+        {/* Phase 191 commit 1's "Camera (Phase 191 commit 1)"
+            Section was a dev-smoke entry — verified vision-camera
+            install + permission flow + Try-recording dev shortcut
+            into a hardcoded session. Removed in Phase 191 commit 5
+            now that SessionDetail's VideosCard is the production
+            entry path. useCameraPermissions still lives in
+            src/hooks/ for VideoCaptureScreen's permission gate. */}
       </ScrollView>
 
       <ApiKeyModal
@@ -441,96 +444,6 @@ function VehiclesBlock({
 
 // Mask a key for display: show prefix (mdk_live_AbCd, 13 chars) +
 // "•••" for the rest. Empty/short keys returned as-is.
-// Phase 191 commit 1 — camera-permission smoke surface. Renders the
-// useCameraPermissions hook output + offers a "Test camera" button
-// that triggers the OS prompt. Provides positive / negative / blocked
-// status lines so the architect-gate micro-smoke can verify the
-// native module wired up correctly without writing any feature code.
-// Removed in Phase 191 commit 5 (or whenever VideoCaptureScreen
-// supersedes the smoke flow).
-function CameraSmokeBlock() {
-  const navigation = useNavigation<HomeNav>();
-  const {camera, microphone, status, request} = useCameraPermissions();
-  const onTestPress = useCallback(async () => {
-    try {
-      await request();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      Alert.alert('Camera permission error', msg);
-    }
-  }, [request]);
-  // Phase 191 commit 3 — temporary smoke entry for VideoCapture.
-  // The production entry path is from SessionsStack (Commit 5's
-  // SessionDetail VideosCard). Hardcoded sessionId=1 for dev
-  // convenience; will be removed in a later commit when the
-  // production entry takes over.
-  const onTryRecordingPress = useCallback(() => {
-    navigation.navigate('VideoCapture', {sessionId: 1});
-  }, [navigation]);
-
-  const renderStatus = () => {
-    if (status === 'granted') {
-      return (
-        <Text
-          style={[styles.statusLine, styles.successText]}
-          testID="camera-smoke-granted">
-          ✓ Camera + Microphone ready
-        </Text>
-      );
-    }
-    if (status === 'permanently-denied') {
-      return (
-        <Text
-          style={[styles.statusLine, styles.errorText]}
-          testID="camera-smoke-permanently-denied">
-          ✗ Permission denied — open system Settings to grant.
-        </Text>
-      );
-    }
-    if (status === 'denied') {
-      return (
-        <Text style={styles.statusLine} testID="camera-smoke-denied">
-          Permission needed — tap below to grant.
-        </Text>
-      );
-    }
-    return (
-      <Text style={styles.statusLine} testID="camera-smoke-unknown">
-        Status: not yet requested.
-      </Text>
-    );
-  };
-
-  return (
-    <View>
-      {renderStatus()}
-      <Text style={styles.statusLine}>
-        camera: {camera} · microphone: {microphone}
-      </Text>
-      <TouchableOpacity
-        style={styles.button}
-        onPress={onTestPress}
-        testID="camera-smoke-test-button">
-        <Text style={styles.buttonText}>Test camera</Text>
-      </TouchableOpacity>
-      {/* Phase 191 commit 3 — try-recording smoke entry */}
-      {status === 'granted' ? (
-        <>
-          <View style={styles.buttonRow} />
-          <TouchableOpacity
-            style={[styles.smallButton, styles.replaceButton]}
-            onPress={onTryRecordingPress}
-            testID="camera-smoke-try-recording-button">
-            <Text style={styles.smallButtonText}>
-              Try recording (smoke session #1)
-            </Text>
-          </TouchableOpacity>
-        </>
-      ) : null}
-    </View>
-  );
-}
-
 function maskKey(key: string): string {
   if (key.length <= 13) return key;
   return `${key.slice(0, 13)}•••`;

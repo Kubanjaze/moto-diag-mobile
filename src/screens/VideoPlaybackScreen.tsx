@@ -30,16 +30,10 @@ import Video from 'react-native-video';
 
 import {Button} from '../components/Button';
 import {useSessionVideos} from '../hooks/useSessionVideos';
-import type {
-  HomeStackParamList,
-  SessionsStackParamList,
-} from '../navigation/types';
+import type {SessionsStackParamList} from '../navigation/types';
 import {formatElapsed, formatFileSize} from './videoCaptureHelpers';
 
-type Props = NativeStackScreenProps<
-  HomeStackParamList | SessionsStackParamList,
-  'VideoPlayback'
->;
+type Props = NativeStackScreenProps<SessionsStackParamList, 'VideoPlayback'>;
 
 export function VideoPlaybackScreen({navigation, route}: Props) {
   const {videoId, sessionId} = route.params;

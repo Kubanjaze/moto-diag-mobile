@@ -25,27 +25,25 @@ export type RootTabParamList = {
  *  Phase 190 commit 1. */
 export type DTCDetailParams = {code: string; sourceSessionId?: number};
 
-/** Phase 191 commit 3 — VideoCapture route params. Same shape
- *  registered in both HomeStack (commit-3 smoke entry; will likely
- *  remove in Commit 5 or stay as a dev convenience) and
- *  SessionsStack (production entry from SessionDetail's VideosCard
- *  in Commit 5). The route is single-purpose: capture a video for
- *  a session, navigate back when done. */
+/** Phase 191 commit 3 — VideoCapture route params. SessionsStack-
+ *  only since Phase 191 commit 5 (smoke entry removed when
+ *  SessionDetail's VideosCard supersedes the dev shortcut). The
+ *  HomeStack registration was Commit 1-3's dev convenience while
+ *  the production entry path was unbuilt. */
 export type VideoCaptureParams = {sessionId: number};
 
 /** Phase 191 commit 4 — VideoPlayback route params. Same
- *  cross-stack same-route-name registration as VideoCapture +
- *  DTCDetail. videoId is the SessionVideo.id (Phase 191: 8-char
- *  hex generated at record-time; Phase 191B: backend-issued UUID
- *  same shape). sessionId scopes the lookup via useSessionVideos. */
+ *  SessionsStack-only registration as VideoCapture (per Commit 5
+ *  cleanup — production entry is from SessionDetail's VideosCard
+ *  tap). videoId is the SessionVideo.id (Phase 191: 8-char hex
+ *  generated at record-time; Phase 191B: backend-issued UUID same
+ *  shape). sessionId scopes the lookup via useSessionVideos. */
 export type VideoPlaybackParams = {videoId: string; sessionId: number};
 
 export type HomeStackParamList = {
   Home: undefined;
   DTCSearch: undefined;
   DTCDetail: DTCDetailParams;
-  VideoCapture: VideoCaptureParams;
-  VideoPlayback: VideoPlaybackParams;
 };
 
 export type GarageStackParamList = {

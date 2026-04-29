@@ -45,10 +45,7 @@ import {Camera, useCameraDevice} from 'react-native-vision-camera';
 
 import {Button} from '../components/Button';
 import {useCameraPermissions} from '../hooks/useCameraPermissions';
-import type {
-  HomeStackParamList,
-  SessionsStackParamList,
-} from '../navigation/types';
+import type {SessionsStackParamList} from '../navigation/types';
 import {
   checkRecordingPrecondition,
   deleteVideo,
@@ -69,10 +66,7 @@ import {
   recordingTransition,
 } from './videoCaptureMachine';
 
-type Props = NativeStackScreenProps<
-  HomeStackParamList | SessionsStackParamList,
-  'VideoCapture'
->;
+type Props = NativeStackScreenProps<SessionsStackParamList, 'VideoCapture'>;
 
 // ---------------------------------------------------------------
 // Screen

@@ -12,7 +12,7 @@
 // quota_remaining}. The footer copy reflects the monthly cadence
 // ("X / 50 this month", not "X / 50 slots").
 
-import React, {useCallback, useLayoutEffect} from 'react';
+import React, {useCallback, useEffect, useLayoutEffect} from 'react';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useFocusEffect} from '@react-navigation/native';
 import {
@@ -29,6 +29,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {Button} from '../components/Button';
 import {useSessions} from '../hooks/useSessions';
 import type {SessionsStackParamList} from '../navigation/types';
+import {cleanupOrphanedVideos} from '../services/videoStorage';
 import type {SessionResponse} from '../types/api';
 
 type Props = NativeStackScreenProps<SessionsStackParamList, 'Sessions'>;
@@ -55,6 +56,24 @@ export function SessionsListScreen({navigation}: Props) {
       void refetch();
     }, [refetch]),
   );
+
+  // Phase 191 commit 5 — cleanupOrphanedVideos wiring (closes the
+  // deferred-caller gap from Commit 2). When useSessions resolves
+  // with the live session set, sweep the videos/ directory and
+  // remove any session-{N}/ subdirs whose sessionId isn't in the
+  // live set. Cheap (RNFS.readDir + per-orphan rmdir; no file
+  // content reads), idempotent, fires on every sessions update.
+  // 0-session case is handled correctly: an empty live set means
+  // all video directories are orphans → all get cleaned. The
+  // separate-effect-watching-sessions pattern (rather than chaining
+  // after refetch) is necessary because refetch's closure captures
+  // a stale `sessions` reference; only React's render cycle gives
+  // us the post-refetch fresh data.
+  useEffect(() => {
+    if (isLoading || error !== null) return;
+    const liveIds = new Set(sessions.map(s => s.id));
+    void cleanupOrphanedVideos(liveIds);
+  }, [sessions, isLoading, error]);
 
   const renderItem: ListRenderItem<SessionResponse> = useCallback(
     ({item}) => (

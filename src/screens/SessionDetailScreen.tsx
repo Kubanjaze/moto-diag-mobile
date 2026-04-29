@@ -35,6 +35,13 @@ import {Button} from '../components/Button';
 import {Field} from '../components/Field';
 import {SelectField} from '../components/SelectField';
 import {useSession} from '../hooks/useSession';
+import {useSessionVideos} from '../hooks/useSessionVideos';
+import {
+  formatElapsed,
+  formatFileSize,
+} from './videoCaptureHelpers';
+import {MAX_VIDEOS_PER_SESSION} from '../services/videoStorage';
+import type {SessionVideo} from '../types/video';
 import type {SessionsStackParamList} from '../navigation/types';
 import type {SessionResponse, SessionUpdateRequest} from '../types/api';
 import {
@@ -246,6 +253,23 @@ export function SessionDetailScreen({navigation, route}: Props) {
               })
             }
           />
+          {/* Phase 191 commit 5 — VideosCard between FAULT CODES
+              and DIAGNOSIS per the v1.0 plan placement (evidence
+              precedes diagnosis). Closed-session lockdown lives
+              inside the card. */}
+          <VideosCard
+            sessionId={session.id}
+            sessionStatus={session.status}
+            onRecordPress={() =>
+              navigation.navigate('VideoCapture', {sessionId: session.id})
+            }
+            onVideoPress={(videoId) =>
+              navigation.navigate('VideoPlayback', {
+                videoId,
+                sessionId: session.id,
+              })
+            }
+          />
           <DiagnosisCard session={session} onPatch={handlePatchDiagnosis} />
           <NotesCard session={session} onAppend={handleAppendNote} />
 
@@ -360,6 +384,157 @@ function FaultCodesCard({
     />
   );
 }
+
+// ---------------------------------------------------------------
+// Videos card (Phase 191 commit 5)
+// ---------------------------------------------------------------
+
+/** VideosCard — renders the session's video list + Record button.
+ *
+ *  Closed-session lockdown (per Phase 191 v1.0 plan + Kerwyn's
+ *  pre-plan ask): when session.status === 'closed', the Record
+ *  button is HIDDEN (not just disabled with a grey-out). Existing
+ *  videos still tappable for playback; empty state shifts to
+ *  "Reopen this session to record" copy.
+ *
+ *  At-cap state surfaces from useSessionVideos.atCap +
+ *  capReason. UI-layer guard per Phase 191 sketch sign-off
+ *  Item 4 — reducer never sees TAP_RECORD when at cap. */
+function VideosCard({
+  sessionId,
+  sessionStatus,
+  onRecordPress,
+  onVideoPress,
+}: {
+  sessionId: number;
+  sessionStatus: SessionResponse['status'];
+  onRecordPress: () => void;
+  onVideoPress: (videoId: string) => void;
+}) {
+  const {videos, atCap, capReason, isLoading, error} =
+    useSessionVideos(sessionId);
+  const isClosed = sessionStatus === 'closed';
+
+  return (
+    <View style={styles.card} testID="session-videos-card">
+      <Text style={styles.cardTitle}>Videos</Text>
+
+      {error ? (
+        <Text style={styles.emptyListText} testID="session-videos-error">
+          Couldn't load videos: {error}
+        </Text>
+      ) : null}
+
+      {videos.length === 0 ? (
+        <Text style={styles.emptyListText} testID="session-videos-empty">
+          {isClosed
+            ? 'No video evidence captured. Reopen this session to record.'
+            : 'No video evidence yet.'}
+        </Text>
+      ) : (
+        <View style={styles.listBody} testID="session-videos-list">
+          {videos.map((video) => (
+            <VideoRow
+              key={video.id}
+              video={video}
+              onPress={() => onVideoPress(video.id)}
+            />
+          ))}
+        </View>
+      )}
+
+      {!isClosed ? (
+        <>
+          <View style={styles.appendDivider} />
+          {atCap ? (
+            <View
+              style={styles.videoCapPane}
+              testID="session-videos-cap-reached">
+              <Text style={styles.videoCapText}>
+                {capReason === 'count'
+                  ? `At cap (${videos.length}/${MAX_VIDEOS_PER_SESSION} videos)`
+                  : 'At cap (500 MB used)'}
+              </Text>
+              <Text style={styles.videoCapHint}>
+                Delete a video above to record more.
+              </Text>
+            </View>
+          ) : (
+            <Button
+              title={isLoading ? 'Loading…' : 'Record video'}
+              variant="secondary"
+              disabled={isLoading}
+              onPress={onRecordPress}
+              testID="session-videos-record-button"
+            />
+          )}
+        </>
+      ) : null}
+    </View>
+  );
+}
+
+/** Single video row in the VideosCard list. Tap → push to
+ *  VideoPlaybackScreen. Shows recorded-at + duration + paused
+ *  indicator + chevron. No thumbnail extraction in Phase 191
+ *  (deferred to Phase 191B / 192). */
+function VideoRow({
+  video,
+  onPress,
+}: {
+  video: SessionVideo;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={styles.listItemTappable}
+      onPress={onPress}
+      accessibilityRole="button"
+      testID={`session-videos-row-${video.id}`}>
+      <Text style={styles.videoIcon}>▶</Text>
+      <View style={styles.videoRowMain}>
+        <Text style={styles.videoRowTitle} numberOfLines={1}>
+          {formatVideoTimestamp(video.startedAt)}
+        </Text>
+        <View style={styles.videoRowMeta}>
+          <Text style={styles.videoRowMetaItem}>
+            {formatElapsed(video.durationMs)}
+          </Text>
+          <Text style={styles.videoRowMetaItem}>
+            {formatFileSize(video.fileSizeBytes)}
+          </Text>
+          {video.interrupted ? (
+            <Text
+              style={styles.videoRowPaused}
+              testID={`session-videos-row-${video.id}-paused`}>
+              ⏸ Paused
+            </Text>
+          ) : null}
+        </View>
+      </View>
+      <Text style={styles.listItemChevron}>›</Text>
+    </TouchableOpacity>
+  );
+}
+
+/** Compact `MMM D · h:mm AM/PM` for video row title. */
+function formatVideoTimestamp(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const date = d.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  });
+  const time = d.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  return `${date} · ${time}`;
+}
+
+// ---------------------------------------------------------------
+// Notes card
+// ---------------------------------------------------------------
 
 function NotesCard({
   session,
@@ -893,6 +1068,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#eee',
     marginVertical: 12,
   },
+  // Phase 191 commit 5 — VideosCard styles. Reuses
+  // listItemTappable + listItemChevron from the fault-code-row
+  // pattern (Phase 190 commit 2) for the row container.
+  videoIcon: {fontSize: 18, color: '#888', width: 24},
+  videoRowMain: {flex: 1, gap: 4},
+  videoRowTitle: {fontSize: 14, color: '#222', fontWeight: '600'},
+  videoRowMeta: {flexDirection: 'row', gap: 12, flexWrap: 'wrap'},
+  videoRowMetaItem: {fontSize: 12, color: '#666'},
+  videoRowPaused: {fontSize: 12, color: '#a85e00', fontWeight: '600'},
+  videoCapPane: {
+    backgroundColor: '#fff8e6',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#f0e0a0',
+  },
+  videoCapText: {fontSize: 14, color: '#7a5500', fontWeight: '600'},
+  videoCapHint: {fontSize: 13, color: '#7a5500', marginTop: 4},
   badge: {paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12},
   badgeOpen: {backgroundColor: '#e0eaff'},
   badgeInProgress: {backgroundColor: '#fff4d6'},
