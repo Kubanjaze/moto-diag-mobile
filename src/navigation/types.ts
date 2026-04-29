@@ -33,11 +33,19 @@ export type DTCDetailParams = {code: string; sourceSessionId?: number};
  *  a session, navigate back when done. */
 export type VideoCaptureParams = {sessionId: number};
 
+/** Phase 191 commit 4 — VideoPlayback route params. Same
+ *  cross-stack same-route-name registration as VideoCapture +
+ *  DTCDetail. videoId is the SessionVideo.id (Phase 191: 8-char
+ *  hex generated at record-time; Phase 191B: backend-issued UUID
+ *  same shape). sessionId scopes the lookup via useSessionVideos. */
+export type VideoPlaybackParams = {videoId: string; sessionId: number};
+
 export type HomeStackParamList = {
   Home: undefined;
   DTCSearch: undefined;
   DTCDetail: DTCDetailParams;
   VideoCapture: VideoCaptureParams;
+  VideoPlayback: VideoPlaybackParams;
 };
 
 export type GarageStackParamList = {
@@ -52,4 +60,5 @@ export type SessionsStackParamList = {
   NewSession: undefined;
   DTCDetail: DTCDetailParams;
   VideoCapture: VideoCaptureParams;
+  VideoPlayback: VideoPlaybackParams;
 };

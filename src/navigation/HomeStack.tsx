@@ -13,6 +13,7 @@ import {DTCDetailScreen} from '../screens/DTCDetailScreen';
 import {DTCSearchScreen} from '../screens/DTCSearchScreen';
 import {HomeScreen} from '../screens/HomeScreen';
 import {VideoCaptureScreen} from '../screens/VideoCaptureScreen';
+import {VideoPlaybackScreen} from '../screens/VideoPlaybackScreen';
 import type {HomeStackParamList} from './types';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -44,6 +45,16 @@ export function HomeStack() {
         name="VideoCapture"
         component={VideoCaptureScreen}
         options={{headerShown: false}}
+      />
+      {/* Phase 191 commit 4 — VideoPlayback registered in
+          HomeStack for cross-stack same-route consistency
+          (matches VideoCapture + DTCDetail). The production
+          entry path is from SessionsStack via the VideosCard
+          tap (Commit 5). */}
+      <Stack.Screen
+        name="VideoPlayback"
+        component={VideoPlaybackScreen}
+        options={{title: 'Video'}}
       />
     </Stack.Navigator>
   );

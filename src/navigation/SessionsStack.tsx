@@ -13,6 +13,7 @@ import {NewSessionScreen} from '../screens/NewSessionScreen';
 import {SessionDetailScreen} from '../screens/SessionDetailScreen';
 import {SessionsListScreen} from '../screens/SessionsListScreen';
 import {VideoCaptureScreen} from '../screens/VideoCaptureScreen';
+import {VideoPlaybackScreen} from '../screens/VideoPlaybackScreen';
 import type {SessionsStackParamList} from './types';
 
 const Stack = createNativeStackNavigator<SessionsStackParamList>();
@@ -49,6 +50,14 @@ export function SessionsStack() {
         name="VideoCapture"
         component={VideoCaptureScreen}
         options={{headerShown: false}}
+      />
+      {/* Phase 191 commit 4 — VideoPlayback registered for
+          tap-from-SessionDetail VideosCard (Commit 5 production
+          wiring). */}
+      <Stack.Screen
+        name="VideoPlayback"
+        component={VideoPlaybackScreen}
+        options={{title: 'Video'}}
       />
     </Stack.Navigator>
   );
