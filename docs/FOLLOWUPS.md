@@ -45,8 +45,28 @@ When picking one up, file it as a tiny phase OR fold it into the next phase that
 - **Surfaced:** Phase 190 architect-gate round 2 (2026-04-28). Backend logs showed two `GET /v1/kb/dtc/P0171 200 OK` calls on every DTCDetailScreen mount.
 - **Severity:** cosmetic only. React 18 StrictMode intentionally double-invokes effects in dev mode to surface side-effect bugs; production builds run a single fetch. No data-correctness impact.
 - **Scope estimate:** small to medium depending on approach. Three options: (a) per-code `useMemo` cache inside `useDTC` that suppresses the second fetch when called twice with the same code in quick succession; (b) move to TanStack Query — would also retire the hand-rolled debounce/race-cancellation in `useDTCSearch` (revisit ADR-003); (c) accept and document the dev-mode double-call.
-- **Decision:** **Recommended target Phase 191 polish or Phase 192+ TanStack adoption** depending on which framework-level decision wins. The cleanest answer is probably (b) — the patterns we hand-rolled in Phases 189/190 (alive-guard, requestId-counter, debounce-with-cleanup) are exactly what TanStack provides for free. ADR-003 deferred state management; the demand is now visible.
+- **Decision:** **Recommended target Phase 192+ TanStack adoption** depending on which framework-level decision wins. The cleanest answer is probably (b) — the patterns we hand-rolled in Phases 189/190 (alive-guard, requestId-counter, debounce-with-cleanup) are exactly what TanStack provides for free. ADR-003 deferred state management; the demand is now visible.
 - **Repro:** Open DTCDetailScreen for any code while watching backend logs.
+
+### F7 — Symmetric closed-session lockdown for Phase 189 append inputs (symptoms / fault-codes / notes)
+
+- **Surfaced:** Phase 191 plan (2026-04-28); confirmed at Phase 191 finalize (2026-04-29).
+- **Severity:** product consistency. Phase 191 closed the closed-session capture gap for videos (Record button HIDDEN when `session.status === 'closed'`; existing videos still tappable for playback; explanatory copy added at full-gate fix-cycle Bug 2). The symmetric gap is still open in Phase 189's SessionDetailScreen: the always-visible inline append inputs for symptoms / fault-codes / notes accept submissions on closed sessions, then post 422-or-similar errors at the backend. Read-only-ness should be visible at the UI layer, not deferred to backend rejection.
+- **Scope estimate:** small. Each list card's append input gets the same `isClosed` gate VideosCard now uses. Hidden-when-closed + a single explanatory line ("Reopen this session to add more...") mirroring VideosCard's closed-with-videos pane (cream/amber styling). 4 cards touched: SymptomsCard, FaultCodesCard, NotesCard (DiagnosisCard already has a different lockdown shape — its edit toggle is gated on `isClosed` directly).
+- **Decision:** **Recommended target Phase 192 polish or alongside F2 (per-entry edit/delete)** since both are SessionDetailScreen append-flow polish — same touched code paths.
+- **Repro:** Open a session, close it via Lifecycle card. Symptoms / Fault codes / Notes append inputs are still visible and submittable; only Diagnosis edit + Videos record are hidden.
+
+### F9 — Document the `useRef`-not-state pattern for callbacks registered with native modules + generalized lint rule
+
+- **Surfaced:** Phase 191 Commit 3 architect-smoke (2026-04-28) with the closure-state-capture bug + meta-observation on the broader pattern.
+- **Severity:** architectural. Three Phase-N bugs on Track I are all instances of the same failure family — "snapshot/assumption doesn't match runtime":
+  - **Phase 188 Bug 2** — HVE shape mock didn't match the real backend (`{detail: [...]}` vs `{title, status, detail}`). Test passed; production failed.
+  - **Phase 190 Bug 2** — substring-match-on-error-text discriminator pattern broke when the backend wire format changed shape; the test fixture was the test author's assumption, not a backend-anchored fixture.
+  - **Phase 191 Commit 3** — closure registered with `cameraRef.startRecording` captured `state` at registration-time (`state=idle`), not at fire-time. The reducer correctly transitioned to `stopping` with `reason='interrupted'` on the AppState handler's dispatch, but `onRecordingFinished` was looking at its captured snapshot from registration-time. Fix: explicit `interruptedRef` ref pattern (set true in AppState background handler before `stopRecording()`, set false on user-initiated stop / start of every recording, read via `interruptedRef.current` inside the closure).
+  - **(Phase 191 full-gate Bug 1 was a fourth instance** — VideosCard's mount-time effect snapshot didn't match the screen-lifecycle reality of "SessionDetail doesn't unmount on push.")
+- **Scope estimate:** small to medium. Three artifacts: (a) `docs/contributing/native-callbacks.md` documenting the useRef-not-state pattern with the Phase 191 example; (b) ESLint rule (or eslint-plugin-react-hooks fork) flagging direct closure capture of useState values inside callbacks passed to native-module APIs (vision-camera, ble-plx, keychain) — heuristic: any function literal passed as a property value to a `*.current.*` member call should not reference any non-ref state in its body; (c) cross-reference in `useSessionVideos.ts` + `VideoCaptureScreen.tsx` headers for future readers.
+- **Decision:** **Recommended target Phase 192+ tooling phase or fold into a docs-only mini-phase.** Architect-cost vs benefit: each bug in this family costs a fix-cycle-and-re-smoke (~4-6 hours architect time round-trip); the lint rule pays for itself after one prevented bug.
+- **Repro:** the three bug fix commits — Phase 188 commit 7 (`eb42c21`), Phase 190 commit 7 (`744becf`), Phase 191 commit 3 fix (`ffa383c`), Phase 191 commit 7 (`39948c1`) — are the canonical examples.
 
 ---
 
