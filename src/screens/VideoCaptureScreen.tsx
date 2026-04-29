@@ -59,6 +59,12 @@ import {
 } from '../services/videoStorage';
 import type {RecordingError} from '../types/video';
 import {
+  classifyVisionCameraError,
+  formatElapsed,
+  formatFileSize,
+  generateShortId,
+} from './videoCaptureHelpers';
+import {
   initialRecordingState,
   recordingTransition,
 } from './videoCaptureMachine';
@@ -67,67 +73,6 @@ type Props = NativeStackScreenProps<
   HomeStackParamList | SessionsStackParamList,
   'VideoCapture'
 >;
-
-// ---------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------
-
-/** Format milliseconds as `m:ss`. Per state machine sketch sign-off
- *  Item 5: elapsed-time UI state, not part of the reducer. */
-function formatElapsed(ms: number): string {
-  const totalSec = Math.max(0, Math.floor(ms / 1000));
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
-
-/** Generate an 8-char hex id for the filename slot. RN doesn't
- *  expose Node's `crypto` global in JS without a polyfill; we
- *  don't need cryptographic strength for first-8-chars uniqueness
- *  within a single session, so Math.random()-derived hex is fine.
- *  saveRecording's filename slot only consumes the first 8 chars
- *  via .slice(0, 8). */
-function generateShortId(): string {
-  // 16 random hex chars (≈64 bits of entropy). Plenty for
-  // per-session collision avoidance even with rapid-fire
-  // recording.
-  let out = '';
-  for (let i = 0; i < 16; i++) {
-    out += Math.floor(Math.random() * 16).toString(16);
-  }
-  return out;
-}
-
-/** Map vision-camera's onRecordingError payload to our typed
- *  RecordingError union. vision-camera's CameraCaptureError carries
- *  a `code` like 'capture/no-data', 'capture/recorder-error',
- *  'permission/microphone-permission-denied', etc. */
-function classifyVisionCameraError(
-  err: unknown,
-): RecordingError {
-  if (typeof err !== 'object' || err === null) {
-    return {kind: 'unknown', message: String(err)};
-  }
-  const e = err as {code?: string; message?: string};
-  const code = e.code ?? '';
-  const message = e.message ?? 'Recording failed';
-
-  if (code.includes('permission')) {
-    const which = code.includes('microphone')
-      ? 'microphone'
-      : code.includes('camera')
-        ? 'camera'
-        : 'both';
-    return {kind: 'permission_lost', which};
-  }
-  if (code.includes('insufficient-storage') || code.includes('no-data')) {
-    return {kind: 'storage_full'};
-  }
-  if (code.includes('recorder') || code.includes('encoder')) {
-    return {kind: 'codec_error', message};
-  }
-  return {kind: 'unknown', message};
-}
 
 // ---------------------------------------------------------------
 // Screen
@@ -142,6 +87,24 @@ export function VideoCaptureScreen({navigation, route}: Props) {
   );
   const cameraRef = useRef<Camera>(null);
   const recordingStartTimeRef = useRef<number>(0);
+
+  // Phase 191 commit-3 fix (architect-gate verification 5 bug):
+  // explicit "this stop is interruption-driven" flag. The
+  // onRecordingFinished callback is registered ONCE with
+  // cameraRef.startRecording(...) and persists across renders;
+  // it captures `state` from the render where startRecording
+  // was invoked, which is always the moment-of-tap-record (state
+  // = idle, transitioning to recording). Reading state.kind
+  // inside the closure when it fires LATER returns the stale
+  // capture, never the current stopping(reason='interrupted')
+  // state. We use this ref instead — set TRUE in the AppState
+  // background handler before stopRecording() lands; set FALSE
+  // in the user-initiated stop path; read in onRecordingFinished
+  // to drive `interrupted: boolean` on the saved SessionVideo.
+  // Independent of render timing + state-machine transition
+  // ordering. Reset to false after each save so the next
+  // recording starts fresh.
+  const interruptedRef = useRef<boolean>(false);
 
   // -----------------------------------------------------------
   // Permission gate + camera device
@@ -197,6 +160,13 @@ export function VideoCaptureScreen({navigation, route}: Props) {
         // transition runs synchronously; the file finalize lands via
         // onRecordingFinished moments later.
         if (state.kind === 'recording') {
+          // Set the interrupted flag BEFORE stopRecording fires the
+          // onRecordingFinished closure. The closure reads
+          // interruptedRef.current to decide whether to mark the
+          // saved SessionVideo as interrupted. See the
+          // interruptedRef declaration block above for the full
+          // closure-capture rationale.
+          interruptedRef.current = true;
           cameraRef.current?.stopRecording().catch(() => undefined);
         }
         dispatch({type: 'APP_BACKGROUNDED'});
@@ -221,6 +191,10 @@ export function VideoCaptureScreen({navigation, route}: Props) {
     }
 
     if (!cameraRef.current || !device) return;
+    // Reset the interrupted flag at the start of every recording —
+    // stale flag from a prior interruption shouldn't leak into the
+    // current recording's metadata.
+    interruptedRef.current = false;
     dispatch({type: 'TAP_RECORD'});
     const startedAt = Date.now();
     recordingStartTimeRef.current = startedAt;
@@ -237,13 +211,19 @@ export function VideoCaptureScreen({navigation, route}: Props) {
         // vision-camera writes to a cache dir the OS can evict at
         // any time; we move synchronously before the saved state
         // lands.
+        //
+        // Phase 191 commit-3 fix: read `wasInterrupted` from
+        // interruptedRef.current rather than from `state` directly.
+        // This closure was registered ONCE at startRecording-time
+        // and captured `state` from the moment-of-tap-record render
+        // (state=idle), so the previous `state.kind === 'stopping'
+        // && state.reason === 'interrupted'` check always evaluated
+        // false regardless of what happened during recording. The
+        // ref is set TRUE by the AppState background handler before
+        // stopRecording() runs; FALSE in the user-initiated stop
+        // path. Architect-gate verification 5 caught the bug.
         try {
-          // Snapshot the current state's reason for interruption
-          // detection — between RECORDING_INTERRUPTED dispatching
-          // and RECORDING_FINISHED firing, state.kind moves
-          // recording → stopping(reason=interrupted).
-          const wasInterrupted =
-            state.kind === 'stopping' && state.reason === 'interrupted';
+          const wasInterrupted = interruptedRef.current;
           const sessionVideo = await saveRecording(
             {
               sessionId,
@@ -259,6 +239,8 @@ export function VideoCaptureScreen({navigation, route}: Props) {
             generateShortId(),
           );
           dispatch({type: 'RECORDING_FINISHED', video: sessionVideo});
+          // Reset for the next recording.
+          interruptedRef.current = false;
           await refreshUsage();
         } catch (saveErr) {
           dispatch({
@@ -272,6 +254,7 @@ export function VideoCaptureScreen({navigation, route}: Props) {
             },
             partialPath: video.path,
           });
+          interruptedRef.current = false;
         }
       },
       onRecordingError: err => {
@@ -290,6 +273,13 @@ export function VideoCaptureScreen({navigation, route}: Props) {
   // -----------------------------------------------------------
   const handleStopRecording = useCallback(async () => {
     if (state.kind !== 'recording') return;
+    // Explicitly mark this stop as user-initiated. AppState
+    // handler is the only path that sets interruptedRef=true; this
+    // path keeps it false. The redundant assignment is intentional:
+    // it documents that user-initiated stops produce
+    // interrupted=false on the saved video, even if a stale flag
+    // somehow survived a prior recording.
+    interruptedRef.current = false;
     dispatch({type: 'TAP_STOP'});
     try {
       await cameraRef.current?.stopRecording();
@@ -489,7 +479,7 @@ export function VideoCaptureScreen({navigation, route}: Props) {
               Resolution: {v.width} × {v.height}
             </Text>
             <Text style={styles.summaryRow}>
-              File size: {Math.round(v.fileSizeBytes / 1024 / 1024)} MB
+              File size: {formatFileSize(v.fileSizeBytes)}
             </Text>
             {v.interrupted ? (
               <Text style={styles.summaryRowPaused}>
