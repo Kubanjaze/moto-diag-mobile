@@ -35,6 +35,17 @@ export function RootNavigator() {
         headerShown: false,
         tabBarActiveTintColor: '#007aff',
         tabBarInactiveTintColor: '#8e8e93',
+        // Phase 191 fix-cycle Bug 3 — suppress
+        // @react-navigation/elements' default MissingIcon (a `⏷`
+        // Unicode glyph rendered when no tabBarIcon is provided).
+        // We're text-label-only by intent (per Phase 189 commit 2's
+        // "no icon library yet — defer until a design pass earns it"
+        // — see this file's header). Returning null leaves only the
+        // label, which is the look the gate validated against in
+        // Phase 189. Not a Phase 191 regression — the placeholder
+        // has been there since the bottom-tab nav landed; the full
+        // gate just surfaced it for the first time.
+        tabBarIcon: () => null,
       }}>
       <Tab.Screen
         name="HomeTab"

@@ -411,9 +411,22 @@ function VideosCard({
   onRecordPress: () => void;
   onVideoPress: (videoId: string) => void;
 }) {
-  const {videos, atCap, capReason, isLoading, error} =
+  const {videos, atCap, capReason, isLoading, error, refresh} =
     useSessionVideos(sessionId);
   const isClosed = sessionStatus === 'closed';
+
+  // Phase 191 fix-cycle Bug 1 — re-list videos whenever VideosCard
+  // regains focus (e.g., back from VideoCaptureScreen after a save,
+  // or back from VideoPlaybackScreen after a delete). SessionDetail
+  // doesn't unmount on push, so the hook's mount-time effect alone
+  // wouldn't re-fire. useFocusEffect lives inside VideosCard rather
+  // than at the screen level because that's where `refresh` is in
+  // scope; it still fires when the parent screen gains focus.
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
 
   return (
     <View style={styles.card} testID="session-videos-card">
@@ -468,6 +481,28 @@ function VideosCard({
               testID="session-videos-record-button"
             />
           )}
+        </>
+      ) : videos.length > 0 ? (
+        // Phase 191 fix-cycle Bug 2 — closed-session × has-videos:
+        // playback is fine (rows above stay tappable), but no Record
+        // button + no at-cap pane meant a blank slot below the list.
+        // Mirror the at-cap pane shape with explanatory copy so the
+        // user knows why they can't record.
+        <>
+          <View style={styles.appendDivider} />
+          <View
+            style={styles.videoCapPane}
+            testID="session-videos-closed-locked">
+            <Text style={styles.videoCapText}>
+              Session closed
+              {videos.length >= MAX_VIDEOS_PER_SESSION
+                ? ` (${videos.length}/${MAX_VIDEOS_PER_SESSION} videos)`
+                : ''}
+            </Text>
+            <Text style={styles.videoCapHint}>
+              Reopen this session to record more.
+            </Text>
+          </View>
         </>
       ) : null}
     </View>
