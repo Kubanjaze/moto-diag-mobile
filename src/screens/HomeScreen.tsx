@@ -449,6 +449,7 @@ function VehiclesBlock({
 // Removed in Phase 191 commit 5 (or whenever VideoCaptureScreen
 // supersedes the smoke flow).
 function CameraSmokeBlock() {
+  const navigation = useNavigation<HomeNav>();
   const {camera, microphone, status, request} = useCameraPermissions();
   const onTestPress = useCallback(async () => {
     try {
@@ -458,6 +459,14 @@ function CameraSmokeBlock() {
       Alert.alert('Camera permission error', msg);
     }
   }, [request]);
+  // Phase 191 commit 3 — temporary smoke entry for VideoCapture.
+  // The production entry path is from SessionsStack (Commit 5's
+  // SessionDetail VideosCard). Hardcoded sessionId=1 for dev
+  // convenience; will be removed in a later commit when the
+  // production entry takes over.
+  const onTryRecordingPress = useCallback(() => {
+    navigation.navigate('VideoCapture', {sessionId: 1});
+  }, [navigation]);
 
   const renderStatus = () => {
     if (status === 'granted') {
@@ -504,6 +513,20 @@ function CameraSmokeBlock() {
         testID="camera-smoke-test-button">
         <Text style={styles.buttonText}>Test camera</Text>
       </TouchableOpacity>
+      {/* Phase 191 commit 3 — try-recording smoke entry */}
+      {status === 'granted' ? (
+        <>
+          <View style={styles.buttonRow} />
+          <TouchableOpacity
+            style={[styles.smallButton, styles.replaceButton]}
+            onPress={onTryRecordingPress}
+            testID="camera-smoke-try-recording-button">
+            <Text style={styles.smallButtonText}>
+              Try recording (smoke session #1)
+            </Text>
+          </TouchableOpacity>
+        </>
+      ) : null}
     </View>
   );
 }

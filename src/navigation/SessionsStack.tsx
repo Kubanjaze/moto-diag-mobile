@@ -12,6 +12,7 @@ import {DTCDetailScreen} from '../screens/DTCDetailScreen';
 import {NewSessionScreen} from '../screens/NewSessionScreen';
 import {SessionDetailScreen} from '../screens/SessionDetailScreen';
 import {SessionsListScreen} from '../screens/SessionsListScreen';
+import {VideoCaptureScreen} from '../screens/VideoCaptureScreen';
 import type {SessionsStackParamList} from './types';
 
 const Stack = createNativeStackNavigator<SessionsStackParamList>();
@@ -38,6 +39,16 @@ export function SessionsStack() {
         name="DTCDetail"
         component={DTCDetailScreen}
         options={{title: 'DTC code'}}
+      />
+      {/* Phase 191 commit 3 — VideoCapture registered for tap-from-
+          SessionDetail VideosCard (Commit 5 production wiring) plus
+          the cross-stack same-route pattern (matches DTCDetail
+          shape: registered identically in HomeStack for commit-3
+          smoke entry). */}
+      <Stack.Screen
+        name="VideoCapture"
+        component={VideoCaptureScreen}
+        options={{headerShown: false}}
       />
     </Stack.Navigator>
   );

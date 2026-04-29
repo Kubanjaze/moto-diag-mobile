@@ -92,7 +92,9 @@ export interface SessionVideo {
 /** Lighter shape passed to videoStorage.saveRecording(). The
  *  saveRecording() helper augments with id (uuid) + canonical
  *  fileUri (after move from vision-camera's temp path) +
- *  remoteUrl/uploadState/analysisState (all null in Phase 191). */
+ *  fileSizeBytes (stat'd post-move; vision-camera's VideoFile
+ *  type doesn't expose size at the JS layer) + remoteUrl /
+ *  uploadState / analysisState (all null in Phase 191). */
 export interface NewRecording {
   sessionId: number;
   /** Source URI from vision-camera's onRecordingFinished callback
@@ -103,7 +105,6 @@ export interface NewRecording {
   durationMs: number;
   width: number;
   height: number;
-  fileSizeBytes: number;
   format: VideoFormat;
   codec: VideoCodec;
   interrupted: boolean;

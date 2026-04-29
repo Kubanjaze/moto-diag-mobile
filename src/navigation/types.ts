@@ -25,10 +25,19 @@ export type RootTabParamList = {
  *  Phase 190 commit 1. */
 export type DTCDetailParams = {code: string; sourceSessionId?: number};
 
+/** Phase 191 commit 3 — VideoCapture route params. Same shape
+ *  registered in both HomeStack (commit-3 smoke entry; will likely
+ *  remove in Commit 5 or stay as a dev convenience) and
+ *  SessionsStack (production entry from SessionDetail's VideosCard
+ *  in Commit 5). The route is single-purpose: capture a video for
+ *  a session, navigate back when done. */
+export type VideoCaptureParams = {sessionId: number};
+
 export type HomeStackParamList = {
   Home: undefined;
   DTCSearch: undefined;
   DTCDetail: DTCDetailParams;
+  VideoCapture: VideoCaptureParams;
 };
 
 export type GarageStackParamList = {
@@ -42,4 +51,5 @@ export type SessionsStackParamList = {
   SessionDetail: {sessionId: number};
   NewSession: undefined;
   DTCDetail: DTCDetailParams;
+  VideoCapture: VideoCaptureParams;
 };

@@ -54,15 +54,11 @@ function makeVideo(overrides: Partial<SessionVideo> = {}): SessionVideo {
   };
 }
 
-// Narrow return type so tests can read .startedAt + .tempVideoPath
-// without per-test discriminated-union narrowing. Same pattern as
-// Phase 190 commit-7 dtcErrors test fixtures.
+// Narrow return type so tests can read .startedAt without per-test
+// discriminated-union narrowing. Same pattern as Phase 190 commit-7
+// dtcErrors test fixtures.
 function recordingState(): Extract<RecordingState, {kind: 'recording'}> {
-  return {
-    kind: 'recording',
-    startedAt: 1700000000000,
-    tempVideoPath: '/cache/mrousavy-XXX.mp4',
-  };
+  return {kind: 'recording', startedAt: 1700000000000};
 }
 
 // ---------------------------------------------------------------
@@ -86,17 +82,12 @@ describe('idle', () => {
     expect(recordingTransition(idle, {type: 'TAP_RECORD'})).toEqual(idle);
   });
 
-  it('RECORDING_STARTED → recording with startedAt + tempVideoPath', () => {
+  it('RECORDING_STARTED → recording with startedAt', () => {
     const next = recordingTransition(idle, {
       type: 'RECORDING_STARTED',
       startedAt: 1700000000000,
-      tempVideoPath: '/cache/x.mp4',
     });
-    expect(next).toEqual({
-      kind: 'recording',
-      startedAt: 1700000000000,
-      tempVideoPath: '/cache/x.mp4',
-    });
+    expect(next).toEqual({kind: 'recording', startedAt: 1700000000000});
   });
 
   it('TAP_STOP / TAP_DISCARD / TAP_KEEP / TAP_RETRY / TAP_CANCEL from idle: no-op', () => {
@@ -333,7 +324,6 @@ describe('integration chains', () => {
     s = recordingTransition(s, {
       type: 'RECORDING_STARTED',
       startedAt: 1,
-      tempVideoPath: '/c/x.mp4',
     });
     expect(s.kind).toBe('recording');
     s = recordingTransition(s, {type: 'TAP_STOP'});
@@ -384,7 +374,6 @@ describe('integration chains', () => {
     s = recordingTransition(s, {
       type: 'RECORDING_STARTED',
       startedAt: 1,
-      tempVideoPath: '/c/y.mp4',
     });
     s = recordingTransition(s, {type: 'TAP_STOP'});
     s = recordingTransition(s, {
@@ -406,7 +395,6 @@ describe('integration chains', () => {
     s = recordingTransition(s, {
       type: 'RECORDING_STARTED',
       startedAt: 2,
-      tempVideoPath: '/c/z.mp4',
     });
     expect(s.kind).toBe('recording');
   });

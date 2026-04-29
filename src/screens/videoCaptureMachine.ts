@@ -33,7 +33,7 @@ import type {RecordingError, SessionVideo} from '../types/video';
 
 export type RecordingState =
   | {kind: 'idle'}
-  | {kind: 'recording'; startedAt: number; tempVideoPath: string}
+  | {kind: 'recording'; startedAt: number}
   | {
       kind: 'stopping';
       startedAt: number;
@@ -41,6 +41,14 @@ export type RecordingState =
     }
   | {kind: 'saved'; video: SessionVideo}
   | {kind: 'failed'; error: RecordingError; partialPath?: string};
+
+// Note (Commit 3 refactor): the `recording` state used to carry
+// `tempVideoPath` but vision-camera v4's startRecording API doesn't
+// expose the cache-directory path until onRecordingFinished fires.
+// The path is only ever needed at save time (saveRecording moves
+// it to the canonical session directory + writes the sidecar). The
+// reducer doesn't need to know it during the recording state, so
+// dropping the field keeps the state shape honest.
 
 export type RecordingEvent =
   // User-initiated taps
@@ -51,7 +59,7 @@ export type RecordingEvent =
   | {type: 'TAP_RETRY'}
   | {type: 'TAP_CANCEL'}
   // vision-camera callbacks
-  | {type: 'RECORDING_STARTED'; tempVideoPath: string; startedAt: number}
+  | {type: 'RECORDING_STARTED'; startedAt: number}
   | {type: 'RECORDING_FINISHED'; video: SessionVideo}
   | {type: 'RECORDING_INTERRUPTED'}
   | {
@@ -98,11 +106,7 @@ export function recordingTransition(
           // resolves with a temp file path.
           return state;
         case 'RECORDING_STARTED':
-          return {
-            kind: 'recording',
-            startedAt: event.startedAt,
-            tempVideoPath: event.tempVideoPath,
-          };
+          return {kind: 'recording', startedAt: event.startedAt};
         // All other events from idle: no-op.
         case 'TAP_STOP':
         case 'TAP_DISCARD':

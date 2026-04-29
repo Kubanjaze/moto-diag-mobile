@@ -90,6 +90,16 @@ jest.mock('react-native-fs', () => {
       dirs.delete(p);
       fileMeta.delete(p);
     }),
+    stat: jest.fn(async (p: string) => {
+      const meta = fileMeta.get(p);
+      if (!meta) throw new Error(`ENOENT ${p}`);
+      return {
+        size: meta.size,
+        path: p,
+        isFile: () => !meta.isDir,
+        isDirectory: () => meta.isDir,
+      };
+    }),
     getFSInfo: jest.fn(async () => ({
       freeSpace: 10 * 1024 * 1024 * 1024, // 10 GB by default
       totalSpace: 64 * 1024 * 1024 * 1024,
@@ -336,14 +346,13 @@ describe('saveRecording', () => {
     durationMs: 14000,
     width: 1280,
     height: 720,
-    fileSizeBytes: 8_400_000,
     format: 'mp4',
     codec: 'h264',
     interrupted: false,
   };
 
   it('moves source to canonical path + writes JSON sidecar + returns SessionVideo', async () => {
-    RNFS_TEST.__seedFile('/cache/mrousavy-XXX.mp4', 'binary');
+    RNFS_TEST.__seedFile('/cache/mrousavy-XXX.mp4', 'binary', 8_400_000);
     const video = await saveRecording(recording, 'abc12345-rest');
     expect(video.sessionId).toBe(5);
     expect(video.id).toBe('abc12345-rest');
@@ -354,6 +363,10 @@ describe('saveRecording', () => {
     expect(video.uploadState).toBeNull();
     expect(video.analysisState).toBeNull();
     expect(video.interrupted).toBe(false);
+    // fileSizeBytes derived from RNFS.stat post-move (vision-camera
+    // doesn't expose size at the JS layer; stat'ing canonical is
+    // source-of-truth).
+    expect(video.fileSizeBytes).toBe(8_400_000);
     // moveFile invoked
     expect((RNFS as unknown as {moveFile: jest.Mock}).moveFile).toHaveBeenCalled();
     // sidecar written

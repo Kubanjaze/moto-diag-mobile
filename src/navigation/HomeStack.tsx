@@ -12,6 +12,7 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {DTCDetailScreen} from '../screens/DTCDetailScreen';
 import {DTCSearchScreen} from '../screens/DTCSearchScreen';
 import {HomeScreen} from '../screens/HomeScreen';
+import {VideoCaptureScreen} from '../screens/VideoCaptureScreen';
 import type {HomeStackParamList} from './types';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -33,6 +34,16 @@ export function HomeStack() {
         name="DTCDetail"
         component={DTCDetailScreen}
         options={{title: 'DTC code'}}
+      />
+      {/* Phase 191 commit 3 — VideoCapture registered in HomeStack
+          for the commit-3 smoke entry from the Camera Section. The
+          production entry path is from SessionsStack via the
+          VideosCard tap (Commit 5). Same screen renders identically
+          in both stacks. */}
+      <Stack.Screen
+        name="VideoCapture"
+        component={VideoCaptureScreen}
+        options={{headerShown: false}}
       />
     </Stack.Navigator>
   );

@@ -208,9 +208,13 @@ export async function checkRecordingPrecondition(): Promise<RecordingError | nul
 }
 
 /** Save a NewRecording: move from vision-camera's temp source path
- *  to the canonical session directory + write JSON sidecar. Returns
- *  the full SessionVideo with the four Phase 191B fields stubbed
- *  null. Atomic move; fall back to copy+unlink if cross-volume. */
+ *  to the canonical session directory + stat for file size + write
+ *  JSON sidecar. Returns the full SessionVideo with the four Phase
+ *  191B fields stubbed null. Atomic move; fall back to copy+unlink
+ *  if cross-volume. fileSizeBytes is derived via RNFS.stat on the
+ *  canonical path post-move (vision-camera's VideoFile type doesn't
+ *  expose size at the JS layer; stat'ing post-move is the
+ *  source-of-truth size anyway). */
 export async function saveRecording(
   recording: NewRecording,
   uuid: string,
@@ -241,6 +245,21 @@ export async function saveRecording(
     }
   }
 
+  // Stat the canonical file for actual byte size. RNFS.stat returns
+  // size as a string-or-number depending on platform; coerce to
+  // Number defensively.
+  let fileSizeBytes = 0;
+  try {
+    const stat = await RNFS.stat(canonicalPath);
+    fileSizeBytes = Number(stat.size);
+    if (Number.isNaN(fileSizeBytes)) fileSizeBytes = 0;
+  } catch {
+    // If stat fails for some reason, leave size at 0 — better
+    // than failing the save. Phase 191B's upload path will
+    // re-derive on the backend side.
+    fileSizeBytes = 0;
+  }
+
   const video: SessionVideo = {
     id: uuid,
     sessionId: recording.sessionId,
@@ -250,7 +269,7 @@ export async function saveRecording(
     durationMs: recording.durationMs,
     width: recording.width,
     height: recording.height,
-    fileSizeBytes: recording.fileSizeBytes,
+    fileSizeBytes,
     format: recording.format,
     codec: recording.codec,
     interrupted: recording.interrupted,
