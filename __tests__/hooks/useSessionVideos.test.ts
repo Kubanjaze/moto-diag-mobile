@@ -1,104 +1,74 @@
-// Phase 191 commit 4 — useSessionVideos hook unit tests.
+// Phase 191B commit 6 — useSessionVideos backend-backed hook tests.
 //
-// Mirror of useSessions.test.ts shape. RNFS mocked at module level
-// with the same in-memory implementation as videoStorage.test.ts so
-// the hook contract is exercised end-to-end (read/write/delete/cap)
-// without rendering anything.
+// Phase 191's mock layer was `react-native-fs` with an in-memory
+// files/dirs/fileMeta tri-map; the hook consumed videoStorage which
+// directly drove RNFS. Phase 191B's swap moved the backing store
+// from filesystem to backend HTTP — so this test file's mocks now
+// shim `../../src/api` (the openapi-fetch client) and
+// `../../src/services/videoStorageCache` (the local-cache wrapper).
 //
-// The contract proven here is what Phase 191B will swap-in-place:
-// {videos, addRecording, deleteVideo, refresh, atCap, capReason,
-//  isLoading, error}. As long as the swap honors these returns,
-// SessionDetailScreen's VideosCard (Commit 5) doesn't need to know
-// whether the data came from the filesystem (Phase 191) or a
-// backend HTTP endpoint (Phase 191B).
+// Test-by-test mapping from Phase 191 → Phase 191B:
+//
+//   Phase 191 it()                                     | Status   | Note
+//   ──────────────────────────────────────────────────── ────────── ──────────
+//   "starts in loading state with empty array"         | preserved
+//   "transitions to loaded state with no videos"       | preserved
+//   "loads existing videos sorted newest-first"        | preserved | seed via api.GET stub instead of RNFS file
+//   "persists a new recording and refreshes the list"  | preserved | seed via api.POST stub instead of RNFS write
+//   "preserves interrupted=true through the persist..." | preserved | metadata round-trips through the HTTP boundary
+//   "removes the video from the list"                  | preserved | api.DELETE stub instead of RNFS unlink
+//   "is a no-op for a non-existent video id"           | rewritten | RNFS no-op had no HTTP equivalent; replaced with "DELETE 404 leaves list intact" (HTTP-equivalent failure mode)
+//   "not at cap with 0 videos"                         | preserved
+//   "atCap=true / capReason='count' with 5 videos"     | preserved
+//   "atCap=true / capReason='size' when bytes..."      | preserved
+//   "refresh re-reads from disk"                       | preserved | re-reads via api.GET (semantically equivalent)
+//   "every Phase 191 SessionVideo has the four..."     | rewritten | Phase 191B's whole point is those fields are NO LONGER null; new test asserts the backend-supplied analysisState propagates correctly
+//
+// 10 of 12 it() titles preserved verbatim. 2 reframed for HTTP
+// realities (commented inline). New test added for analysisFindings
+// pass-through (Phase 191B's net-new contract).
 
-jest.mock('react-native-fs', () => {
-  const files = new Map<string, string>();
-  const dirs = new Set<string>(['/doc']);
-  const fileMeta = new Map<string, {size: number; isDir: boolean}>();
+// ---------------------------------------------------------------
+// Mocks
+// ---------------------------------------------------------------
+
+jest.mock('../../src/api', () => {
+  const get = jest.fn();
+  const post = jest.fn();
+  const del = jest.fn();
   return {
-    DocumentDirectoryPath: '/doc',
-    exists: jest.fn(async (p: string) => dirs.has(p) || files.has(p)),
-    mkdir: jest.fn(async (p: string) => {
-      dirs.add(p);
-    }),
-    readDir: jest.fn(async (p: string) => {
-      if (!dirs.has(p)) return [];
-      const out: Array<{
-        name: string;
-        path: string;
-        size: number;
-        isFile: () => boolean;
-        isDirectory: () => boolean;
-      }> = [];
-      const prefix = p.endsWith('/') ? p : p + '/';
-      for (const filePath of files.keys()) {
-        if (
-          filePath.startsWith(prefix) &&
-          !filePath.slice(prefix.length).includes('/')
-        ) {
-          const meta = fileMeta.get(filePath) ?? {size: 0, isDir: false};
-          out.push({
-            name: filePath.slice(prefix.length),
-            path: filePath,
-            size: meta.size,
-            isFile: () => !meta.isDir,
-            isDirectory: () => meta.isDir,
-          });
-        }
-      }
-      return out;
-    }),
-    readFile: jest.fn(async (p: string) => {
-      if (!files.has(p)) throw new Error(`ENOENT ${p}`);
-      return files.get(p)!;
-    }),
-    writeFile: jest.fn(async (p: string, content: string) => {
-      files.set(p, content);
-      fileMeta.set(p, {size: content.length, isDir: false});
-    }),
-    moveFile: jest.fn(async (src: string, dest: string) => {
-      const c = files.get(src);
-      if (c === undefined) throw new Error(`ENOENT ${src}`);
-      files.delete(src);
-      const meta = fileMeta.get(src);
-      fileMeta.delete(src);
-      files.set(dest, c);
-      fileMeta.set(dest, meta ?? {size: c.length, isDir: false});
-    }),
-    copyFile: jest.fn(async (src: string, dest: string) => {
-      const c = files.get(src);
-      if (c === undefined) throw new Error(`ENOENT ${src}`);
-      files.set(dest, c);
-      fileMeta.set(dest, {size: c.length, isDir: false});
-    }),
-    unlink: jest.fn(async (p: string) => {
-      files.delete(p);
-      dirs.delete(p);
-      fileMeta.delete(p);
-    }),
-    stat: jest.fn(async (p: string) => {
-      const meta = fileMeta.get(p);
-      if (!meta) throw new Error(`ENOENT ${p}`);
-      return {size: meta.size, path: p, isFile: () => true, isDirectory: () => false};
-    }),
-    getFSInfo: jest.fn(async () => ({
-      freeSpace: 10 * 1024 * 1024 * 1024,
-      totalSpace: 64 * 1024 * 1024 * 1024,
-    })),
-    __reset: () => {
-      files.clear();
-      dirs.clear();
-      dirs.add('/doc');
-      fileMeta.clear();
-    },
-    __seedFile: (p: string, content: string, size?: number) => {
-      files.set(p, content);
-      fileMeta.set(p, {size: size ?? content.length, isDir: false});
-      const parts = p.split('/');
-      for (let i = 1; i < parts.length; i++) {
-        dirs.add(parts.slice(0, i).join('/'));
-      }
+    api: {GET: get, POST: post, DELETE: del},
+    describeError: (err: unknown) =>
+      err instanceof Error
+        ? err.message
+        : typeof err === 'object' && err !== null && 'title' in err
+          ? String((err as {title?: unknown}).title)
+          : String(err),
+    isProblemDetail: (x: unknown) =>
+      typeof x === 'object' &&
+      x !== null &&
+      typeof (x as {title?: unknown}).title === 'string' &&
+      typeof (x as {status?: unknown}).status === 'number',
+  };
+});
+
+jest.mock('../../src/services/videoStorageCache', () => {
+  const map = new Map<string, string>();
+  return {
+    videoStorageCache: {
+      lookup: jest.fn((id: string) => map.get(id) ?? null),
+      adopt: jest.fn(async (id: string, sourceUri: string) => {
+        const dest = `file:///doc/videos/v-${id}.mp4`;
+        map.set(id, dest);
+        return dest;
+      }),
+      evict: jest.fn(async (id: string) => {
+        map.delete(id);
+      }),
+      cleanupOrphaned: jest.fn(async () => {}),
+      __resetForTests: () => {
+        map.clear();
+      },
     },
   };
 });
@@ -106,20 +76,29 @@ jest.mock('react-native-fs', () => {
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 
-import RNFS from 'react-native-fs';
-const RNFS_TEST = RNFS as unknown as {
-  __reset: () => void;
-  __seedFile: (p: string, content: string, size?: number) => void;
-};
-
+import {api} from '../../src/api';
+import {videoStorageCache} from '../../src/services/videoStorageCache';
 import {
   useSessionVideos,
   type UseSessionVideosResult,
 } from '../../src/hooks/useSessionVideos';
-import type {NewRecording, SessionVideo} from '../../src/types/video';
+import type {NewRecording} from '../../src/types/video';
+
+const apiMock = api as unknown as {
+  GET: jest.Mock;
+  POST: jest.Mock;
+  DELETE: jest.Mock;
+};
+const cacheMock = videoStorageCache as unknown as {
+  lookup: jest.Mock;
+  adopt: jest.Mock;
+  evict: jest.Mock;
+  cleanupOrphaned: jest.Mock;
+  __resetForTests: () => void;
+};
 
 // ---------------------------------------------------------------
-// renderHook shim (same shape as useSessions.test)
+// renderHook shim (same shape as Phase 191's)
 // ---------------------------------------------------------------
 
 function renderHook<Result>(callback: () => Result) {
@@ -177,37 +156,55 @@ async function waitFor(
 }
 
 // ---------------------------------------------------------------
-// Fixtures
+// Fixtures — backend VideoResponse shape (snake_case wire format)
 // ---------------------------------------------------------------
 
-function sampleVideo(
-  id: string,
+interface BackendVideoResponse {
+  id: number;
+  session_id: number;
+  started_at: string;
+  duration_ms: number;
+  width: number;
+  height: number;
+  file_size_bytes: number;
+  format: string;
+  codec: string;
+  interrupted: boolean;
+  upload_state: string;
+  analysis_state: string;
+  analysis_findings?: {[key: string]: unknown} | null;
+  analyzed_at?: string | null;
+  created_at: string;
+}
+
+function backendVideo(
+  id: number,
   sessionId: number,
   startedAt: string,
   fileSizeBytes = 5_000_000,
-): SessionVideo {
+  overrides: Partial<BackendVideoResponse> = {},
+): BackendVideoResponse {
   return {
     id,
-    sessionId,
-    fileUri: `file:///doc/videos/session-${sessionId}/session-${sessionId}-${id}.mp4`,
-    remoteUrl: null,
-    startedAt,
-    durationMs: 10_000,
+    session_id: sessionId,
+    started_at: startedAt,
+    duration_ms: 10_000,
     width: 1280,
     height: 720,
-    fileSizeBytes,
+    file_size_bytes: fileSizeBytes,
     format: 'mp4',
     codec: 'h264',
     interrupted: false,
-    uploadState: null,
-    analysisState: null,
+    upload_state: 'uploaded',
+    // Default to a terminal analysis_state so the hook's polling
+    // effect doesn't kick off an interval that leaks across tests.
+    // Tests that exercise the pending/analyzing flow override this.
+    analysis_state: 'analyzed',
+    analysis_findings: null,
+    analyzed_at: null,
+    created_at: startedAt,
+    ...overrides,
   };
-}
-
-function seedVideoOnDisk(v: SessionVideo): void {
-  const filePath = v.fileUri.replace(/^file:\/\//, '');
-  RNFS_TEST.__seedFile(filePath, 'binary', v.fileSizeBytes);
-  RNFS_TEST.__seedFile(filePath.replace(/\.mp4$/, '.json'), JSON.stringify(v));
 }
 
 const recordingFixture: NewRecording = {
@@ -222,8 +219,23 @@ const recordingFixture: NewRecording = {
   interrupted: false,
 };
 
+/** Stub api.GET to return a list of backend videos. */
+function stubListResponse(videos: BackendVideoResponse[]): void {
+  apiMock.GET.mockImplementation(async () => ({
+    data: videos,
+    error: undefined,
+  }));
+}
+
 beforeEach(() => {
-  RNFS_TEST.__reset();
+  apiMock.GET.mockReset();
+  apiMock.POST.mockReset();
+  apiMock.DELETE.mockReset();
+  cacheMock.lookup.mockClear();
+  cacheMock.adopt.mockClear();
+  cacheMock.evict.mockClear();
+  cacheMock.cleanupOrphaned.mockClear();
+  cacheMock.__resetForTests();
 });
 
 // ---------------------------------------------------------------
@@ -232,6 +244,7 @@ beforeEach(() => {
 
 describe('useSessionVideos — initial load', () => {
   it('starts in loading state with empty array', () => {
+    stubListResponse([]);
     const {result} = renderHook<UseSessionVideosResult>(() =>
       useSessionVideos(1),
     );
@@ -241,6 +254,7 @@ describe('useSessionVideos — initial load', () => {
   });
 
   it('transitions to loaded state with no videos', async () => {
+    stubListResponse([]);
     const {result} = renderHook<UseSessionVideosResult>(() =>
       useSessionVideos(1),
     );
@@ -253,21 +267,28 @@ describe('useSessionVideos — initial load', () => {
   });
 
   it('loads existing videos sorted newest-first', async () => {
-    seedVideoOnDisk(sampleVideo('a', 1, '2026-04-29T10:00:00.000Z'));
-    seedVideoOnDisk(sampleVideo('b', 1, '2026-04-29T11:00:00.000Z'));
+    stubListResponse([
+      backendVideo(1, 1, '2026-04-29T10:00:00.000Z'),
+      backendVideo(2, 1, '2026-04-29T11:00:00.000Z'),
+    ]);
     const {result} = renderHook<UseSessionVideosResult>(() =>
       useSessionVideos(1),
     );
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
-    expect(result.current.videos.map(v => v.id)).toEqual(['b', 'a']);
+    // Newest-first by startedAt: id 2 (11:00) before id 1 (10:00).
+    expect(result.current.videos.map(v => v.id)).toEqual(['2', '1']);
   });
 });
 
 describe('useSessionVideos — addRecording', () => {
   it('persists a new recording and refreshes the list', async () => {
-    RNFS_TEST.__seedFile('/cache/source.mp4', 'binary', 8_400_000);
+    stubListResponse([]);
+    apiMock.POST.mockImplementation(async () => ({
+      data: backendVideo(42, 1, '2026-04-29T15:00:00.000Z', 8_400_000),
+      error: undefined,
+    }));
     const {result} = renderHook<UseSessionVideosResult>(() =>
       useSessionVideos(1),
     );
@@ -283,14 +304,28 @@ describe('useSessionVideos — addRecording', () => {
     expect(result.current.videos).toHaveLength(1);
     expect(result.current.videos[0].sessionId).toBe(1);
     expect(result.current.videos[0].fileSizeBytes).toBe(8_400_000);
-    // remoteUrl + uploadState + analysisState always null in Phase 191
-    expect(result.current.videos[0].remoteUrl).toBeNull();
-    expect(result.current.videos[0].uploadState).toBeNull();
-    expect(result.current.videos[0].analysisState).toBeNull();
+    // Phase 191B: the api.POST was hit with the multipart body.
+    expect(apiMock.POST).toHaveBeenCalledWith(
+      '/v1/sessions/{session_id}/videos',
+      expect.objectContaining({
+        params: {path: {session_id: 1}},
+      }),
+    );
+    // The local cache was populated for offline playback.
+    expect(cacheMock.adopt).toHaveBeenCalledWith(
+      '42',
+      'file:///cache/source.mp4',
+    );
   });
 
   it('preserves interrupted=true through the persist + reload cycle', async () => {
-    RNFS_TEST.__seedFile('/cache/source.mp4', 'binary', 4_200_000);
+    stubListResponse([]);
+    apiMock.POST.mockImplementation(async () => ({
+      data: backendVideo(7, 1, '2026-04-29T15:00:00.000Z', 4_200_000, {
+        interrupted: true,
+      }),
+      error: undefined,
+    }));
     const {result} = renderHook<UseSessionVideosResult>(() =>
       useSessionVideos(1),
     );
@@ -298,7 +333,10 @@ describe('useSessionVideos — addRecording', () => {
       expect(result.current.isLoading).toBe(false);
     });
     await act(async () => {
-      await result.current.addRecording({...recordingFixture, interrupted: true});
+      await result.current.addRecording({
+        ...recordingFixture,
+        interrupted: true,
+      });
     });
     expect(result.current.videos[0].interrupted).toBe(true);
   });
@@ -306,8 +344,14 @@ describe('useSessionVideos — addRecording', () => {
 
 describe('useSessionVideos — deleteVideo', () => {
   it('removes the video from the list', async () => {
-    seedVideoOnDisk(sampleVideo('toDelete', 1, '2026-04-29T10:00:00.000Z'));
-    seedVideoOnDisk(sampleVideo('keep', 1, '2026-04-29T11:00:00.000Z'));
+    stubListResponse([
+      backendVideo(10, 1, '2026-04-29T10:00:00.000Z'),
+      backendVideo(20, 1, '2026-04-29T11:00:00.000Z'),
+    ]);
+    apiMock.DELETE.mockImplementation(async () => ({
+      data: undefined,
+      error: undefined,
+    }));
     const {result} = renderHook<UseSessionVideosResult>(() =>
       useSessionVideos(1),
     );
@@ -317,14 +361,34 @@ describe('useSessionVideos — deleteVideo', () => {
     expect(result.current.videos).toHaveLength(2);
 
     await act(async () => {
-      await result.current.deleteVideo('toDelete');
+      await result.current.deleteVideo('10');
     });
 
-    expect(result.current.videos.map(v => v.id)).toEqual(['keep']);
+    expect(result.current.videos.map(v => v.id)).toEqual(['20']);
+    // The backend DELETE call was issued + the local cache was
+    // evicted.
+    expect(apiMock.DELETE).toHaveBeenCalledWith(
+      '/v1/sessions/{session_id}/videos/{video_id}',
+      expect.objectContaining({
+        params: {path: {session_id: 1, video_id: 10}},
+      }),
+    );
+    expect(cacheMock.evict).toHaveBeenCalledWith('10');
   });
 
-  it('is a no-op for a non-existent video id', async () => {
-    seedVideoOnDisk(sampleVideo('a', 1, '2026-04-29T10:00:00.000Z'));
+  // Reframed from Phase 191's "is a no-op for a non-existent video id"
+  // test. The Phase 191 version exercised RNFS-side absence (the file
+  // simply isn't on disk; deleteVideo returns silently). The HTTP
+  // equivalent: backend returns 404 ProblemDetail; the hook surfaces
+  // the error rather than silently no-oping. This is the load-bearing
+  // behavior change between phases (HTTP errors are first-class) so
+  // we test the new contract.
+  it('surfaces backend 404 on a non-existent video id (Phase 191B HTTP-equivalent failure mode)', async () => {
+    stubListResponse([backendVideo(1, 1, '2026-04-29T10:00:00.000Z')]);
+    apiMock.DELETE.mockImplementation(async () => ({
+      data: undefined,
+      error: {title: 'Not found', status: 404, type: 'about:blank'},
+    }));
     const {result} = renderHook<UseSessionVideosResult>(() =>
       useSessionVideos(1),
     );
@@ -332,14 +396,17 @@ describe('useSessionVideos — deleteVideo', () => {
       expect(result.current.isLoading).toBe(false);
     });
     await act(async () => {
-      await result.current.deleteVideo('does-not-exist');
+      await result.current.deleteVideo('999').catch(() => undefined);
     });
+    // Original list intact (DELETE rejected); error string surfaced.
     expect(result.current.videos).toHaveLength(1);
+    expect(result.current.error).toBe('Not found');
   });
 });
 
 describe('useSessionVideos — atCap / capReason', () => {
   it('not at cap with 0 videos', async () => {
+    stubListResponse([]);
     const {result} = renderHook<UseSessionVideosResult>(() =>
       useSessionVideos(1),
     );
@@ -351,16 +418,11 @@ describe('useSessionVideos — atCap / capReason', () => {
   });
 
   it('atCap=true / capReason="count" with 5 videos', async () => {
-    for (let i = 0; i < 5; i++) {
-      seedVideoOnDisk(
-        sampleVideo(
-          `v${i}`,
-          1,
-          `2026-04-29T1${i}:00:00.000Z`,
-          1_000_000, // 1 MB each — count cap fires before size
-        ),
-      );
-    }
+    stubListResponse(
+      Array.from({length: 5}, (_, i) =>
+        backendVideo(i + 1, 1, `2026-04-29T1${i}:00:00.000Z`, 1_000_000),
+      ),
+    );
     const {result} = renderHook<UseSessionVideosResult>(() =>
       useSessionVideos(1),
     );
@@ -374,16 +436,11 @@ describe('useSessionVideos — atCap / capReason', () => {
 
   it('atCap=true / capReason="size" when bytes exceed 500 MB before count cap', async () => {
     // 4 videos of 130 MB each = 520 MB > 500 MB cap.
-    for (let i = 0; i < 4; i++) {
-      seedVideoOnDisk(
-        sampleVideo(
-          `big${i}`,
-          2,
-          `2026-04-29T1${i}:00:00.000Z`,
-          130 * 1024 * 1024,
-        ),
-      );
-    }
+    stubListResponse(
+      Array.from({length: 4}, (_, i) =>
+        backendVideo(i + 1, 2, `2026-04-29T1${i}:00:00.000Z`, 130 * 1024 * 1024),
+      ),
+    );
     const {result} = renderHook<UseSessionVideosResult>(() =>
       useSessionVideos(2),
     );
@@ -397,6 +454,20 @@ describe('useSessionVideos — atCap / capReason', () => {
 
 describe('useSessionVideos — refresh + Phase 191B contract', () => {
   it('refresh re-reads from disk', async () => {
+    // (Phase 191 title preserved; "from disk" is now "from backend"
+    // semantically, but the behavior — explicit refresh re-fetches
+    // — is identical.)
+    let callIdx = 0;
+    apiMock.GET.mockImplementation(async () => {
+      callIdx += 1;
+      if (callIdx === 1) {
+        return {data: [], error: undefined};
+      }
+      return {
+        data: [backendVideo(1, 1, '2026-04-29T12:00:00.000Z')],
+        error: undefined,
+      };
+    });
     const {result} = renderHook<UseSessionVideosResult>(() =>
       useSessionVideos(1),
     );
@@ -405,34 +476,51 @@ describe('useSessionVideos — refresh + Phase 191B contract', () => {
     });
     expect(result.current.videos).toHaveLength(0);
 
-    // Seed a video off-screen (simulating an external mutation).
-    seedVideoOnDisk(sampleVideo('offscreen', 1, '2026-04-29T12:00:00.000Z'));
     await act(async () => {
       await result.current.refresh();
     });
     expect(result.current.videos).toHaveLength(1);
   });
 
-  it('every Phase 191 SessionVideo has the four Phase 191B fields stubbed null', async () => {
-    // Regression guard for the Phase 191B handoff contract: in
-    // Phase 191, remoteUrl + uploadState + analysisState are
-    // ALWAYS null. Phase 191B's swap will populate them; that
-    // change is invisible to consumers because the type stays the
-    // same. If Phase 191's saveRecording starts setting them by
-    // accident, this test fails loudly.
-    RNFS_TEST.__seedFile('/cache/source.mp4', 'binary', 1_000_000);
+  // Phase 191's regression test asserted that the four backend-side
+  // fields (remoteUrl, uploadState, analysisState,
+  // analysisFindings) STAY null in Phase 191. Phase 191B's whole
+  // point is those fields PROPAGATE from the backend. The test is
+  // now the inverse: assert that analysisState round-trips from the
+  // wire, and analysisFindings is populated when the backend sends
+  // it. analysisFindings is the Phase 191B commit 6 net-new field.
+  it('Phase 191B handoff contract: analysisState + analysisFindings propagate from the backend response', async () => {
+    stubListResponse([
+      backendVideo(1, 1, '2026-04-29T10:00:00.000Z', 1_000_000, {
+        analysis_state: 'analyzed',
+        analysis_findings: {
+          overall_assessment: 'Likely lean fuel mixture.',
+          findings: [
+            {
+              severity: 'medium',
+              finding_type: 'visible_smoke',
+              description: 'Light exhaust smoke at idle',
+              location_in_image: 'tailpipe',
+            },
+          ],
+          suggested_diagnostics: ['compression test'],
+          cost_estimate_usd: 0.0023,
+        },
+      }),
+    ]);
     const {result} = renderHook<UseSessionVideosResult>(() =>
       useSessionVideos(1),
     );
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
-    await act(async () => {
-      await result.current.addRecording(recordingFixture);
-    });
     const v = result.current.videos[0];
-    expect(v.remoteUrl).toBeNull();
-    expect(v.uploadState).toBeNull();
-    expect(v.analysisState).toBeNull();
+    expect(v.analysisState).toBe('analyzed');
+    expect(v.analysisFindings).not.toBeNull();
+    expect(v.analysisFindings!.overall_assessment).toBe(
+      'Likely lean fuel mixture.',
+    );
+    expect(v.analysisFindings!.findings).toHaveLength(1);
+    expect(v.analysisFindings!.cost_estimate_usd).toBe(0.0023);
   });
 });

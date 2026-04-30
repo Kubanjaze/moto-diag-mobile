@@ -6208,10 +6208,538 @@
           }
         ]
       }
+    },
+    "/v1/sessions/{session_id}/videos": {
+      "post": {
+        "tags": [
+          "videos"
+        ],
+        "summary": "Upload a video to a session and queue analysis",
+        "description": "Upload an mp4 + sidecar metadata; queue Vision analysis.\n\nMultipart fields:\n  file:     mp4 binary\n  metadata: JSON string mirroring :class:`VideoBase` shape\n            (started_at, duration_ms, width, height,\n            file_size_bytes, format, codec, interrupted)",
+        "operationId": "upload_video_v1_sessions__session_id__videos_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_video_v1_sessions__session_id__videos_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "videos"
+        ],
+        "summary": "List videos for a session",
+        "operationId": "list_videos_v1_sessions__session_id__videos_get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VideoResponse"
+                  },
+                  "title": "Response List Videos V1 Sessions  Session Id  Videos Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/sessions/{session_id}/videos/{video_id}": {
+      "get": {
+        "tags": [
+          "videos"
+        ],
+        "summary": "Get one video by id",
+        "operationId": "get_one_video_v1_sessions__session_id__videos__video_id__get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "video_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Video Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "videos"
+        ],
+        "summary": "Soft-delete a video",
+        "description": "Soft-delete via ``deleted_at``. Idempotent \u2014 second call also 204.",
+        "operationId": "delete_video_v1_sessions__session_id__videos__video_id__delete",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "video_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Video Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/sessions/{session_id}/videos/{video_id}/file": {
+      "get": {
+        "tags": [
+          "videos"
+        ],
+        "summary": "Stream the binary mp4 file",
+        "operationId": "get_video_file_v1_sessions__session_id__videos__video_id__file_get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "video_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Video Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "video/mp4": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
     }
   },
   "components": {
     "schemas": {
+      "Body_upload_video_v1_sessions__session_id__videos_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "metadata": {
+            "type": "string",
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "metadata"
+        ],
+        "title": "Body_upload_video_v1_sessions__session_id__videos_post"
+      },
       "CheckoutSessionRequest": {
         "properties": {
           "tier": {
@@ -8319,6 +8847,140 @@
           "package"
         ],
         "title": "VersionInfo"
+      },
+      "VideoAnalysisState": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "analyzing",
+          "analyzed",
+          "analysis_failed",
+          "unsupported"
+        ],
+        "title": "VideoAnalysisState",
+        "description": "Analysis state machine for a session video.\n\nTransitions (per Phase 191B v1.0 plan):\n    pending      \u2500\u2500worker-picks-up\u2500\u2500\u25b6 analyzing\n    analyzing    \u2500\u2500findings-saved\u2500\u2500\u25b6  analyzed\n    analyzing    \u2500\u2500ffmpeg-failed\u2500\u2500\u25b6   unsupported  (terminal)\n    analyzing    \u2500\u2500vision-failed\u2500\u2500\u25b6   analysis_failed  (retryable)"
+      },
+      "VideoResponse": {
+        "properties": {
+          "started_at": {
+            "type": "string",
+            "title": "Started At",
+            "description": "ISO 8601 timestamp when recording started"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Duration Ms",
+            "description": "Recording duration in milliseconds"
+          },
+          "width": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Width",
+            "description": "Pixel width"
+          },
+          "height": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Height",
+            "description": "Pixel height"
+          },
+          "file_size_bytes": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "File Size Bytes",
+            "description": "File size in bytes"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format",
+            "description": "Container format (default mp4)",
+            "default": "mp4"
+          },
+          "codec": {
+            "type": "string",
+            "title": "Codec",
+            "description": "Video codec (default h264)",
+            "default": "h264"
+          },
+          "interrupted": {
+            "type": "boolean",
+            "title": "Interrupted",
+            "description": "True iff the recording was stopped by phone-call/app-background rather than the mechanic's explicit Stop tap.",
+            "default": false
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Server-assigned video id"
+          },
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id",
+            "description": "Owning diagnostic session id"
+          },
+          "upload_state": {
+            "$ref": "#/components/schemas/VideoUploadState",
+            "description": "Upload-side state machine value",
+            "default": "uploaded"
+          },
+          "analysis_state": {
+            "$ref": "#/components/schemas/VideoAnalysisState",
+            "description": "Analysis-side state machine value",
+            "default": "pending"
+          },
+          "analysis_findings": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Findings",
+            "description": "Serialized VisualAnalysisResult once analyzed. NULL while analysis_state is pending|analyzing or terminally failed."
+          },
+          "analyzed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analyzed At",
+            "description": "ISO 8601 timestamp when analysis_state advanced past `analyzing`"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At",
+            "description": "ISO 8601 timestamp when row was inserted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "started_at",
+          "duration_ms",
+          "width",
+          "height",
+          "file_size_bytes",
+          "id",
+          "session_id",
+          "created_at"
+        ],
+        "title": "VideoResponse",
+        "description": "API response shape \u2014 includes server-managed fields + analysis state.\n\nNote: `file_path` and `sha256` are deliberately omitted from this\nresponse model. They are internal storage details and exposing them\non the wire leaks information about the backend's filesystem layout\nand dedup pipeline. Mobile reads videos via the dedicated\n`/v1/sessions/{id}/videos/{video_id}/file` stream endpoint."
+      },
+      "VideoUploadState": {
+        "type": "string",
+        "enum": [
+          "uploaded"
+        ],
+        "title": "VideoUploadState",
+        "description": "Upload-side state for a session video.\n\nPhase 191B reserves only `uploaded` \u2014 Phase 192+ may add `pending`\n(multi-part upload in progress) and `failed` (network drop mid-upload)."
       },
       "WorkOrderCreateRequest": {
         "properties": {

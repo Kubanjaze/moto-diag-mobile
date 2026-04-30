@@ -858,10 +858,82 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/sessions/{session_id}/videos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List videos for a session */
+        get: operations["list_videos_v1_sessions__session_id__videos_get"];
+        put?: never;
+        /**
+         * Upload a video to a session and queue analysis
+         * @description Upload an mp4 + sidecar metadata; queue Vision analysis.
+         *
+         *     Multipart fields:
+         *       file:     mp4 binary
+         *       metadata: JSON string mirroring :class:`VideoBase` shape
+         *                 (started_at, duration_ms, width, height,
+         *                 file_size_bytes, format, codec, interrupted)
+         */
+        post: operations["upload_video_v1_sessions__session_id__videos_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sessions/{session_id}/videos/{video_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one video by id */
+        get: operations["get_one_video_v1_sessions__session_id__videos__video_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Soft-delete a video
+         * @description Soft-delete via ``deleted_at``. Idempotent — second call also 204.
+         */
+        delete: operations["delete_video_v1_sessions__session_id__videos__video_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sessions/{session_id}/videos/{video_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stream the binary mp4 file */
+        get: operations["get_video_file_v1_sessions__session_id__videos__video_id__file_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Body_upload_video_v1_sessions__session_id__videos_post */
+        Body_upload_video_v1_sessions__session_id__videos_post: {
+            /** File */
+            file: string;
+            /** Metadata */
+            metadata: string;
+        };
         /** CheckoutSessionRequest */
         CheckoutSessionRequest: {
             /** Tier */
@@ -1424,6 +1496,119 @@ export interface components {
              */
             api_version: string;
         };
+        /**
+         * VideoAnalysisState
+         * @description Analysis state machine for a session video.
+         *
+         *     Transitions (per Phase 191B v1.0 plan):
+         *         pending      ──worker-picks-up──▶ analyzing
+         *         analyzing    ──findings-saved──▶  analyzed
+         *         analyzing    ──ffmpeg-failed──▶   unsupported  (terminal)
+         *         analyzing    ──vision-failed──▶   analysis_failed  (retryable)
+         * @enum {string}
+         */
+        VideoAnalysisState: "pending" | "analyzing" | "analyzed" | "analysis_failed" | "unsupported";
+        /**
+         * VideoResponse
+         * @description API response shape — includes server-managed fields + analysis state.
+         *
+         *     Note: `file_path` and `sha256` are deliberately omitted from this
+         *     response model. They are internal storage details and exposing them
+         *     on the wire leaks information about the backend's filesystem layout
+         *     and dedup pipeline. Mobile reads videos via the dedicated
+         *     `/v1/sessions/{id}/videos/{video_id}/file` stream endpoint.
+         */
+        VideoResponse: {
+            /**
+             * Started At
+             * @description ISO 8601 timestamp when recording started
+             */
+            started_at: string;
+            /**
+             * Duration Ms
+             * @description Recording duration in milliseconds
+             */
+            duration_ms: number;
+            /**
+             * Width
+             * @description Pixel width
+             */
+            width: number;
+            /**
+             * Height
+             * @description Pixel height
+             */
+            height: number;
+            /**
+             * File Size Bytes
+             * @description File size in bytes
+             */
+            file_size_bytes: number;
+            /**
+             * Format
+             * @description Container format (default mp4)
+             * @default mp4
+             */
+            format: string;
+            /**
+             * Codec
+             * @description Video codec (default h264)
+             * @default h264
+             */
+            codec: string;
+            /**
+             * Interrupted
+             * @description True iff the recording was stopped by phone-call/app-background rather than the mechanic's explicit Stop tap.
+             * @default false
+             */
+            interrupted: boolean;
+            /**
+             * Id
+             * @description Server-assigned video id
+             */
+            id: number;
+            /**
+             * Session Id
+             * @description Owning diagnostic session id
+             */
+            session_id: number;
+            /**
+             * @description Upload-side state machine value
+             * @default uploaded
+             */
+            upload_state: components["schemas"]["VideoUploadState"];
+            /**
+             * @description Analysis-side state machine value
+             * @default pending
+             */
+            analysis_state: components["schemas"]["VideoAnalysisState"];
+            /**
+             * Analysis Findings
+             * @description Serialized VisualAnalysisResult once analyzed. NULL while analysis_state is pending|analyzing or terminally failed.
+             */
+            analysis_findings?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Analyzed At
+             * @description ISO 8601 timestamp when analysis_state advanced past `analyzing`
+             */
+            analyzed_at?: string | null;
+            /**
+             * Created At
+             * @description ISO 8601 timestamp when row was inserted
+             */
+            created_at: string;
+        };
+        /**
+         * VideoUploadState
+         * @description Upload-side state for a session video.
+         *
+         *     Phase 191B reserves only `uploaded` — Phase 192+ may add `pending`
+         *     (multi-part upload in progress) and `failed` (network drop mid-upload).
+         * @enum {string}
+         */
+        VideoUploadState: "uploaded";
         /** WorkOrderCreateRequest */
         WorkOrderCreateRequest: {
             /** Vehicle Id */
@@ -3929,6 +4114,202 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             402: components["responses"]["SubscriptionRequired"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    list_videos_v1_sessions__session_id__videos_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoResponse"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    upload_video_v1_sessions__session_id__videos_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_video_v1_sessions__session_id__videos_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_one_video_v1_sessions__session_id__videos__video_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                session_id: number;
+                video_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    delete_video_v1_sessions__session_id__videos__video_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                session_id: number;
+                video_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_video_file_v1_sessions__session_id__videos__video_id__file_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                session_id: number;
+                video_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "video/mp4": unknown;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             /** @description Validation Error */
             422: {

@@ -40,8 +40,14 @@ import {
   formatElapsed,
   formatFileSize,
 } from './videoCaptureHelpers';
-import {MAX_VIDEOS_PER_SESSION} from '../services/videoStorage';
 import type {SessionVideo} from '../types/video';
+
+// Phase 191B commit 6 — backend per-session count cap, mirrored on
+// the mobile side for the at-cap copy in VideosCard. Was imported
+// from videoStorage in Phase 191; videoStorage was deleted with the
+// hook swap so the constant lives inline here next to its sole
+// consumer.
+const MAX_VIDEOS_PER_SESSION = 5;
 import type {SessionsStackParamList} from '../navigation/types';
 import type {SessionResponse, SessionUpdateRequest} from '../types/api';
 import {
@@ -509,10 +515,16 @@ function VideosCard({
   );
 }
 
-/** Single video row in the VideosCard list. Tap → push to
- *  VideoPlaybackScreen. Shows recorded-at + duration + paused
- *  indicator + chevron. No thumbnail extraction in Phase 191
- *  (deferred to Phase 191B / 192). */
+/** Single video row in the VideosCard list. Tap on row body → push
+ *  to VideoPlaybackScreen. Phase 191B commit 6 additions:
+ *
+ *    - 5-state analysis badge (pending / analyzing / analyzed /
+ *      analysis-failed / unsupported) below the title. null
+ *      analysisState (Phase 191 leftover or pre-upload row) renders
+ *      no badge.
+ *    - Tapping an `analyzed` badge expands findings inline (toggle).
+ *      Tapping the row body always plays the video; the badge has
+ *      its own touch target so playback / expand are disambiguated. */
 function VideoRow({
   video,
   onPress,
@@ -520,36 +532,219 @@ function VideoRow({
   video: SessionVideo;
   onPress: () => void;
 }) {
+  const [findingsExpanded, setFindingsExpanded] = useState<boolean>(false);
+  const canExpand =
+    video.analysisState === 'analyzed' && video.analysisFindings != null;
+
   return (
-    <TouchableOpacity
-      style={styles.listItemTappable}
-      onPress={onPress}
-      accessibilityRole="button"
-      testID={`session-videos-row-${video.id}`}>
-      <Text style={styles.videoIcon}>▶</Text>
-      <View style={styles.videoRowMain}>
-        <Text style={styles.videoRowTitle} numberOfLines={1}>
-          {formatVideoTimestamp(video.startedAt)}
-        </Text>
-        <View style={styles.videoRowMeta}>
-          <Text style={styles.videoRowMetaItem}>
-            {formatElapsed(video.durationMs)}
+    <View testID={`session-videos-row-${video.id}`}>
+      <TouchableOpacity
+        style={styles.listItemTappable}
+        onPress={onPress}
+        accessibilityRole="button"
+        testID={`session-videos-row-${video.id}-play`}>
+        <Text style={styles.videoIcon}>▶</Text>
+        <View style={styles.videoRowMain}>
+          <Text style={styles.videoRowTitle} numberOfLines={1}>
+            {formatVideoTimestamp(video.startedAt)}
           </Text>
-          <Text style={styles.videoRowMetaItem}>
-            {formatFileSize(video.fileSizeBytes)}
-          </Text>
-          {video.interrupted ? (
-            <Text
-              style={styles.videoRowPaused}
-              testID={`session-videos-row-${video.id}-paused`}>
-              ⏸ Paused
+          <View style={styles.videoRowMeta}>
+            <Text style={styles.videoRowMetaItem}>
+              {formatElapsed(video.durationMs)}
             </Text>
+            <Text style={styles.videoRowMetaItem}>
+              {formatFileSize(video.fileSizeBytes)}
+            </Text>
+            {video.interrupted ? (
+              <Text
+                style={styles.videoRowPaused}
+                testID={`session-videos-row-${video.id}-paused`}>
+                ⏸ Paused
+              </Text>
+            ) : null}
+          </View>
+          {video.analysisState !== null ? (
+            <AnalysisBadge
+              state={video.analysisState}
+              expanded={findingsExpanded}
+              expandable={canExpand}
+              onToggle={() => setFindingsExpanded(v => !v)}
+              testIDBase={`session-videos-row-${video.id}`}
+            />
           ) : null}
         </View>
+        <Text style={styles.listItemChevron}>›</Text>
+      </TouchableOpacity>
+      {findingsExpanded && canExpand ? (
+        <FindingsExpansion
+          findings={video.analysisFindings!}
+          testIDBase={`session-videos-row-${video.id}`}
+        />
+      ) : null}
+    </View>
+  );
+}
+
+/** 5-state analysis badge. Tappable when expandable=true (analyzed
+ *  + findings present); inert otherwise. Renders the state-specific
+ *  glyph + label + variant style. */
+function AnalysisBadge({
+  state,
+  expanded,
+  expandable,
+  onToggle,
+  testIDBase,
+}: {
+  state: NonNullable<SessionVideo['analysisState']>;
+  expanded: boolean;
+  expandable: boolean;
+  onToggle: () => void;
+  testIDBase: string;
+}) {
+  let label = '';
+  let style = styles.analysisBadge;
+  switch (state) {
+    case 'pending':
+      label = '🔄 Analyzing soon';
+      style = styles.analysisBadgePending;
+      break;
+    case 'analyzing':
+      label = '🔍 Analyzing now';
+      style = styles.analysisBadgeAnalyzing;
+      break;
+    case 'analyzed':
+      label = expanded ? '✓ Analyzed (tap to collapse)' : '✓ Analyzed';
+      style = styles.analysisBadgeAnalyzed;
+      break;
+    case 'analysis-failed':
+      label = '⚠ Analysis failed';
+      style = styles.analysisBadgeFailed;
+      break;
+    case 'unsupported':
+      label = '— Unsupported';
+      style = styles.analysisBadgeUnsupported;
+      break;
+  }
+
+  if (!expandable) {
+    return (
+      <View style={style} testID={`${testIDBase}-analysis-${state}`}>
+        <Text style={styles.analysisBadgeText}>{label}</Text>
       </View>
-      <Text style={styles.listItemChevron}>›</Text>
+    );
+  }
+  return (
+    <TouchableOpacity
+      style={style}
+      onPress={onToggle}
+      accessibilityRole="button"
+      testID={`${testIDBase}-analysis-${state}`}>
+      <Text style={styles.analysisBadgeText}>{label}</Text>
     </TouchableOpacity>
   );
+}
+
+/** Inline findings expansion. Renders overall_assessment +
+ *  per-finding rows + suggested follow-up + cost estimate. Defensive
+ *  null-checks throughout — the wire shape is opaque (`dict | null`
+ *  in OpenAPI) so any field can be missing without crashing. */
+function FindingsExpansion({
+  findings,
+  testIDBase,
+}: {
+  findings: NonNullable<SessionVideo['analysisFindings']>;
+  testIDBase: string;
+}) {
+  const list = findings.findings ?? [];
+  const followUp = findings.suggested_diagnostics ?? [];
+  return (
+    <View
+      style={styles.findingsExpansion}
+      testID={`${testIDBase}-findings`}>
+      {findings.overall_assessment ? (
+        <Text style={styles.findingsAssessment}>
+          {findings.overall_assessment}
+        </Text>
+      ) : null}
+      {list.length > 0 ? (
+        <View style={styles.findingsList}>
+          {list.map((finding, idx) => (
+            <View
+              key={`${idx}-${finding.finding_type ?? 'unknown'}`}
+              style={styles.findingsItem}
+              testID={`${testIDBase}-findings-item-${idx}`}>
+              <View style={styles.findingsItemHeader}>
+                {finding.severity ? (
+                  <View
+                    style={severityBadgeStyleFor(finding.severity)}
+                    testID={`${testIDBase}-findings-severity-${idx}`}>
+                    <Text style={styles.findingsSeverityText}>
+                      {finding.severity}
+                    </Text>
+                  </View>
+                ) : null}
+                {finding.finding_type ? (
+                  <Text style={styles.findingsType}>
+                    {finding.finding_type}
+                  </Text>
+                ) : null}
+              </View>
+              {finding.description ? (
+                <Text style={styles.findingsDescription}>
+                  {finding.description}
+                </Text>
+              ) : null}
+              {finding.location_in_image ? (
+                <Text style={styles.findingsLocation}>
+                  Location: {finding.location_in_image}
+                </Text>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.findingsEmpty}>No specific findings.</Text>
+      )}
+      {followUp.length > 0 ? (
+        <View style={styles.findingsFollowUp}>
+          <Text style={styles.findingsFollowUpTitle}>Suggested follow-up</Text>
+          {followUp.map((item, idx) => (
+            <Text
+              key={`${idx}-${item}`}
+              style={styles.findingsFollowUpItem}
+              testID={`${testIDBase}-followup-${idx}`}>
+              • {item}
+            </Text>
+          ))}
+        </View>
+      ) : null}
+      {findings.cost_estimate_usd != null ? (
+        <Text
+          style={styles.findingsCost}
+          testID={`${testIDBase}-cost`}>
+          Analysis cost: ${findings.cost_estimate_usd.toFixed(4)}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+/** Map a finding severity to the badge style variant. The four-color
+ *  palette mirrors the diagnosis severity badge convention used in
+ *  DiagnosisCard (low / medium / high / critical). */
+function severityBadgeStyleFor(severity: string) {
+  switch (severity) {
+    case 'low':
+      return styles.findingsSeverityLow;
+    case 'medium':
+      return styles.findingsSeverityMedium;
+    case 'high':
+      return styles.findingsSeverityHigh;
+    case 'critical':
+      return styles.findingsSeverityCritical;
+    default:
+      return styles.findingsSeverityLow;
+  }
 }
 
 /** Compact `MMM D · h:mm AM/PM` for video row title. */
@@ -1121,6 +1316,151 @@ const styles = StyleSheet.create({
   },
   videoCapText: {fontSize: 14, color: '#7a5500', fontWeight: '600'},
   videoCapHint: {fontSize: 13, color: '#7a5500', marginTop: 4},
+  // Phase 191B commit 6 — analysis badge variants. Five states; null
+  // analysisState renders no badge. Sized to fit on the same row
+  // as the metadata under the title. Tap target met by paddingV/H.
+  analysisBadge: {
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    marginTop: 4,
+    minHeight: 28,
+    backgroundColor: '#eef',
+  },
+  analysisBadgePending: {
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    marginTop: 4,
+    minHeight: 28,
+    backgroundColor: '#eee',
+  },
+  analysisBadgeAnalyzing: {
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    marginTop: 4,
+    minHeight: 28,
+    backgroundColor: '#e0eaff',
+  },
+  analysisBadgeAnalyzed: {
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    marginTop: 4,
+    minHeight: 28,
+    backgroundColor: '#e3f5e0',
+  },
+  analysisBadgeFailed: {
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    marginTop: 4,
+    minHeight: 28,
+    backgroundColor: '#fff0d6',
+  },
+  analysisBadgeUnsupported: {
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    marginTop: 4,
+    minHeight: 28,
+    backgroundColor: '#f0f0f0',
+  },
+  analysisBadgeText: {fontSize: 12, color: '#333', fontWeight: '600'},
+  // Findings expansion — appears below the row when analyzed-badge
+  // is tapped. White card-within-card so it visually nests under
+  // the row's chevron.
+  findingsExpansion: {
+    backgroundColor: '#fafafa',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 4,
+    marginBottom: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#e6e6e6',
+  },
+  findingsAssessment: {fontSize: 14, color: '#222', lineHeight: 20},
+  findingsList: {marginTop: 10, gap: 10},
+  findingsItem: {
+    backgroundColor: '#fff',
+    borderRadius: 6,
+    padding: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#eee',
+  },
+  findingsItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  findingsType: {
+    fontSize: 13,
+    color: '#222',
+    fontWeight: '700',
+    fontFamily: 'monospace',
+  },
+  findingsDescription: {fontSize: 13, color: '#333', lineHeight: 18},
+  findingsLocation: {fontSize: 12, color: '#666', marginTop: 4},
+  findingsEmpty: {fontSize: 13, color: '#777', fontStyle: 'italic', marginTop: 8},
+  findingsFollowUp: {marginTop: 12},
+  findingsFollowUpTitle: {
+    fontSize: 12,
+    color: '#888',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  findingsFollowUpItem: {
+    fontSize: 13,
+    color: '#333',
+    lineHeight: 18,
+    paddingVertical: 2,
+  },
+  findingsCost: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 10,
+    fontFamily: 'monospace',
+  },
+  findingsSeverityText: {
+    fontSize: 11,
+    color: '#fff',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  findingsSeverityLow: {
+    backgroundColor: '#5caa5c',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  findingsSeverityMedium: {
+    backgroundColor: '#d39e00',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  findingsSeverityHigh: {
+    backgroundColor: '#d05a2e',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  findingsSeverityCritical: {
+    backgroundColor: '#b00020',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
   badge: {paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12},
   badgeOpen: {backgroundColor: '#e0eaff'},
   badgeInProgress: {backgroundColor: '#fff4d6'},

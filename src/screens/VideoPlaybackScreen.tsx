@@ -121,11 +121,39 @@ export function VideoPlaybackScreen({navigation, route}: Props) {
 
   const recordedAt = formatRecordingTimestamp(video.startedAt);
 
+  // Phase 191B commit 6: fileUri may be null when the video lives
+  // only on the backend (e.g., loaded from a fresh device install
+  // where the local cache hasn't been populated yet). Fall back to
+  // the remote `/file` stream endpoint in that case. The hook's
+  // makeClient base URL is what we'd want here; for now, surface a
+  // gentle "not available offline" error if the local file is gone.
+  const playbackUri = video.fileUri;
+  if (playbackUri === null) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
+        <View style={styles.errorPane}>
+          <Text style={styles.errorTitle}>Video not cached locally</Text>
+          <Text style={styles.errorBody}>
+            This recording is stored on the server. Streaming playback for
+            backend-only videos lands in a future update.
+          </Text>
+          <View style={styles.spacer} />
+          <Button
+            title="Back"
+            variant="secondary"
+            onPress={() => navigation.goBack()}
+            testID="video-playback-back-button"
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
       <View style={styles.videoContainer} testID="video-playback-player">
         <Video
-          source={{uri: video.fileUri}}
+          source={{uri: playbackUri}}
           style={styles.video}
           controls
           resizeMode="contain"

@@ -1,31 +1,39 @@
 // Phase 191 commit 3 — VideoCaptureScreen.
+// Phase 191B commit 6 — extended for backend-backed upload flow.
 //
 // Wires Commit 2's pure reducer to the vision-camera <Camera>
-// component + 4 failed-state UIs (one per RecordingError.kind per
-// Kerwyn fold #2 sign-off pre-Commit 2) + AppState listener +
+// component + 4 failed-state UIs (Phase 191) + 3 NEW failed-state
+// UIs (Phase 191B Q3: upload_failed, upload_interrupted,
+// quota_exceeded) + an `uploading`-state UI with progress feedback
+// + AppState listener (recording → stopping(interrupted), saved →
+// idle auto-keep, uploading → failed(upload_interrupted)) +
 // permission gate + at-cap guard + elapsed-time counter.
 //
-// State machine is in src/screens/videoCaptureMachine.ts; this
-// screen is the side-effect layer that:
-//   - calls vision-camera's startRecording() / stopRecording() in
-//     response to TAP_RECORD / TAP_STOP / OS interruptions
-//   - moves the temp file to the canonical session directory via
-//     videoStorage.saveRecording() before dispatching
-//     RECORDING_FINISHED
-//   - subscribes to AppState + dispatches APP_BACKGROUNDED
-//   - cleans up partial files on TAP_DISCARD / TAP_RETRY / TAP_CANCEL
+// Phase 191B refactor of the save flow:
+//   - Phase 191 saved the recording to the local FS via
+//     videoStorage.saveRecording inside vision-camera's
+//     onRecordingFinished, then dispatched RECORDING_FINISHED with
+//     the persisted SessionVideo.
+//   - Phase 191B keeps the file in vision-camera's cache dir until
+//     the user taps Keep, then hands the source URI to
+//     useSessionVideos.addRecording (multipart POST). The hook
+//     adopts the source file into the local cache after the upload
+//     succeeds. This swap means the saved-state SessionVideo built
+//     for the reducer is a synthetic preview (no backend id yet,
+//     fileUri pointing at the cache dir) — it gets superseded in
+//     the hook's videos array by the backend-issued SessionVideo
+//     after addRecording resolves.
 //
-// Per state machine sketch sign-off Item 5: elapsed-time counter
-// lives OUTSIDE the reducer as separate UI state (setInterval at
-// the screen level reading state.startedAt). Reducer events
-// represent meaningful lifecycle transitions; clock ticks aren't
-// one of them.
+// Real fetch-progress in React Native is non-trivial — XHR has
+// onprogress, fetch doesn't. For Phase 191B commit 6 we dispatch
+// UPLOAD_PROGRESS at start (0%) only and use indeterminate
+// progress UI until UPLOAD_SUCCEEDED. Real byte-level progress is
+// a Phase 192+ concern (will likely use react-native-blob-util's
+// onprogress callback).
 //
 // Per Kerwyn flag #1 from Commit 2 sign-off: user-facing badge
 // copy reads "Paused" not "Interrupted" so the voluntary-background
-// case doesn't sound alarming. The technical
-// `video.interrupted: true` flag stays — it's the audit signal
-// that flows to Phase 191B's AI handoff.
+// case doesn't sound alarming.
 
 import React, {useCallback, useEffect, useReducer, useRef, useState} from 'react';
 import {
@@ -44,22 +52,15 @@ import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {Camera, useCameraDevice} from 'react-native-vision-camera';
 
 import {Button} from '../components/Button';
+import {isProblemDetail} from '../api';
 import {useCameraPermissions} from '../hooks/useCameraPermissions';
+import {useSessionVideos} from '../hooks/useSessionVideos';
 import type {SessionsStackParamList} from '../navigation/types';
-import {
-  checkRecordingPrecondition,
-  deleteVideo,
-  evaluateCap,
-  getSessionUsage,
-  MAX_VIDEOS_PER_SESSION,
-  saveRecording,
-} from '../services/videoStorage';
-import type {RecordingError} from '../types/video';
+import type {NewRecording, RecordingError, SessionVideo} from '../types/video';
 import {
   classifyVisionCameraError,
   formatElapsed,
   formatFileSize,
-  generateShortId,
 } from './videoCaptureHelpers';
 import {
   initialRecordingState,
@@ -67,6 +68,11 @@ import {
 } from './videoCaptureMachine';
 
 type Props = NativeStackScreenProps<SessionsStackParamList, 'VideoCapture'>;
+
+// Backend per-session count cap, mirrored on the mobile side for the
+// at-cap copy. Same 5/500 MB numbers Phase 191 used; backend is
+// authoritative.
+const MAX_VIDEOS_PER_SESSION = 5;
 
 // ---------------------------------------------------------------
 // Screen
@@ -83,21 +89,10 @@ export function VideoCaptureScreen({navigation, route}: Props) {
   const recordingStartTimeRef = useRef<number>(0);
 
   // Phase 191 commit-3 fix (architect-gate verification 5 bug):
-  // explicit "this stop is interruption-driven" flag. The
-  // onRecordingFinished callback is registered ONCE with
-  // cameraRef.startRecording(...) and persists across renders;
-  // it captures `state` from the render where startRecording
-  // was invoked, which is always the moment-of-tap-record (state
-  // = idle, transitioning to recording). Reading state.kind
-  // inside the closure when it fires LATER returns the stale
-  // capture, never the current stopping(reason='interrupted')
-  // state. We use this ref instead — set TRUE in the AppState
-  // background handler before stopRecording() lands; set FALSE
-  // in the user-initiated stop path; read in onRecordingFinished
-  // to drive `interrupted: boolean` on the saved SessionVideo.
-  // Independent of render timing + state-machine transition
-  // ordering. Reset to false after each save so the next
-  // recording starts fresh.
+  // explicit "this stop is interruption-driven" flag. See Phase 191
+  // implementation for the full closure-capture rationale; preserved
+  // verbatim in Phase 191B because the recording-side flow is
+  // untouched.
   const interruptedRef = useRef<boolean>(false);
 
   // -----------------------------------------------------------
@@ -107,23 +102,20 @@ export function VideoCaptureScreen({navigation, route}: Props) {
   const device = useCameraDevice('back');
 
   // -----------------------------------------------------------
-  // At-cap guard (Item 4 from sketch sign-off): UI layer only;
-  // reducer never sees TAP_RECORD when at cap.
+  // useSessionVideos drives upload + at-cap state. Phase 191B's
+  // hook hits the backend; the same shape as Phase 191 means this
+  // screen's wiring stays minimal.
   // -----------------------------------------------------------
-  const [usage, setUsage] = useState<{count: number; bytes: number}>({
-    count: 0,
-    bytes: 0,
-  });
-  const refreshUsage = useCallback(async () => {
-    setUsage(await getSessionUsage(sessionId));
-  }, [sessionId]);
-  useEffect(() => {
-    void refreshUsage();
-  }, [refreshUsage]);
-  const capReason = evaluateCap({
-    currentCount: usage.count,
-    currentBytes: usage.bytes,
-  });
+  const {videos, addRecording, atCap, capReason} = useSessionVideos(sessionId);
+
+  // -----------------------------------------------------------
+  // Source-URI / NewRecording cache for retries. When the upload
+  // fails, RETRY_UPLOAD needs the original NewRecording payload
+  // (with the local source URI); we keep it in a ref keyed by the
+  // synthetic SessionVideo.id we issued at the saved-state
+  // transition. Cleared on successful upload + on full reset.
+  // -----------------------------------------------------------
+  const pendingRecordingRef = useRef<NewRecording | null>(null);
 
   // -----------------------------------------------------------
   // Elapsed-time tick (Item 5 from sketch sign-off): separate UI
@@ -143,23 +135,14 @@ export function VideoCaptureScreen({navigation, route}: Props) {
 
   // -----------------------------------------------------------
   // AppState listener: forwards background events to the reducer.
-  // recording → APP_BACKGROUNDED → stopping(interrupted)
-  // saved     → APP_BACKGROUNDED → idle (auto-keep per fold #1)
+  //   recording  → APP_BACKGROUNDED → stopping(interrupted)
+  //   saved      → APP_BACKGROUNDED → idle (auto-keep per fold #1)
+  //   uploading  → APP_BACKGROUNDED → failed(upload_interrupted) [Q1c]
   // -----------------------------------------------------------
   useEffect(() => {
     const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
       if (next === 'background' || next === 'inactive') {
-        // Side-effect side: if we're recording, also stop the camera
-        // so vision-camera flushes the partial file. The reducer's
-        // transition runs synchronously; the file finalize lands via
-        // onRecordingFinished moments later.
         if (state.kind === 'recording') {
-          // Set the interrupted flag BEFORE stopRecording fires the
-          // onRecordingFinished closure. The closure reads
-          // interruptedRef.current to decide whether to mark the
-          // saved SessionVideo as interrupted. See the
-          // interruptedRef declaration block above for the full
-          // closure-capture rationale.
           interruptedRef.current = true;
           cameraRef.current?.stopRecording().catch(() => undefined);
         }
@@ -173,83 +156,59 @@ export function VideoCaptureScreen({navigation, route}: Props) {
   // Start recording handler
   // -----------------------------------------------------------
   const handleStartRecording = useCallback(async () => {
-    // At-cap guard at the UI layer (per sketch Item 4); never
-    // dispatches TAP_RECORD if at cap.
     if (capReason !== null) return;
 
-    // Storage precondition (predictive disk-full check).
-    const precondition = await checkRecordingPrecondition();
-    if (precondition) {
-      dispatch({type: 'RECORDING_FAILED', error: precondition});
-      return;
-    }
-
     if (!cameraRef.current || !device) return;
-    // Reset the interrupted flag at the start of every recording —
-    // stale flag from a prior interruption shouldn't leak into the
-    // current recording's metadata.
     interruptedRef.current = false;
     dispatch({type: 'TAP_RECORD'});
     const startedAt = Date.now();
     recordingStartTimeRef.current = startedAt;
 
-    // vision-camera v4: startRecording is fire-and-forget; the
-    // result lands in onRecordingFinished. No promise to await.
     cameraRef.current.startRecording({
       fileType: 'mp4',
       videoCodec: 'h264',
-      onRecordingFinished: async video => {
-        // Side effect — saveRecording moves the temp file to the
-        // canonical session directory + writes the JSON sidecar.
-        // Per state machine sketch sign-off Item 6 (move-not-copy):
-        // vision-camera writes to a cache dir the OS can evict at
-        // any time; we move synchronously before the saved state
-        // lands.
-        //
-        // Phase 191 commit-3 fix: read `wasInterrupted` from
-        // interruptedRef.current rather than from `state` directly.
-        // This closure was registered ONCE at startRecording-time
-        // and captured `state` from the moment-of-tap-record render
-        // (state=idle), so the previous `state.kind === 'stopping'
-        // && state.reason === 'interrupted'` check always evaluated
-        // false regardless of what happened during recording. The
-        // ref is set TRUE by the AppState background handler before
-        // stopRecording() runs; FALSE in the user-initiated stop
-        // path. Architect-gate verification 5 caught the bug.
-        try {
-          const wasInterrupted = interruptedRef.current;
-          const sessionVideo = await saveRecording(
-            {
-              sessionId,
-              sourceUri: video.path,
-              startedAt: new Date(startedAt).toISOString(),
-              durationMs: Math.round(video.duration * 1000),
-              width: video.width ?? 1280,
-              height: video.height ?? 720,
-              format: 'mp4',
-              codec: 'h264',
-              interrupted: wasInterrupted,
-            },
-            generateShortId(),
-          );
-          dispatch({type: 'RECORDING_FINISHED', video: sessionVideo});
-          // Reset for the next recording.
-          interruptedRef.current = false;
-          await refreshUsage();
-        } catch (saveErr) {
-          dispatch({
-            type: 'RECORDING_FAILED',
-            error: {
-              kind: 'unknown',
-              message:
-                saveErr instanceof Error
-                  ? saveErr.message
-                  : 'File save failed',
-            },
-            partialPath: video.path,
-          });
-          interruptedRef.current = false;
-        }
+      onRecordingFinished: video => {
+        // Phase 191B refactor: build a synthetic preview SessionVideo
+        // from vision-camera's onRecordingFinished payload + the
+        // wasInterrupted ref. The actual upload + persisted backend
+        // SessionVideo lands when the user taps Keep — see
+        // handleKeep below. fileUri points at vision-camera's cache
+        // dir until videoStorageCache.adopt moves it post-upload.
+        const wasInterrupted = interruptedRef.current;
+        const sourceUri = video.path;
+        const newRecording: NewRecording = {
+          sessionId,
+          sourceUri,
+          startedAt: new Date(startedAt).toISOString(),
+          durationMs: Math.round(video.duration * 1000),
+          width: video.width ?? 1280,
+          height: video.height ?? 720,
+          format: 'mp4',
+          codec: 'h264',
+          interrupted: wasInterrupted,
+        };
+        // Cache for retry-upload path. Persists across saved →
+        // uploading → failed → uploading transitions.
+        pendingRecordingRef.current = newRecording;
+        const previewVideo: SessionVideo = {
+          id: `local-${startedAt}`,
+          sessionId,
+          fileUri: sourceUri.startsWith('file://') ? sourceUri : `file://${sourceUri}`,
+          remoteUrl: null,
+          startedAt: newRecording.startedAt,
+          durationMs: newRecording.durationMs,
+          width: newRecording.width,
+          height: newRecording.height,
+          fileSizeBytes: 0, // unknown until backend stat's it; UI hides 0
+          format: 'mp4',
+          codec: 'h264',
+          interrupted: wasInterrupted,
+          uploadState: null,
+          analysisState: null,
+          analysisFindings: null,
+        };
+        dispatch({type: 'RECORDING_FINISHED', video: previewVideo});
+        interruptedRef.current = false;
       },
       onRecordingError: err => {
         dispatch({
@@ -260,19 +219,13 @@ export function VideoCaptureScreen({navigation, route}: Props) {
     });
 
     dispatch({type: 'RECORDING_STARTED', startedAt});
-  }, [capReason, device, refreshUsage, sessionId, state]);
+  }, [capReason, device, sessionId]);
 
   // -----------------------------------------------------------
   // Stop recording handler
   // -----------------------------------------------------------
   const handleStopRecording = useCallback(async () => {
     if (state.kind !== 'recording') return;
-    // Explicitly mark this stop as user-initiated. AppState
-    // handler is the only path that sets interruptedRef=true; this
-    // path keeps it false. The redundant assignment is intentional:
-    // it documents that user-initiated stops produce
-    // interrupted=false on the saved video, even if a stale flag
-    // somehow survived a prior recording.
     interruptedRef.current = false;
     dispatch({type: 'TAP_STOP'});
     try {
@@ -286,54 +239,111 @@ export function VideoCaptureScreen({navigation, route}: Props) {
   }, [state]);
 
   // -----------------------------------------------------------
+  // Upload helper — called from handleKeep + handleRetryUpload.
+  // Wraps useSessionVideos.addRecording with progress + classified
+  // error dispatch. Real fetch-progress is non-trivial in RN; we
+  // dispatch UPLOAD_PROGRESS at start only (indeterminate UI).
+  // -----------------------------------------------------------
+  const performUpload = useCallback(
+    async (recording: NewRecording, videoForRetry: SessionVideo) => {
+      // Indeterminate-progress kick. bytesTotal=0 means "we don't
+      // know"; the UI renders an ActivityIndicator instead of a
+      // bar.
+      dispatch({type: 'UPLOAD_PROGRESS', bytesUploaded: 0, bytesTotal: 0});
+      try {
+        await addRecording(recording);
+        // Success — clear the pending-retry cache and transition.
+        pendingRecordingRef.current = null;
+        dispatch({type: 'UPLOAD_SUCCEEDED'});
+        navigation.goBack();
+      } catch (err) {
+        const error = classifyUploadError(err);
+        dispatch({
+          type: 'UPLOAD_FAILED',
+          error,
+          videoToRetry: videoForRetry,
+        });
+      }
+    },
+    [addRecording, navigation],
+  );
+
+  // -----------------------------------------------------------
   // Saved-state actions
   // -----------------------------------------------------------
-  const handleKeep = useCallback(() => {
-    // The video is already on disk + sidecar written by saveRecording.
-    // Just transition + pop back to caller (SessionDetail in Commit 5
-    // production; HomeScreen in Commit 3 smoke).
+  const handleKeep = useCallback(async () => {
+    if (state.kind !== 'saved') return;
+    const recording = pendingRecordingRef.current;
+    if (recording === null) {
+      // Defensive — shouldn't happen because onRecordingFinished
+      // always populates the ref before dispatching RECORDING_FINISHED.
+      dispatch({
+        type: 'RECORDING_FAILED',
+        error: {kind: 'unknown', message: 'No recording to upload.'},
+      });
+      return;
+    }
     dispatch({type: 'TAP_KEEP'});
-    navigation.goBack();
-  }, [navigation]);
+    void performUpload(recording, state.video);
+  }, [state, performUpload]);
 
   const handleDiscard = useCallback(async () => {
     if (state.kind !== 'saved') return;
-    const videoId = state.video.id;
+    pendingRecordingRef.current = null;
     dispatch({type: 'TAP_DISCARD'});
-    try {
-      await deleteVideo(sessionId, videoId);
-      await refreshUsage();
-    } catch {
-      // Best-effort cleanup; if it fails the orphan-cleanup path
-      // (Commit 5's SessionsListScreen useFocusEffect) catches it
-      // on the next session-list refresh.
-    }
-  }, [refreshUsage, sessionId, state]);
+    // The source file in vision-camera's cache will be evicted by
+    // the OS when cache pressure hits. We don't unlink explicitly
+    // here — addRecording's adopt() never runs in the discard path,
+    // so there's no canonical-cache file to remove either.
+  }, [state]);
 
   // -----------------------------------------------------------
   // Failed-state actions
   // -----------------------------------------------------------
-  const handleRetry = useCallback(async () => {
-    // Per reducer: failed + TAP_RETRY → idle. Caller cleans up
-    // partialPath if present.
-    if (state.kind === 'failed' && state.partialPath) {
-      try {
-        const path = state.partialPath;
-        // Minimal cleanup — RNFS direct unlink, but we don't import
-        // RNFS at this layer; the orphan-cleanup pass in Commit 5
-        // is the safety net. Call deleteVideo isn't right (no
-        // sessionVideo id). For now, leave the partial file; it'll
-        // be reaped at next session-list cleanup.
-        // (Documented limitation; F8 if it ever matters.)
-        void path;
-      } catch {
-        // ignore
-      }
-    }
+  const handleRetry = useCallback(() => {
+    // Non-upload failures (storage_full / codec_error /
+    // permission_lost / unknown): TAP_RETRY → idle, ready to record.
+    pendingRecordingRef.current = null;
     dispatch({type: 'TAP_RETRY'});
-  }, [state]);
+  }, []);
+
+  const handleRetryUpload = useCallback(() => {
+    if (state.kind !== 'failed') return;
+    const recording = pendingRecordingRef.current;
+    if (recording === null) {
+      // Lost the source — fall back to a generic retry that resets
+      // to idle so the user can re-record.
+      dispatch({type: 'TAP_RETRY'});
+      return;
+    }
+    // Build a synthetic SessionVideo for the reducer's
+    // videoToRetry payload requirement on UPLOAD_FAILED + the new
+    // uploading state's video field.
+    const retryVideo: SessionVideo = {
+      id: `local-retry-${Date.now()}`,
+      sessionId: recording.sessionId,
+      fileUri: recording.sourceUri.startsWith('file://')
+        ? recording.sourceUri
+        : `file://${recording.sourceUri}`,
+      remoteUrl: null,
+      startedAt: recording.startedAt,
+      durationMs: recording.durationMs,
+      width: recording.width,
+      height: recording.height,
+      fileSizeBytes: 0,
+      format: 'mp4',
+      codec: 'h264',
+      interrupted: recording.interrupted,
+      uploadState: null,
+      analysisState: null,
+      analysisFindings: null,
+    };
+    dispatch({type: 'RETRY_UPLOAD', video: retryVideo});
+    void performUpload(recording, retryVideo);
+  }, [state, performUpload]);
 
   const handleCancel = useCallback(() => {
+    pendingRecordingRef.current = null;
     dispatch({type: 'TAP_CANCEL'});
     navigation.goBack();
   }, [navigation]);
@@ -438,7 +448,8 @@ export function VideoCaptureScreen({navigation, route}: Props) {
     );
   }
 
-  // Failed state — kind-specific copy + actions per Kerwyn fold #2.
+  // Failed state — kind-specific copy + actions per Kerwyn fold #2 +
+  // Phase 191B Q3 (3 new upload kinds).
   if (state.kind === 'failed') {
     return (
       <SafeAreaView
@@ -447,6 +458,7 @@ export function VideoCaptureScreen({navigation, route}: Props) {
         <FailedPane
           error={state.error}
           onRetry={handleRetry}
+          onRetryUpload={handleRetryUpload}
           onCancel={handleCancel}
           onOpenSettings={handleOpenSettings}
         />
@@ -454,8 +466,21 @@ export function VideoCaptureScreen({navigation, route}: Props) {
     );
   }
 
-  // Saved state — preview + Use this / Discard buttons per
-  // state machine sketch Item 2 (preview-then-keep).
+  // Uploading state — progress UI per Phase 191B commit 6.
+  if (state.kind === 'uploading') {
+    return (
+      <SafeAreaView
+        style={styles.container}
+        edges={['top', 'bottom', 'left', 'right']}>
+        <UploadingPane
+          bytesUploaded={state.bytesUploaded}
+          bytesTotal={state.bytesTotal}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  // Saved state — preview + Use this / Discard buttons.
   if (state.kind === 'saved') {
     const v = state.video;
     return (
@@ -472,9 +497,11 @@ export function VideoCaptureScreen({navigation, route}: Props) {
             <Text style={styles.summaryRow}>
               Resolution: {v.width} × {v.height}
             </Text>
-            <Text style={styles.summaryRow}>
-              File size: {formatFileSize(v.fileSizeBytes)}
-            </Text>
+            {v.fileSizeBytes > 0 ? (
+              <Text style={styles.summaryRow}>
+                File size: {formatFileSize(v.fileSizeBytes)}
+              </Text>
+            ) : null}
             {v.interrupted ? (
               <Text style={styles.summaryRowPaused}>
                 Paused at {formatElapsed(v.durationMs)}
@@ -514,7 +541,6 @@ export function VideoCaptureScreen({navigation, route}: Props) {
           video
           audio
         />
-        {/* Top-right close button (disabled mid-record) */}
         <TouchableOpacity
           style={styles.closeButton}
           onPress={handleCancel}
@@ -531,7 +557,6 @@ export function VideoCaptureScreen({navigation, route}: Props) {
           </Text>
         </TouchableOpacity>
 
-        {/* Top-center: red dot + elapsed time when recording */}
         {state.kind === 'recording' ? (
           <View style={styles.recordingIndicator}>
             <View style={styles.recordingDot} />
@@ -541,7 +566,6 @@ export function VideoCaptureScreen({navigation, route}: Props) {
           </View>
         ) : null}
 
-        {/* Stopping: centered spinner */}
         {state.kind === 'stopping' ? (
           <View style={styles.stoppingOverlay}>
             <ActivityIndicator
@@ -553,14 +577,9 @@ export function VideoCaptureScreen({navigation, route}: Props) {
           </View>
         ) : null}
 
-        {/* Bottom: record/stop button OR cap-reached message */}
         <View style={styles.bottomControls}>
           {capReason !== null && state.kind === 'idle' ? (
-            <CapReachedHint
-              count={usage.count}
-              capReason={capReason}
-              bytes={usage.bytes}
-            />
+            <CapReachedHint count={videos.length} capReason={capReason} />
           ) : (
             <RecordButton
               state={state.kind}
@@ -616,16 +635,14 @@ function RecordButton({
 function CapReachedHint({
   count,
   capReason,
-  bytes,
 }: {
   count: number;
   capReason: 'count' | 'size';
-  bytes: number;
 }) {
   const reasonText =
     capReason === 'count'
       ? `${count}/${MAX_VIDEOS_PER_SESSION} videos`
-      : `${Math.round(bytes / 1024 / 1024)}/500 MB used`;
+      : '500 MB used';
   return (
     <View style={styles.capReachedPane} testID="video-capture-cap-reached">
       <Text style={styles.capReachedTitle}>At cap ({reasonText})</Text>
@@ -636,22 +653,63 @@ function CapReachedHint({
   );
 }
 
+/** Phase 191B commit 6 — uploading-state UI. Real byte-level
+ *  fetch-progress is non-trivial in React Native (deferred to
+ *  Phase 192+); this UI uses an ActivityIndicator + indeterminate
+ *  copy. If bytesTotal > 0 (future progress wiring) it'd render
+ *  bytesUploaded/bytesTotal as a percentage. */
+function UploadingPane({
+  bytesUploaded,
+  bytesTotal,
+}: {
+  bytesUploaded: number;
+  bytesTotal: number;
+}) {
+  const showProgress = bytesTotal > 0;
+  const pct = showProgress
+    ? Math.min(100, Math.round((bytesUploaded / bytesTotal) * 100))
+    : null;
+  return (
+    <View style={styles.uploadingPane} testID="video-capture-uploading">
+      <Text style={styles.uploadingTitle}>Uploading video…</Text>
+      <View style={styles.spacer} />
+      <ActivityIndicator
+        size="large"
+        color="#1b7c2f"
+        testID="video-capture-uploading-spinner"
+      />
+      <View style={styles.spacer} />
+      <Text style={styles.uploadingHint}>
+        {pct !== null
+          ? `${pct}% complete (${formatFileSize(bytesUploaded)} / ${formatFileSize(
+              bytesTotal,
+            )})`
+          : 'This may take a moment depending on your connection.'}
+      </Text>
+    </View>
+  );
+}
+
 function FailedPane({
   error,
   onRetry,
+  onRetryUpload,
   onCancel,
   onOpenSettings,
 }: {
   error: RecordingError;
+  /** Recording-side retry — resets to idle so the user can re-record. */
   onRetry: () => void;
+  /** Upload-side retry — re-POSTs the same local file. Used for
+   *  upload_failed / upload_interrupted error kinds. */
+  onRetryUpload: () => void;
   onCancel: () => void;
   onOpenSettings: () => void;
 }) {
-  // Per Kerwyn fold #2 sign-off: route distinct copy by error.kind.
   let title = 'Recording failed';
   let body = '';
-  let primaryLabel = 'Try again';
-  let primaryAction = onRetry;
+  let primaryLabel: string | null = 'Try again';
+  let primaryAction: (() => void) | null = onRetry;
   let primaryTestID = 'video-capture-retry-button';
 
   switch (error.kind) {
@@ -674,23 +732,53 @@ function FailedPane({
     case 'codec_error':
       body = error.message;
       break;
+    case 'upload_failed':
+      title = 'Upload failed';
+      body = `${error.message || 'Network or server error.'}`;
+      primaryLabel = 'Retry upload';
+      primaryAction = onRetryUpload;
+      primaryTestID = 'video-capture-retry-upload-button';
+      break;
+    case 'upload_interrupted':
+      title = 'Upload interrupted';
+      body =
+        'The app was backgrounded mid-upload. The video is saved locally — tap Retry to upload now.';
+      primaryLabel = 'Retry upload';
+      primaryAction = onRetryUpload;
+      primaryTestID = 'video-capture-retry-upload-button';
+      break;
+    case 'quota_exceeded':
+      title = 'Upload limit reached';
+      body = quotaExceededCopy(error.cap, error.message);
+      // No retry on quota_exceeded — the user must delete an
+      // existing video (count) / shorter clip (size) / upgrade
+      // their tier (monthly) before another upload will go through.
+      primaryLabel = null;
+      primaryAction = null;
+      break;
     case 'unknown':
       body = error.message;
       break;
   }
 
   return (
-    <View style={styles.failedPane} testID={`video-capture-failed-${error.kind}`}>
+    <View
+      style={styles.failedPane}
+      testID={`video-capture-failed-${error.kind}`}>
       <Text style={styles.failedTitle}>{title}</Text>
       <Text style={styles.failedBody}>{body}</Text>
       <View style={styles.spacer} />
-      <Button
-        title={primaryLabel}
-        variant="primary"
-        onPress={primaryAction}
-        testID={primaryTestID}
-      />
-      <View style={styles.buttonGap} />
+      {primaryLabel !== null && primaryAction !== null ? (
+        <>
+          <Button
+            title={primaryLabel}
+            variant="primary"
+            onPress={primaryAction}
+            testID={primaryTestID}
+          />
+          <View style={styles.buttonGap} />
+        </>
+      ) : null}
       <Button
         title="Cancel"
         variant="secondary"
@@ -699,6 +787,63 @@ function FailedPane({
       />
     </View>
   );
+}
+
+/** Render the cap-disambiguated copy for a quota_exceeded error.
+ *  Backend's ProblemDetail.detail string usually carries human-
+ *  readable context; we surface it after the cap-specific lead. */
+function quotaExceededCopy(
+  cap: 'count' | 'size' | 'monthly',
+  serverMessage: string,
+): string {
+  const lead =
+    cap === 'count'
+      ? `Session is at its ${MAX_VIDEOS_PER_SESSION}-video limit. Delete a video to record more.`
+      : cap === 'size'
+        ? 'Session is at its 500 MB limit. Delete a video to free space.'
+        : 'Monthly upload limit reached. Upgrade your plan or wait until next month.';
+  return serverMessage ? `${lead}\n\n${serverMessage}` : lead;
+}
+
+// ---------------------------------------------------------------
+// Upload-error classification helpers
+// ---------------------------------------------------------------
+
+/** Classify an addRecording rejection into the discriminated union
+ *  RecordingError kinds. The backend returns:
+ *
+ *    402 ProblemDetail with title "video-quota-exceeded" — count or
+ *        monthly cap (the detail string disambiguates).
+ *    413 ProblemDetail with title "video-too-large" — per-video size.
+ *    Other 4xx — generic upload_failed (treat as retryable).
+ *    Network / timeout / 5xx — generic upload_failed.
+ *
+ *  Per Q3 sign-off, the cap field on quota_exceeded is REQUIRED.
+ *  We extract it from the title (count/size/monthly) so the UI
+ *  copy doesn't have to parse the detail string. */
+function classifyUploadError(err: unknown): RecordingError {
+  if (isProblemDetail(err)) {
+    const title = err.title ?? '';
+    const detail = err.detail ?? '';
+    const message = detail || title;
+    if (err.status === 413 || title === 'video-too-large') {
+      return {kind: 'quota_exceeded', cap: 'size', message};
+    }
+    if (err.status === 402 || title === 'video-quota-exceeded') {
+      // Backend's title doesn't disambiguate count-vs-monthly directly;
+      // detail string conventionally includes "monthly" for the
+      // monthly-cap case. Default to count when ambiguous.
+      const cap: 'count' | 'monthly' = /monthly/i.test(detail)
+        ? 'monthly'
+        : 'count';
+      return {kind: 'quota_exceeded', cap, message};
+    }
+    return {kind: 'upload_failed', message: message || 'Upload failed.'};
+  }
+  if (err instanceof Error) {
+    return {kind: 'upload_failed', message: err.message};
+  }
+  return {kind: 'upload_failed', message: String(err)};
 }
 
 // ---------------------------------------------------------------
@@ -849,5 +994,20 @@ const styles = StyleSheet.create({
     color: '#a85e00',
     paddingVertical: 4,
     fontWeight: '600',
+  },
+  uploadingPane: {
+    flex: 1,
+    padding: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f7',
+  },
+  uploadingTitle: {fontSize: 22, fontWeight: '700', color: '#1b7c2f'},
+  uploadingHint: {
+    fontSize: 13,
+    color: '#555',
+    textAlign: 'center',
+    paddingHorizontal: 24,
+    lineHeight: 18,
   },
 });
