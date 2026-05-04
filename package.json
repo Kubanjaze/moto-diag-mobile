@@ -9,6 +9,7 @@
     "start": "react-native start",
     "test": "jest",
     "postinstall": "patch-package",
+    "prepare": "husky",
     "refresh-api-schema": "node scripts/refresh-api-schema.js",
     "generate-api-types": "openapi-typescript api-schema/openapi.json -o src/api-types.ts"
   },
@@ -45,7 +46,10 @@
     "@types/react": "^19.2.0",
     "@types/react-test-renderer": "^19.1.0",
     "eslint": "^8.19.0",
+    "eslint-plugin-motodiag": "file:./eslint-plugin-motodiag",
+    "husky": "^9.1.6",
     "jest": "^29.6.3",
+    "lint-staged": "^15.2.10",
     "openapi-typescript": "^7.6.1",
     "patch-package": "^8.0.1",
     "postinstall-postinstall": "^2.1.0",

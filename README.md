@@ -176,6 +176,32 @@ npx tsc --noEmit             # TypeScript typecheck
 
 Unit tests only for now — Jest covers API client header injection + Keychain round-trip + ProblemDetail / HTTPValidationError narrowing + hook state transitions (useApiKey / useVehicles / useVehicle / useSessions / useSession / useDTC / useDTCSearch including a deterministic race-cancellation test / useSessionVideos including the Phase 191B handoff regression guard) + pure helpers (Field validators, vehicleEnums + sessionEnums labelFor / round-trip helpers, NewSessionScreen pack helpers, SelectField buildSelectRows + getTriggerDisplay, videoCaptureMachine reducer with all transitions + auto-keep-on-background per Kerwyn fold, videoStorage path math + EXDEV cross-volume save fallback + cap evaluation + orphan cleanup, videoCaptureHelpers formatFileSize unit-switching + classifyVisionCameraError + dtcErrors narrowing). 301 tests as of Phase 191 commit 5. Two transport-regression guards pin Content-Type preservation on body-bearing POST/PATCH (Phase 188 commit-6 lesson) plus X-API-Key propagation on empty-body POST (Phase 189 commit-6 lifecycle path). useDTCSearch tests use jest.useFakeTimers() to control the 300ms debounce timer deterministically. No component-level render tests yet (Phase 187 Q3 decision — component tests on RN are brittle + expensive to maintain; revisit at a later phase if regression pressure justifies).
 
+## Lint hooks
+
+This repo uses [husky](https://typicode.github.io/husky) + [lint-staged](https://github.com/lint-staged/lint-staged) to run F9 mock-vs-runtime-drift ESLint checks on staged files before each commit. Custom rules live in `eslint-plugin-motodiag/`.
+
+Architect-side opt-in (one-time per machine):
+
+```bash
+npm install   # installs husky + lint-staged + eslint-plugin-motodiag
+              # (the "prepare" script wires husky's git hooks via npx husky)
+```
+
+After install, every `git commit` runs `npx lint-staged` on staged `.ts`/`.tsx` files. To run manually:
+
+```bash
+npm run lint
+```
+
+Custom rules:
+- `motodiag/no-closure-state-capture-in-native-callback` (subspecies i)
+- `motodiag/no-hardcoded-model-ids-in-tests` (subspecies ii)
+- `motodiag/no-loose-typed-async-mock-returns` (subspecies iii)
+
+See `docs/patterns/f9-mock-vs-runtime-drift.md` for the pattern catalog + per-subspecies mitigation strategy.
+
+Real CI integration is deferred to Phase 204 / Gate 10 per ADR-004.
+
 ## Patches
 
 Two `patch-package` patches applied on every `npm install` via the `postinstall` hook:

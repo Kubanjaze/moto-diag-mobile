@@ -1,0 +1,17 @@
+{
+  "name": "eslint-plugin-motodiag",
+  "version": "1.0.0",
+  "description": "Custom ESLint rules for motodiag F9 failure-family mitigation. See docs/patterns/f9-mock-vs-runtime-drift.md.",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "private": true,
+  "peerDependencies": {
+    "eslint": ">=8"
+  },
+  "devDependencies": {
+    "@typescript-eslint/parser": "^8.0.0",
+    "@typescript-eslint/utils": "^8.0.0"
+  }
+}
