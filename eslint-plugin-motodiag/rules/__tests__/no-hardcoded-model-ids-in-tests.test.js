@@ -1,5 +1,14 @@
 "use strict";
 
+// f9-allow-model-ids: meta-test — this file IS the RuleTester suite
+// for the no-hardcoded-model-ids-in-tests rule itself. The literal
+// model IDs inside RuleTester `code` fixtures + `data: { value: ... }`
+// expectations are intentional fixtures of the very pattern the rule
+// catches. Refactoring them through any source-of-truth would defeat
+// the test's purpose (the rule's regression coverage relies on
+// asserting on specific literal shapes). See docs/patterns/
+// f9-mock-vs-runtime-drift.md subspecies (ii).
+
 const { RuleTester } = require("eslint");
 const rule = require("../no-hardcoded-model-ids-in-tests");
 
