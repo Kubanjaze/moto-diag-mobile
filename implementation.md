@@ -1,7 +1,7 @@
 # MotoDiag Mobile — Project Implementation
 
-**Version:** 0.0.9 | **Date:** 2026-05-04
-**Package version:** 0.0.7 (see `package.json` — bumps on feature milestones, independent of doc version)
+**Version:** 0.0.10 | **Date:** 2026-05-04
+**Package version:** 0.0.8 (see `package.json` — bumps on feature milestones, independent of doc version)
 **Repo:** https://github.com/Kubanjaze/moto-diag-mobile
 **Backend:** https://github.com/Kubanjaze/moto-diag (moto-diag platform, Track H = v0.13.1+)
 **Local:** `C:\Users\Kerwyn\PycharmProjects\moto-diag-mobile\`
@@ -105,6 +105,7 @@ Phase-specific scripts (active as of Phase 187):
 | 190 | DTC code lookup screen + SessionDetail cross-link | ✅ | `190_*.md` |
 | 191 | Video diagnostic capture (mobile, capture-only substrate) | ✅ | `191_*.md` |
 | 191B | Video upload + Claude Vision AI analysis pipeline | ✅ | `191B_*.md` (architect-gate ROUND 5 PASS on 22/22 steps; full Vision pipeline ran end-to-end against live Anthropic API at $0.0354/video; load-bearing useSessionVideos.test.ts assertion held) |
+| 191C | F9 failure-family architectural intervention (pattern doc + 3 ESLint rules + 2 backend script modes + clean-baseline cleanup) | ✅ | `191C_*.md` (6 commits both repos; 5a clean-baseline scrubbed 50→0 backend findings + 2→0 mobile; 5b severity bump warn→error + un-xfailed clean-baseline gate tests; 5 of 7 F9 instances catchable by lint, 2 doc-only; F9 closed in this repo's FOLLOWUPS) |
 | 192-204 | (remaining Track I) | 🔲 | (will land in backend `completed/` as they ship) |
 
 Up-to-date status table in [`docs/ROADMAP.md`](./docs/ROADMAP.md). Cross-phase follow-ups in [`docs/FOLLOWUPS.md`](./docs/FOLLOWUPS.md).
