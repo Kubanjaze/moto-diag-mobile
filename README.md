@@ -96,6 +96,39 @@ The backend issues Stripe-style API keys. From the `moto-diag` repo:
 
 Paste into the mobile app's **Set API key** modal on the Home screen. Key persists in Android Keystore across app restarts.
 
+> ⚠ **`--tier` is NOT a flag on `apikey create`.** Tier is set separately via the `motodiag subscription set` CLI (see "Setting subscription tier" below). Older versions of this runbook included `--tier shop` on the `apikey create` command — that's wrong and the CLI will reject it.
+
+### Setting subscription tier (for Phase 191B+ video upload smoke)
+
+Phase 191B's POST `/v1/sessions/{id}/videos` endpoint enforces `require_tier('shop')`. To upgrade user 1 to shop tier without going through Stripe checkout (overkill for smoke), use the dev-only `motodiag subscription set` CLI added in Phase 191B fix-cycle-3:
+
+```bash
+.venv/Scripts/python.exe -m motodiag subscription set --user 1 --tier shop
+# Cancels any existing active subscription; inserts new active row;
+# stripe_subscription_id stays NULL so future cancel/sync commands skip Stripe.
+```
+
+This writes to the same SQLite file the running `motodiag serve` reads — no backend restart needed. The CLI prints a `DEV/TEST PATH — bypasses Stripe checkout` disclaimer; for production, use `motodiag subscription checkout-url` instead.
+
+### Anthropic API key for Phase 191B Vision analysis
+
+Phase 191B's BackgroundTask analysis pipeline calls Claude Vision via the Anthropic SDK. The backend reads `ANTHROPIC_API_KEY` from the environment at SDK-call time. Set it before launching `motodiag serve`:
+
+```powershell
+# PowerShell (Window A)
+$env:ANTHROPIC_API_KEY = "sk-ant-..."
+.\.venv\Scripts\python.exe -m motodiag serve --port 8000 --host 0.0.0.0
+```
+
+Or persist it via `.env`:
+
+```
+# moto-diag/.env (gitignored)
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+> ⚠ **API-key hygiene (F16):** Never paste `sk-ant-...` keys into chat, screenshots, or commit messages. When screenshotting backend logs, scroll past any line containing the env-var assignment so the key isn't in frame. If a key leaks, rotate immediately at https://console.anthropic.com/settings/keys.
+
 ## Project structure
 
 ```
