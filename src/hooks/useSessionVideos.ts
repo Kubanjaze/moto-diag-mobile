@@ -224,9 +224,24 @@ export function useSessionVideos(sessionId: number): UseSessionVideosResult {
         // from JSON-stringifying the FormData; the underlying
         // fetch impl serializes it as multipart/form-data
         // automatically when given a FormData body.
+        //
+        // Phase 191B fix-cycle (2026-05-03): vision-camera v4 returns
+        // VideoFile.path WITHOUT the file:// scheme on Android (raw
+        // /data/user/0/.../cache/... path). React Native's networking
+        // layer requires the file:// prefix to recognize a local file
+        // for FormData multipart uploads — without it the body
+        // construction silently fails before the request is dispatched
+        // (architect-gate symptom: "Network request failed" with no
+        // POST line in backend logs). Same prefix logic the screen
+        // layer applies for playback (VideoCaptureScreen line 196 +
+        // 325). iOS accepts both with-and-without prefix; with-prefix
+        // is portable.
+        const fileUri = recording.sourceUri.startsWith('file://')
+          ? recording.sourceUri
+          : `file://${recording.sourceUri}`;
         const formData = new FormData();
         formData.append('file', {
-          uri: recording.sourceUri,
+          uri: fileUri,
           name: `video.${recording.format}`,
           type: `video/${recording.format}`,
         } as unknown as Blob);
@@ -285,6 +300,27 @@ export function useSessionVideos(sessionId: number): UseSessionVideosResult {
         setError(null);
         return video;
       } catch (err) {
+        // F11 (Phase 191B fix-cycle 2026-05-03): log the raw error
+        // BEFORE describeError flattens it. Architect-gate gate-breaker
+        // surfaced as "Network request failed" with zero diagnostic
+        // signal — the catch block was swallowing the original Error
+        // (name + cause + stack), making root-cause attribution
+        // impossible without a debug build with breakpoints. Logging
+        // here costs nothing in production (logcat-only) and saves
+        // hours of guessing on the next mobile-only failure mode.
+        // Visible in `adb logcat *:S ReactNativeJS:V` during smoke runs.
+        // eslint-disable-next-line no-console
+        console.error(
+          '[useSessionVideos] addRecording failed',
+          {
+            errName: err instanceof Error ? err.name : typeof err,
+            errMessage: err instanceof Error ? err.message : String(err),
+            errCause:
+              err instanceof Error && 'cause' in err ? err.cause : undefined,
+            // Stack is RN-noisy but worth it for upload-path diagnosis.
+            errStack: err instanceof Error ? err.stack : undefined,
+          },
+        );
         const msg = describeError(err);
         setError(msg);
         throw err;
