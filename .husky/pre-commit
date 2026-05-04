@@ -1,0 +1,14 @@
+# Phase 191C Commit 4 — pre-commit hook runs lint-staged on staged
+# files. lint-staged config lives in package.json under "lint-staged"
+# and runs ESLint on staged .ts/.tsx/.js/.jsx files (catching the F9
+# motodiag/* rules at warn severity in Commits 3-4; bumped to error in
+# Commit 5).
+#
+# Architect-side opt-in: `npm install` runs the "prepare": "husky"
+# script which wires this file into .git/hooks/pre-commit. Re-running
+# `npm install` after a fresh clone is sufficient.
+#
+# Real CI integration deferred to Phase 204 / Gate 10 per ADR-004.
+# See docs/patterns/f9-mock-vs-runtime-drift.md.
+
+npx lint-staged
