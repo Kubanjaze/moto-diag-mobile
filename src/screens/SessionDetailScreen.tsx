@@ -308,6 +308,24 @@ export function SessionDetailScreen({navigation, route}: Props) {
             )}
           </View>
 
+          {/* Phase 192 commit 4 — "View report" cross-link. Placed
+              after Lifecycle so the close-session button stays the
+              first call-to-action; report-view is a tertiary action
+              that's most often used post-close (sharing the result
+              with the customer). Available on open + closed sessions
+              alike since the backend route doesn't gate on lifecycle
+              state. */}
+          <View style={styles.actions}>
+            <Button
+              title="View report"
+              variant="secondary"
+              onPress={() =>
+                navigation.navigate('ReportViewer', {sessionId: session.id})
+              }
+              testID="session-detail-view-report-button"
+            />
+          </View>
+
           <View style={styles.bottomSpacer} />
         </ScrollView>
       </KeyboardAvoidingView>
@@ -1466,6 +1484,7 @@ const styles = StyleSheet.create({
   spacer: {height: 12},
   bottomSpacer: {height: 24},
   buttonGap: {height: 10},
+  actions: {marginTop: 12, flexDirection: 'column', alignItems: 'stretch'},
   errorPane: {flex: 1, padding: 24, justifyContent: 'center'},
   errorTitle: {fontSize: 20, fontWeight: '700', color: '#b00020'},
   errorBody: {fontSize: 14, color: '#555', marginTop: 8, lineHeight: 20},

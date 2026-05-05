@@ -120,8 +120,8 @@ export function ReportViewerScreen({navigation, route}: Props) {
   // ReportSectionCard uses this to classify analyzing-state video
   // cards. Re-render on focus + on preset change naturally re-
   // evaluates without needing a tick interval — stuck rows surface
-  // on next focus / preset toggle. Live tick is a future refinement
-  // (F30 candidate) when SessionDetail's polling proves insufficient.
+  // on next focus / preset toggle. Live tick is filed as F29 for a
+  // future polish phase (likely 192B alongside PDF export).
   const now = Date.now();
 
   const visibleSections = report.sections.filter(
