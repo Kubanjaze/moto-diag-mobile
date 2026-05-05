@@ -18,6 +18,23 @@
 // recording time, before metadata-augmentation (uuid, derived file
 // path) lands.
 
+/**
+ * Per-session video count cap. Mobile-side mirror of backend
+ * `motodiag.api.routes.videos.PER_SESSION_COUNT_CAP`. Phase 191D
+ * Commit 3 consolidation: was previously duplicated as a local
+ * `const` declaration in `src/screens/SessionDetailScreen.tsx` and
+ * `src/screens/VideoCaptureScreen.tsx`; both screens now import from
+ * here so a backend bump only requires updating this single SSOT
+ * (and the `MAX_VIDEOS_PER_SESSION` entry in
+ * `eslint-plugin-motodiag/ssot-constants.json`).
+ *
+ * Backend remains authoritative — this constant is a fast UI hint
+ * used to suppress the Record button before the user taps and gets a
+ * 402 quota_exceeded response. Bumping requires coordinating with the
+ * backend `PER_SESSION_COUNT_CAP` symbol.
+ */
+export const MAX_VIDEOS_PER_SESSION = 5;
+
 /** Container format. Phase 191 always 'mp4' (locked per plan v1.0
  *  — H.265/MOV rejected for battery + iOS-Photo legacy reasons). */
 export type VideoFormat = 'mp4';

@@ -1,0 +1,69 @@
+{
+  "_meta": {
+    "schema_version": 1,
+    "role_field_semantics": {
+      "contract": "Lint applies. The literal value of this constant is canonical and tests must NOT pin a duplicate literal — they must import the constant from its source_module.",
+      "default": "Registered for documentation purposes only. The lint scanner skips entries with role: 'default' (no production-side literal-pin checking applied)."
+    },
+    "reconciliation_note": "Backend's TOML registry (f9_ssot_constants.toml) dropped DEFAULT_VISION_MODEL with an inline-comment rationale. Mobile encodes the contract-vs-default distinction explicitly at the schema level (the role field) so future entries inherit the classification vocabulary rather than relying on tribal knowledge or inline TOML comments. Phase 191D Commit 3 ships with all initial entries as role: 'contract' — no role: 'default' entries identified yet on the mobile surface; the field exists in the schema for future use.",
+    "see_also": "docs/patterns/f9-mock-vs-runtime-drift.md subspecies (ii) generalized"
+  },
+  "constants": [
+    {
+      "name": "DEFAULT_BASE_URL",
+      "source_module": "src/api/client",
+      "role": "contract",
+      "value_type": "string",
+      "live_value": "http://10.0.2.2:8000",
+      "description": "Dev backend URL the API client falls back to when neither options.baseUrl nor Config.API_BASE_URL is set. The 10.0.2.2:8000 value is the Android emulator host loopback; pinned by emulator regression coverage. Tests must import and contract-pin if literal-checked."
+    },
+    {
+      "name": "DTC_SEARCH_DEBOUNCE_MS",
+      "source_module": "src/hooks/useDTCSearch",
+      "role": "contract",
+      "value_type": "number",
+      "live_value": 300,
+      "description": "Debounce delay (ms) for the DTC search hook. UX guarantee: 300ms is the snappy-but-not-API-pounding threshold. Tests pin via fake-timers; bumping requires UX sign-off."
+    },
+    {
+      "name": "DTC_SEARCH_LIMIT",
+      "source_module": "src/hooks/useDTCSearch",
+      "role": "contract",
+      "value_type": "number",
+      "live_value": 50,
+      "description": "Page-size cap on DTC search results. 50 is the backend's preferred page size; deeper paging requires query refinement."
+    },
+    {
+      "name": "PER_SESSION_COUNT_CAP",
+      "source_module": "src/hooks/useSessionVideos",
+      "role": "contract",
+      "value_type": "number",
+      "live_value": 5,
+      "description": "Mobile-side mirror of backend per-session video count cap. Used as a fast UI hint to hide the Record button before the user taps and gets a 402. Backend is authoritative."
+    },
+    {
+      "name": "PER_SESSION_BYTES_CAP",
+      "source_module": "src/hooks/useSessionVideos",
+      "role": "contract",
+      "value_type": "number",
+      "live_value": 524288000,
+      "description": "Mobile-side mirror of backend per-session size cap (500 MB = 500 * 1024 * 1024 bytes). Pre-empts the Record button before a 402 round-trip. Backend is authoritative."
+    },
+    {
+      "name": "POLL_INTERVAL_MS",
+      "source_module": "src/hooks/useSessionVideos",
+      "role": "contract",
+      "value_type": "number",
+      "live_value": 5000,
+      "description": "Polling interval while video analysis is in flight. 5s balances snappy badge updates against backend pressure. Tests pin via fake-timers."
+    },
+    {
+      "name": "MAX_VIDEOS_PER_SESSION",
+      "source_module": "src/types/video",
+      "role": "contract",
+      "value_type": "number",
+      "live_value": 5,
+      "description": "Per-session video count cap, surfaced in screen UI copy (at-cap badges, count tickers). Mobile-side mirror of backend motodiag.api.routes.videos.PER_SESSION_COUNT_CAP. Phase 191D Commit 3 consolidated this from duplicated declarations in SessionDetailScreen.tsx + VideoCaptureScreen.tsx into src/types/video.ts as the canonical SSOT."
+    }
+  ]
+}

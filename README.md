@@ -195,10 +195,11 @@ npm run lint
 
 Custom rules:
 - `motodiag/no-closure-state-capture-in-native-callback` (subspecies i)
-- `motodiag/no-hardcoded-model-ids-in-tests` (subspecies ii)
+- `motodiag/no-hardcoded-model-ids-in-tests` (subspecies ii — DEPRECATED stub-redirect, Phase 191D; will be removed in Phase 200+)
+- `motodiag/no-hardcoded-ssot-constants-in-tests` (subspecies ii generalized — Phase 191D; registry-driven, scans `eslint-plugin-motodiag/ssot-constants.json` for canonical constant values; entries carry an explicit `role` field — `"contract"` entries are lint-enforced, `"default"` entries are documented but skipped at scan-time)
 - `motodiag/no-loose-typed-async-mock-returns` (subspecies iii)
 
-See `docs/patterns/f9-mock-vs-runtime-drift.md` for the pattern catalog + per-subspecies mitigation strategy.
+See `docs/patterns/f9-mock-vs-runtime-drift.md` (subsection "Subspecies (ii) generalized") for the pattern catalog + per-subspecies mitigation strategy + the `contract` vs `default` role-field semantics.
 
 Real CI integration is deferred to Phase 204 / Gate 10 per ADR-004.
 

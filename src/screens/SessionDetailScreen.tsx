@@ -40,14 +40,11 @@ import {
   formatElapsed,
   formatFileSize,
 } from './videoCaptureHelpers';
-import type {SessionVideo} from '../types/video';
-
-// Phase 191B commit 6 — backend per-session count cap, mirrored on
-// the mobile side for the at-cap copy in VideosCard. Was imported
-// from videoStorage in Phase 191; videoStorage was deleted with the
-// hook swap so the constant lives inline here next to its sole
-// consumer.
-const MAX_VIDEOS_PER_SESSION = 5;
+// Phase 191D Commit 3 — MAX_VIDEOS_PER_SESSION moved to src/types/
+// video.ts as the canonical SSOT (was duplicated here + in
+// VideoCaptureScreen.tsx through Phase 191B). SessionVideo type stays
+// in the same import line.
+import {MAX_VIDEOS_PER_SESSION, type SessionVideo} from '../types/video';
 import type {SessionsStackParamList} from '../navigation/types';
 import type {SessionResponse, SessionUpdateRequest} from '../types/api';
 import {

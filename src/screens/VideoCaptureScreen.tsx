@@ -56,7 +56,16 @@ import {isProblemDetail} from '../api';
 import {useCameraPermissions} from '../hooks/useCameraPermissions';
 import {useSessionVideos} from '../hooks/useSessionVideos';
 import type {SessionsStackParamList} from '../navigation/types';
-import type {NewRecording, RecordingError, SessionVideo} from '../types/video';
+// Phase 191D Commit 3 — MAX_VIDEOS_PER_SESSION moved to src/types/
+// video.ts as the canonical SSOT (was duplicated here + in
+// SessionDetailScreen.tsx through Phase 191B). The value remains
+// 5/500 MB matching the backend; backend is still authoritative.
+import {
+  MAX_VIDEOS_PER_SESSION,
+  type NewRecording,
+  type RecordingError,
+  type SessionVideo,
+} from '../types/video';
 import {
   classifyVisionCameraError,
   formatElapsed,
@@ -68,11 +77,6 @@ import {
 } from './videoCaptureMachine';
 
 type Props = NativeStackScreenProps<SessionsStackParamList, 'VideoCapture'>;
-
-// Backend per-session count cap, mirrored on the mobile side for the
-// at-cap copy. Same 5/500 MB numbers Phase 191 used; backend is
-// authoritative.
-const MAX_VIDEOS_PER_SESSION = 5;
 
 // ---------------------------------------------------------------
 // Screen
@@ -106,7 +110,7 @@ export function VideoCaptureScreen({navigation, route}: Props) {
   // hook hits the backend; the same shape as Phase 191 means this
   // screen's wiring stays minimal.
   // -----------------------------------------------------------
-  const {videos, addRecording, atCap, capReason} = useSessionVideos(sessionId);
+  const {videos, addRecording, capReason} = useSessionVideos(sessionId);
 
   // -----------------------------------------------------------
   // Source-URI / NewRecording cache for retries. When the upload
