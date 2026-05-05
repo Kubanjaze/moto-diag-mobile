@@ -44,6 +44,15 @@ import {
 
 const getMock = api.GET as jest.Mock;
 
+// Phase 191D Commit 4: simulated keystroke interval for the rapid-typing
+// debounce-collapse tests below. 50ms = ~20wpm typing speed for
+// motorcycle DTC codes (short, all-caps, mostly digits — closer to
+// keypad punching than natural typing). Extracted as a named constant
+// to (a) make the rapid-typing tests' intent self-documenting and
+// (b) eliminate 5 literal `50` occurrences that coincidentally matched
+// DTC_SEARCH_LIMIT in the F9 SSOT-constants lint scan.
+const KEYSTROKE_INTERVAL_MS = 50;  // f9-noqa: ssot-pin fixture-data: this local constant's value coincidentally matches DTC_SEARCH_LIMIT; the constant exists specifically to ELIMINATE 5 ambiguous literal-`50` timing fixtures below (the cleanup the rule encouraged). Self-referential opt-out — the rule fired on the cleanup that resolves the rule's other findings.
+
 function renderHook<Result>(callback: () => Result) {
   const ref: {current: Result | null} = {current: null};
   function HookRunner() {
@@ -116,8 +125,8 @@ describe('useDTCSearch — basics', () => {
   });
 
   it('exposes the constants used by the screen', () => {
-    expect(DTC_SEARCH_DEBOUNCE_MS).toBe(300);
-    expect(DTC_SEARCH_LIMIT).toBe(50);
+    expect(DTC_SEARCH_DEBOUNCE_MS).toBe(300);  // f9-noqa: ssot-pin contract-pin: search debounce window — 300ms is the conventional UX threshold for "type-ahead feels live without firing per-keystroke" (faster feels twitchy on slow keyboards; slower feels laggy). Bumping requires re-validation against the search-as-you-type smoke flow + reconciling with any UX-tone documentation; the rapid-typing test cases below depend on this exact window for collapse-to-one-call behavior.
+    expect(DTC_SEARCH_LIMIT).toBe(50);  // f9-noqa: ssot-pin contract-pin: results-page cap — 50 matches the DTCDetail screen render budget (50 rows = ~3 phone screens of scroll, conventional infinite-scroll pagination size). Bumping changes the API call's limit param + risks render performance on low-end Android devices; the boundary tests below (lines 366/378) verify the cap is honored end-to-end.
   });
 });
 
@@ -132,7 +141,7 @@ describe('useDTCSearch — debounce', () => {
       expect(getMock).not.toHaveBeenCalled();
       // Advance just under the debounce window — still no call.
       ReactTestRenderer.act(() => {
-        jest.advanceTimersByTime(DTC_SEARCH_DEBOUNCE_MS - 50);
+        jest.advanceTimersByTime(DTC_SEARCH_DEBOUNCE_MS - KEYSTROKE_INTERVAL_MS);
       });
       expect(getMock).not.toHaveBeenCalled();
     } finally {
@@ -150,13 +159,13 @@ describe('useDTCSearch — debounce', () => {
       // Rapid typing — five setQuery calls, each well within 300ms.
       ReactTestRenderer.act(() => {
         result.current.setQuery('P');
-        jest.advanceTimersByTime(50);
+        jest.advanceTimersByTime(KEYSTROKE_INTERVAL_MS);
         result.current.setQuery('P0');
-        jest.advanceTimersByTime(50);
+        jest.advanceTimersByTime(KEYSTROKE_INTERVAL_MS);
         result.current.setQuery('P01');
-        jest.advanceTimersByTime(50);
+        jest.advanceTimersByTime(KEYSTROKE_INTERVAL_MS);
         result.current.setQuery('P017');
-        jest.advanceTimersByTime(50);
+        jest.advanceTimersByTime(KEYSTROKE_INTERVAL_MS);
         result.current.setQuery('P0171');
       });
       // Still inside the debounce window — no call yet.
@@ -361,9 +370,12 @@ describe('useDTCSearch — error path', () => {
   it('exposes total alongside results when backend caps the page', async () => {
     jest.useFakeTimers();
     try {
-      // Backend returns 50 items (the cap) but reports 127 total
-      // matches — UI uses this for the "showing 50 of 127" footer.
-      const items = Array.from({length: 50}, (_, i) =>
+      // Backend returns DTC_SEARCH_LIMIT items (the cap) but reports 127
+      // total matches — UI uses this for the "showing N of 127" footer.
+      // Phase 191D Commit 4: refactored from literal 50 to import-from-
+      // SSOT so the boundary test math becomes self-documenting AND
+      // tracks any future cap bump automatically.
+      const items = Array.from({length: DTC_SEARCH_LIMIT}, (_, i) =>
         dtcRow({code: `P${String(i).padStart(4, '0')}`}),
       );
       getMock.mockImplementation(() => okResponse(listResponse(items, 127)));
@@ -375,7 +387,7 @@ describe('useDTCSearch — error path', () => {
         jest.advanceTimersByTime(DTC_SEARCH_DEBOUNCE_MS);
         await Promise.resolve();
       });
-      expect(result.current.results).toHaveLength(50);
+      expect(result.current.results).toHaveLength(DTC_SEARCH_LIMIT);
       expect(result.current.total).toBe(127);
     } finally {
       jest.useRealTimers();

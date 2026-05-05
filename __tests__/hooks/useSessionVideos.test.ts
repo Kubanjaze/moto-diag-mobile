@@ -57,7 +57,7 @@ jest.mock('../../src/services/videoStorageCache', () => {
   return {
     videoStorageCache: {
       lookup: jest.fn((id: string) => map.get(id) ?? null),
-      adopt: jest.fn(async (id: string, sourceUri: string) => {
+      adopt: jest.fn(async (id: string, _sourceUri: string) => {
         const dest = `file:///doc/videos/v-${id}.mp4`;
         map.set(id, dest);
         return dest;
@@ -79,6 +79,7 @@ import ReactTestRenderer from 'react-test-renderer';
 import {api} from '../../src/api';
 import {videoStorageCache} from '../../src/services/videoStorageCache';
 import {
+  PER_SESSION_COUNT_CAP,
   useSessionVideos,
   type UseSessionVideosResult,
 } from '../../src/hooks/useSessionVideos';
@@ -417,9 +418,12 @@ describe('useSessionVideos — atCap / capReason', () => {
     expect(result.current.capReason).toBeNull();
   });
 
-  it('atCap=true / capReason="count" with 5 videos', async () => {
+  it('atCap=true / capReason="count" at the count-cap boundary', async () => {
+    // Phase 191D Commit 4: refactored from literal 5 to import-from-SSOT
+    // (PER_SESSION_COUNT_CAP) so the boundary-test math becomes self-
+    // documenting AND tracks any future cap bump automatically.
     stubListResponse(
-      Array.from({length: 5}, (_, i) =>
+      Array.from({length: PER_SESSION_COUNT_CAP}, (_, i) =>
         backendVideo(i + 1, 1, `2026-04-29T1${i}:00:00.000Z`, 1_000_000),
       ),
     );
@@ -429,7 +433,7 @@ describe('useSessionVideos — atCap / capReason', () => {
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
-    expect(result.current.videos).toHaveLength(5);
+    expect(result.current.videos).toHaveLength(PER_SESSION_COUNT_CAP);
     expect(result.current.atCap).toBe(true);
     expect(result.current.capReason).toBe('count');
   });

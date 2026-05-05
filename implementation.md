@@ -1,7 +1,7 @@
 # MotoDiag Mobile — Project Implementation
 
-**Version:** 0.0.10 | **Date:** 2026-05-04
-**Package version:** 0.0.8 (see `package.json` — bumps on feature milestones, independent of doc version)
+**Version:** 0.0.11 | **Date:** 2026-05-05
+**Package version:** 0.0.9 (see `package.json` — bumps on feature milestones, independent of doc version)
 **Repo:** https://github.com/Kubanjaze/moto-diag-mobile
 **Backend:** https://github.com/Kubanjaze/moto-diag (moto-diag platform, Track H = v0.13.1+)
 **Local:** `C:\Users\Kerwyn\PycharmProjects\moto-diag-mobile\`
@@ -106,6 +106,7 @@ Phase-specific scripts (active as of Phase 187):
 | 191 | Video diagnostic capture (mobile, capture-only substrate) | ✅ | `191_*.md` |
 | 191B | Video upload + Claude Vision AI analysis pipeline | ✅ | `191B_*.md` (architect-gate ROUND 5 PASS on 22/22 steps; full Vision pipeline ran end-to-end against live Anthropic API at $0.0354/video; load-bearing useSessionVideos.test.ts assertion held) |
 | 191C | F9 failure-family architectural intervention (pattern doc + 3 ESLint rules + 2 backend script modes + clean-baseline cleanup) | ✅ | `191C_*.md` (6 commits both repos; 5a clean-baseline scrubbed 50→0 backend findings + 2→0 mobile; 5b severity bump warn→error + un-xfailed clean-baseline gate tests; 5 of 7 F9 instances catchable by lint, 2 doc-only; F9 closed in this repo's FOLLOWUPS) |
+| 191D | F9 SSOT-constants lint generalization (extends 191C narrow rule + TAG_CATALOG coverage check) | ✅ | `191D_*.md` (4 commits both repos; backend `--check-ssot-constants` + `--check-tag-catalog-coverage` modes added, `--check-model-ids` deprecated as stub-redirect; mobile `motodiag/no-hardcoded-ssot-constants-in-tests` rule added at error-from-day-one with JSON registry + explicit `role: contract` field; pattern doc Instances #8/#9/#10 + layered-history note; 311 backend findings narrowed via heuristic refinement to 17 legitimate Bucket-1 hits → opt-out'd to 0; 13 mobile findings → 0; auth tag orphan removed (Phase 183 placeholder, 378 days latent); F20 + F21 closed in this repo's FOLLOWUPS; F22/F23/F24/F26 filed; F25 explicitly NOT filed; mobile package 0.0.8→0.0.9; mobile impl.md 0.0.10→0.0.11) |
 | 192-204 | (remaining Track I) | 🔲 | (will land in backend `completed/` as they ship) |
 
 Up-to-date status table in [`docs/ROADMAP.md`](./docs/ROADMAP.md). Cross-phase follow-ups in [`docs/FOLLOWUPS.md`](./docs/FOLLOWUPS.md).

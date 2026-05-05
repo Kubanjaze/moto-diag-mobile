@@ -64,7 +64,7 @@ describe('makeClient — base URL resolution', () => {
     await client.GET('/v1/version');
     const callUrl = extractUrl(fetchMock.mock.calls[0][0]);
     expect(callUrl).toMatch(/^http:\/\/10\.0\.2\.2:8000/);
-    expect(DEFAULT_BASE_URL).toBe('http://10.0.2.2:8000');
+    expect(DEFAULT_BASE_URL).toBe('http://10.0.2.2:8000');  // f9-noqa: ssot-pin contract-pin: dev-loop fallback URL — Phase 187 runbook fixes Android emulator → host backend at this exact URL (10.0.2.2 is the AVD-routed host loopback; port 8000 is the FastAPI dev server in scripts/run-backend-dev.sh). Bumping requires updating the runbook + Android emulator config used in the smoke gate; the regex match on line 66 catches any prefix change automatically, this assertion catches the exact-shape contract.
   });
 });
 

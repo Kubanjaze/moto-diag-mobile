@@ -67,14 +67,19 @@ export interface UseSessionVideosResult {
 // ---------------------------------------------------------------
 
 /** Backend per-session count cap. Mirrored here so the hook can
- *  pre-empt the Record button before the user taps and gets a 402. */
-const PER_SESSION_COUNT_CAP = 5;
-/** Backend per-session bytes cap (500 MB). Same rationale. */
-const PER_SESSION_BYTES_CAP = 500 * 1024 * 1024;
+ *  pre-empt the Record button before the user taps and gets a 402.
+ *  Phase 191D: exported (was const-local) so test files can import the
+ *  SSOT instead of literal-pinning the cap value. Registered in
+ *  eslint-plugin-motodiag/ssot-constants.json with role: contract. */
+export const PER_SESSION_COUNT_CAP = 5;
+/** Backend per-session bytes cap (500 MB). Same rationale + export
+ *  posture as PER_SESSION_COUNT_CAP. */
+export const PER_SESSION_BYTES_CAP = 500 * 1024 * 1024;
 
 /** Polling interval while analysis is in flight. 5s is a balance
- *  between snappy badge updates + not pounding the backend. */
-const POLL_INTERVAL_MS = 5000;
+ *  between snappy badge updates + not pounding the backend. Phase
+ *  191D: exported for SSOT-import discipline. */
+export const POLL_INTERVAL_MS = 5000;
 
 // ---------------------------------------------------------------
 // Wire-format → client-type mapping
