@@ -560,9 +560,212 @@ describe('resolveModel', () => {
 
 ---
 
+## Subspecies (ii) generalized: when the test pins a literal that production code derives from an SSOT
+
+Phase 191C's narrow rule (`motodiag/no-hardcoded-model-ids-in-tests` on mobile; `scripts/check_f9_patterns.py --check-model-ids` on backend) shipped against Instance #7's exact shape: a regex match on `claude-(haiku|sonnet|opus)-\d` literals inside test files. That scope was deliberate — Instance #7 was the only data point at the time, so the rule's heuristic was tightly fit to model-ID strings and the matching SSOT module (`MODEL_ALIASES`). One day after the Phase 191C closure commit landed, the post-191C full backend regression sweep (4338 PASS / 5 SKIP / 2 FAIL, ~94 minutes) surfaced two new failures (Instances #8 and #9 below) that share the same essence as Instance #7 but live on entirely different SSOT modules — a schema-version integer constant and a tag-catalog dict-of-dicts. Two new data points proves the generalization is needed: the F9 subspecies-(ii) shape isn't about model IDs specifically, it's about ANY constant that lives canonically in a single source-of-truth module and gets pinned-by-literal in a test that should be importing the constant instead. Phase 191D ships the generalized engine: the rule reads a JSON registry on mobile (`eslint-plugin-motodiag/ssot-constants.json`) / a TOML registry on backend (`f9_ssot_constants.toml`) of `{constant_name: source_module}` pairs, and AST-walks for any literal value matching a registry entry's known production value. The narrow `motodiag/no-hardcoded-model-ids-in-tests` rule becomes a stub-redirect for back-compat (filtered to the `MODEL_ALIASES` registry entry); see the reconciliation note at the end of this section.
+
+### Instance #8 — Phase 191B fix-cycle-5 [2026-05-04]
+
+**Subspecies**: (ii) hardcoded source-of-truth values in tests — SSOT-drift generalization (SCHEMA_VERSION pin)
+
+**The bug**: `tests/test_phase184_gate9.py:584` (sibling backend repo) asserted `assert SCHEMA_VERSION == 38` — a literal integer pinned at the value SCHEMA_VERSION held when the test was originally written. Phase 191B added migration 039 (the `videos` table for video diagnostic capture) and bumped `motodiag.core.database.SCHEMA_VERSION` to 39. Production code + the migration runner both moved to 39; the test stayed pinned at 38. Pytest passed locally during Phase 191B finalize because the test file wasn't part of the Phase 191B targeted regression sample. The drift surfaced ~94 minutes into the post-Phase-191C full regression sweep, one calendar day after the Phase 191B finalize commit landed.
+
+**The mock-vs-runtime gap**: production code bumped the constant via the canonical mechanism (a new migration + a `SCHEMA_VERSION` constant edit); test code pinned a literal that no longer matched. The test's *intent* (anti-regression on schema bumps — fail loud if SCHEMA_VERSION drifts unexpectedly) was correct and load-bearing; the test's *mechanism* (literal pin instead of an import-and-compare against a known-good set) was the bug. The mock-vs-runtime gap is the test asserting a value that production has moved past, with no path for the test to learn about the production move because the literal `38` was hand-typed.
+
+**Anti-example code (backend Python — where the bug originally surfaced)**:
+
+```py
+# tests/test_phase184_gate9.py:584
+from motodiag.core.database import SCHEMA_VERSION
+
+def test_schema_version_unchanged(self):
+    # Anti-regression on accidental schema bumps. Bump this pin alongside
+    # any deliberate SCHEMA_VERSION change AND its corresponding migration.
+    assert SCHEMA_VERSION == 38  # bug: literal pinned to 38; production bumped to 39 in Phase 191B migration 039
+```
+
+**Anti-example code (mobile TypeScript — same shape)**: the equivalent on the mobile side would manifest if a jest test pinned the schema-version contract that mobile reads from `/v1/version` against a hand-typed literal instead of importing the expected version from a shared constants module:
+
+```ts
+// __tests__/api/version.test.ts (hypothetical equivalent)
+import {EXPECTED_SCHEMA_VERSION} from '../../src/api/versionContract';
+
+describe('/v1/version', () => {
+  it('returns the expected schema version', async () => {
+    const {data} = await api.GET('/v1/version');
+    // Anti-regression on accidental schema bumps from the backend side.
+    // Bump alongside any deliberate backend SCHEMA_VERSION change.
+    expect(data?.schema_version).toBe(38);  // bug: literal pinned; backend bumped to 39 in Phase 191B
+  });
+});
+```
+
+The mobile-side bug shape would be the same family — pinning a literal in a test that should reference the SSOT module that ships the contract value. The fix is identical in shape: bump the pin AND the SSOT-module entry in lockstep, AND opt-out with `contract-pin` to document why the literal lives at the test site.
+
+**Fix pattern (backend Python)** (commit `7d4c2f6`):
+
+```py
+# tests/test_phase184_gate9.py:584
+from motodiag.core.database import SCHEMA_VERSION
+
+def test_schema_version_unchanged(self):
+    # Bump this pin alongside any deliberate SCHEMA_VERSION change AND
+    # the corresponding migration; an unintended bump must fail loud.
+    # Phase 191B migration 039 (videos table) bumped 38 -> 39.
+    assert SCHEMA_VERSION == 39  # f9-noqa: ssot-pin contract-pin: schema bump anti-regression; bumping requires concurrent migration + cross-phase grep
+```
+
+**Recognition heuristic**: any test that imports a constant from a production module AND asserts a literal value of that constant. Two ways to read the test: (a) the literal is a *contract pin* — intentional anti-regression scaffolding that should fail loud whenever the constant drifts (legitimate; opt-out with the new `contract-pin` reason category), OR (b) the literal is a *drift bug* — unintentional pin that the author meant to be "whatever production's value is" but wrote down as a literal (refactor to assert against the import directly, or against a frozen-reference set defined separately). Distinguish by intent: does the test's purpose require the literal to be exactly THIS value (contract-pin: yes — bump deliberately, with cross-phase grep), OR does it only require the import + the production constant to agree (drift-bug: refactor)?
+
+**Lint coverage**: caught by `motodiag/no-hardcoded-ssot-constants-in-tests` on mobile (Phase 191D, generalized from Phase 191C's narrow `motodiag/no-hardcoded-model-ids-in-tests`); caught by `scripts/check_f9_patterns.py --check-ssot-constants` on backend (sibling repo). Both rules read a registry of `{constant_name: source_module}` pairs (JSON on mobile, TOML on backend) and AST-walk test files for literal values matching a registry entry's current production value. Findings are flagged unless an explicit opt-out comment is present with a reason ≥ 20 chars (mirrors Phase 191C 5a's `MIN_OPTOUT_REASON_CHARS = 20`).
+
+**Fix commit**: `7d4c2f6` (Phase 191B fix-cycle-5, backend repo)
+
+---
+
+### Instance #9 — Phase 191B fix-cycle-5 [2026-05-04]
+
+**Subspecies**: (ii) hardcoded source-of-truth values in tests — SSOT-drift generalization (TAG_CATALOG drift)
+
+**The bug**: Phase 191B added `src/motodiag/api/routes/videos.py:91` (sibling backend repo) declaring `APIRouter(prefix="/sessions", tags=["videos"])` — introducing a new tag string literal at the route-declaration site. `src/motodiag/api/openapi.py:131`'s `TAG_CATALOG` (a list-of-dict that ships per-tag descriptions to the OpenAPI spec) was never updated to include a `"videos"` entry. `tests/test_phase183_openapi.py::TestTags::test_tag_catalog_covers_used_tags` is a coverage assertion that walks every `APIRouter` in `src/motodiag/api/routes/**/*.py`, collects the `tags=[...]` set, and asserts each tag appears as an entry in `TAG_CATALOG`. The drift caught the missing `"videos"` entry on the post-Phase-191C regression sweep, one day after the Phase 191B finalize.
+
+**The mock-vs-runtime gap**: route declarations carry tags (one source of truth — owned by the route module itself); `TAG_CATALOG` carries tag *descriptions* (a parallel source of truth — owned by `openapi.py` for documentation-generation reasons). They drifted because they're maintained separately, with no compile-time link between adding a new `tags=["videos"]` to a router and adding a corresponding `{"name": "videos", "description": ...}` entry to `TAG_CATALOG`. The Phase 183 coverage test was the only enforcement; it ran on the 191B finalize sample but happened to be in a test file that wasn't selected for the Phase 191B targeted regression. Same family as Instance #8 — production state + parallel-state-store drift — different shape (dict-vs-route-decl rather than int-vs-literal-pin).
+
+**Anti-example code (backend Python — this is a backend-only surface; the case study is included for cross-stack literacy)**:
+
+```py
+# src/motodiag/api/routes/videos.py:91
+router = APIRouter(prefix="/sessions", tags=["videos"])  # NEW tag introduced in Phase 191B
+
+# src/motodiag/api/openapi.py:131
+TAG_CATALOG = [
+    {"name": "auth",       "description": "..."},
+    {"name": "users",      "description": "..."},
+    {"name": "vehicles",   "description": "..."},
+    {"name": "sessions",   "description": "..."},
+    {"name": "kb",         "description": "..."},
+    {"name": "shop",       "description": "..."},
+    {"name": "media",      "description": "..."},
+    {"name": "live",       "description": "..."},
+    {"name": "telemetry",  "description": "..."},
+    # ↑ 9 entries, "videos" not among them — drift surfaced 1 day later
+]
+```
+
+**Fix pattern (backend Python)** (commit `7d4c2f6`):
+
+```py
+# src/motodiag/api/openapi.py:131
+TAG_CATALOG = [
+    # ... 9 prior entries ...
+    {
+        "name": "videos",
+        "description": (
+            "Video diagnostic uploads + Claude Vision AI analysis. POST"
+            " upload, GET list/single, DELETE, GET file-stream. Per-session"
+            " caps (count + bytes) enforced at the upload boundary; per-tier"
+            " monthly caps enforced at the session-create boundary. The"
+            " 5-state analysis pipeline (queued -> uploading -> analyzing"
+            " -> complete | failed) drives client polling cadence."
+        ),
+    },
+]
+```
+
+**Mobile-side relevance**: the same pattern shape exists backend-side; mobile has no current equivalent surface but might gain one if/when mobile starts shipping its own router-tag-style metadata (e.g., a navigation route registry maintained alongside per-screen metadata for analytics tracking, a deep-link route catalog maintained alongside the actual deep-link handler registrations, or a feature-flag catalog maintained alongside the actual `useFeatureFlag(...)` hook usages). When that day comes, the mitigation will follow the same playbook: a coverage-check lint that walks the route/handler/hook declarations, parses the parallel catalog, diffs the two, and flags drift. Until then, this case study is here so mobile contributors recognize the shape if they're reviewing a backend PR or designing a new mobile registry.
+
+**Recognition heuristic**: any module-level constant maintained in parallel to declarations elsewhere in the codebase. The TAG_CATALOG case is one shape; other shapes that fit the same pattern include: CLI command registries (a `__commands__` list) maintained alongside the actual `*_cmd` Click decorators in command modules; OpenAPI schema registries (`SCHEMA_REGISTRY`) maintained alongside the actual Pydantic models; navigation route maps (a routes dict) maintained alongside the actual screen modules in a React Native app; permission-string registries maintained alongside the actual `@require_permission(...)` decorators. The common thread: two source-of-truth files exist for what should be one logical fact, and there's no compile-time link between updating one and updating the other.
+
+**Lint coverage**: caught by `scripts/check_f9_patterns.py --check-tag-catalog-coverage` on backend (Phase 191D); no mobile-side equivalent currently because mobile has no parallel-catalog surface. **F22 escalation criterion**: if `--check-tag-catalog-coverage` flags drift in 3+ subsequent phases, escalate to F22 (full FastAPI introspection refactor — descriptions move into per-router metadata, eliminating the parallel-state store entirely).
+
+**Fix commit**: `7d4c2f6` (Phase 191B fix-cycle-5, backend repo)
+
+---
+
+### The new `contract-pin` opt-out category
+
+Phase 191C 5a established three opt-out reason categories the lint accepts on a per-line `f9-noqa` comment: `SSOT-pin`, `meta-test`, and `contract-assertion`. Phase 191D adds a fourth — `contract-pin` — to handle the legitimate two-source assertion design that the SSOT-constants generalization surfaces in well-written tests.
+
+The four categories distinguish four genuinely different intents. `SSOT-pin` covers the case where the SSOT module IS the literal — Phase 162.5's `__tests__/services/aiClient.test.ts` asserts `MODEL_ALIASES` maps to specific values because the test FILE is the canonical source-of-truth for the alias resolution contract; Phase 79's `tests/test_phase79_engine_client.py` is the same shape on the backend side. `meta-test` covers the case where the test IS the linter's own RuleTester suite (Phase 191C ESLint rule's own `__tests__/no-hardcoded-model-ids-in-tests.test.js` deliberately includes the `claude-sonnet-4-5-20241022` literal as a fixture for testing the rule fires on it). `contract-assertion` covers the case where the literal IS the contract being pinned in isolation — no SSOT module exists for it, OR the literal IS the SSOT (a test asserting `expect(response.data?.api_version).toBe('v1')` against the wire shape directly, with no `APP_VERSION` import).
+
+`contract-pin` (NEW) covers the case where a test asserts a specific literal value of an SSOT-managed constant alongside an EXPLICIT import of that constant. The two-source assertion is intentional: the test catches drift if EITHER the production constant changes OR the contract value changes. Use `contract-pin` when the constant encodes a contractual guarantee — base URL feeds into dev-backend identity (`DEFAULT_BASE_URL == 'http://10.0.2.2:8000'` — drift breaks the Android emulator integration that maps host's localhost to the emulator's 10.0.2.2); debounce timing feeds into UX guarantees (`DTC_SEARCH_DEBOUNCE_MS == 300` — drift breaks the documented "results appear within ~300ms of typing" UX); per-session caps feed into upload-boundary enforcement (`PER_SESSION_COUNT_CAP == 10` — drift breaks the documented "max 10 videos per session" contract); tier limits feed into billing math (Instance #8 / SCHEMA_VERSION on the backend side is the same family — schema bumps coordinate with Stripe price assumptions and migration deployment).
+
+Format example (TypeScript):
+
+```ts
+// __tests__/api/client.test.ts:67
+import {DEFAULT_BASE_URL} from '../../src/api/client';
+
+describe('api client', () => {
+  it('uses the dev-backend URL on Android emulator', () => {
+    // Pinned for emulator regression coverage. Bumping requires concurrent
+    // Android emulator config update (the 10.0.2.2 mapping is the emulator
+    // contract; changing this URL means the emulator stops resolving the
+    // host machine's backend).
+    expect(DEFAULT_BASE_URL).toBe('http://10.0.2.2:8000');  // f9-noqa: ssot-pin contract-pin: dev-backend URL pinned for emulator regression coverage; bumping requires android emulator config update
+  });
+});
+```
+
+```ts
+// __tests__/hooks/useDTCSearch.test.ts:119
+import {DTC_SEARCH_DEBOUNCE_MS} from '../../src/hooks/useDTCSearch';
+
+describe('useDTCSearch', () => {
+  it('debounces input by the documented UX interval', () => {
+    // Pinned for UX-contract regression coverage. The "300ms" number is
+    // documented in the design spec + the user-facing changelog; bumping
+    // requires a design review + a re-test of the typeahead flow on
+    // physical devices.
+    expect(DTC_SEARCH_DEBOUNCE_MS).toBe(300);  // f9-noqa: ssot-pin contract-pin: debounce timing pinned for UX-contract regression coverage; bumping requires design-spec re-review
+  });
+});
+```
+
+Format example (Python — equivalent shape on the backend side):
+
+```py
+# tests/test_phase177_vehicle_api.py:238
+from motodiag.vehicles.registry import TIER_VEHICLE_LIMITS
+
+def test_individual_tier_vehicle_limit():
+    # Pinned for billing math regression coverage. Bumping requires a
+    # concurrent Stripe price re-verification + a cross-phase grep on
+    # any test referencing TIER_VEHICLE_LIMITS["individual"].
+    assert TIER_VEHICLE_LIMITS["individual"] == 5  # f9-noqa: ssot-pin contract-pin: tier limit pinned for billing math regression coverage; bumping requires Stripe price re-verification
+```
+
+The 20-character `<reason>` floor (mirroring Phase 191C 5a's `MIN_OPTOUT_REASON_CHARS = 20`) applies to `contract-pin` opt-outs as well: a one-word reason like "billing" is rejected; a category-tagged reason like `dev-backend URL pinned for emulator regression coverage; bumping requires android emulator config update` clears the floor and documents the WHY for the next contributor.
+
+### Recognition pattern: literal-pin WITH import vs literal-pin WITHOUT import
+
+The single most useful recognition heuristic for distinguishing "legitimate contract-pin" from "drift bug" is: **does the test file import the SSOT-managed constant from its source module?**
+
+- **Literal-pin WITH import** (legitimate, `contract-pin` opt-out): the test imports `import {DEFAULT_BASE_URL} from '../../src/api/client'` AND asserts `expect(DEFAULT_BASE_URL).toBe('http://10.0.2.2:8000')`. The two-source assertion is deliberate: if the production constant drifts to a different URL, the test fails loud (catching unintentional bumps); if the contract value drifts but production hasn't, the assertion catches it. The author explicitly opted into two-source assertion because the constant encodes a contractual guarantee.
+
+- **Literal-pin WITHOUT import** (drift-bug indicator, refactor candidate): the test asserts `expect(getDefaultBaseUrl()).toBe('http://10.0.2.2:8000')` with no import of `DEFAULT_BASE_URL` — the literal URL string was hand-typed at test-write time, and the author expected "production's value" but had no compile-time link to it. This is the exact shape of Instance #7 (model IDs) and Instance #8 (SCHEMA_VERSION). The fix is to either (a) refactor to import the constant and assert against the import (`expect(getDefaultBaseUrl()).toBe(DEFAULT_BASE_URL)` — turns the test essentially tautological but at least the source-of-truth update propagates), or (b) refactor to assert membership in a known-good set defined separately from production (`expect(KNOWN_GOOD_BASE_URLS).toContain(getDefaultBaseUrl())` — catches cases where the source-of-truth constant itself is wrong).
+
+Future contributors reading this doc: when you see a test pinning a literal that looks like it should match production state, ask the import question first. If the import is present + the literal is intentional, opt-out with `contract-pin` and document why bumping is non-trivial. If the import is absent, refactor — that's Instance #7 / #8 reproducing under a new banner.
+
+### Reconciliation note: `no-hardcoded-model-ids-in-tests` → `no-hardcoded-ssot-constants-in-tests`
+
+Phase 191C's narrow `motodiag/no-hardcoded-model-ids-in-tests` rule was generalized in Phase 191D as `motodiag/no-hardcoded-ssot-constants-in-tests`. Closure docs from Phase 191C reference the original name; sealed history. The generalized rule subsumes the narrow one (model IDs are one entry — `MODEL_ALIASES` from `src/config/aiModels` — in the SSOT registry alongside `DEFAULT_BASE_URL`, `DTC_SEARCH_DEBOUNCE_MS`, `PER_SESSION_COUNT_CAP`, etc.); the deprecated `motodiag/no-hardcoded-model-ids-in-tests` rule continues to function via stub-redirect for backward compatibility (it internally calls the generalized rule with the `MODEL_ALIASES` registry filter applied) but is deprecated from Phase 191D onward. Same shape on backend: `--check-model-ids` becomes a stub-redirect to `--check-ssot-constants` filtered to the `MODEL_ALIASES` registry entry; existing `# f9-noqa: model-id` opt-outs continue to work via the redirect, and a deprecation message prints on each invocation: `"--check-model-ids is deprecated; use --check-ssot-constants. This stub will be removed in Phase 200+."`.
+
+### Forward-looking F-tickets filed at Phase 191D pre-plan
+
+Three F-tickets file alongside this generalization, each with a measurable promotion criterion (rather than indefinitely-deferred "nice to have" status):
+
+- **F22** — TAG_CATALOG full FastAPI introspection refactor (descriptions move into per-router metadata, eliminating the parallel-state store entirely). Backend-only surface. **Promotion trigger**: 3+ subsequent phases of `--check-tag-catalog-coverage` drift.
+- **F23** — Credential-hygiene lint (`*_API_KEY`, `*_SECRET`, `*_TOKEN`, `*_PASSWORD` literal pins in `__tests__/**` OR `src/**` on mobile; equivalent in `tests/**` OR `src/**` on backend). Pre-plan grep confirmed zero current findings on either repo, both scopes; F23 ships purely as forward-looking guard. Recommended target Phase 192+ low-priority.
+- **F24** — Extend `motodiag/no-hardcoded-ssot-constants-in-tests` rule scope from `__tests__/**` to `src/**` on mobile (catch production-side SSOT-drift); same extension on backend from `tests/**` to `src/**`. **Promotion trigger**: 2+ subsequent phases surface production-side findings; the backend `vehicle_identifier.py:HAIKU_MODEL_ID = "claude-haiku-4-5-20251001"` literal addressed inline in Phase 191D Commit 2 is data point 1.
+
+The full F22 / F23 / F24 descriptions live in this repo's `docs/FOLLOWUPS.md` (the cross-cutting Track-I follow-up ledger); the signposting here exists so doc readers know where the generalization roadmap goes next without having to dig through follow-up files.
+
+---
+
 ## The 5 subspecies + their mitigations
 
-The seven instances above partition into five subspecies by mechanism. Lint coverage exists for four; the fifth is doc-only.
+The nine instances above partition into five subspecies by mechanism. Lint coverage exists for four; the fifth is doc-only. Subspecies (ii) carries the bulk of the family weight — three of nine instances (#7 Phase 191B C2 model-string, #8 Phase 191B fix-cycle-5 SCHEMA_VERSION, #9 Phase 191B fix-cycle-5 TAG_CATALOG) — which is why Phase 191D generalized the narrow Phase 191C rule to cover any SSOT-managed constant rather than model IDs only.
 
 ### Subspecies (i) — Closure-state capture in native callbacks
 
