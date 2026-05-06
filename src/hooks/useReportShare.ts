@@ -1,22 +1,36 @@
-// Phase 192B Commit 2 — useReportShare(filePath) hook.
+// Phase 192B Commit 2 → 3 — useReportShare hook.
 //
 // Effect-layer concern: take a file URI, present the OS share
 // sheet (iOS UIActivityViewController, Android ACTION_SEND chooser),
-// handle completion + dismiss callbacks, unlink the temp file in
-// both cases.
+// handle completion + dismiss callbacks, unlink the temp file
+// per the per-share-unlink discipline.
 //
-// Hook composition (per pre-plan + commit dispatch reminder):
-// useReportShare takes the filePath as a PARAMETER rather than
-// calling usePdfDownload internally. Calling component owns the
-// download → share orchestration explicitly. Lets non-PDF flows
-// (CSV export, screenshot share, etc.) reuse this hook by
-// pointing it at any file URI.
+// Phase 192B Commit 3 refactor: ``share`` now takes the filePath
+// as a CALL-TIME argument rather than a hook-init parameter. The
+// natural composition shape with ``usePdfDownload`` is dynamic —
+// the file URI is only known after ``download()`` resolves —
+// so a hook-bound URI forced state-effect-await ceremony in the
+// caller. Call-time argument is more ergonomic + matches the
+// user's "download then share" mental model directly.
+//
+// Hook composition still preserved (per pre-plan): ``useReportShare``
+// does NOT call ``usePdfDownload`` internally. Caller owns the
+// orchestration. Lets non-PDF flows (CSV export, screenshot share,
+// etc.) reuse this hook by pointing it at any file URI.
 //
 // Defensive URI validation: per the 5-min compat audit on
 // react-native-share v12.3.1, open issue #1683 (Aug 2025) is an
 // Android null-Uri error from getScheme() on a malformed input.
 // We validate the URI has a scheme before calling Share.open
 // to avoid that failure mode.
+//
+// Per-share unlink semantics (Commit 3 refinement per pre-dispatch
+// reminder): unlink runs on SUCCESS only. The dismiss + error
+// paths leave the file in <tmp>/motodiag-shares/ for the 24-hour
+// startup sweep to handle. Some share targets present cancellation
+// UX that user perception treats as "not done yet" rather than
+// "done and dismissed" — letting the sweep clean up matches that
+// expectation. The sweep is the safety net regardless.
 
 import {useCallback, useState} from 'react';
 import Share from 'react-native-share';
@@ -27,13 +41,10 @@ export interface UseReportShareResult {
   /** Present the OS share sheet with the PDF at filePath. Resolves
    *  with the user-completion outcome ('shared' | 'dismissed' |
    *  'error'); rejects only on argument-validation failure (bad
-   *  URI). On both happy + dismissed paths, the temp file at
-   *  filePath is unlinked.
-   *
-   *  Returns the outcome string so consumers can branch — e.g.,
-   *  ReportViewerScreen can show a brief "Shared" toast on
-   *  'shared' and stay silent on 'dismissed'. */
-  share: () => Promise<ShareOutcome>;
+   *  URI). On the shared path the temp file is unlinked; on
+   *  dismissed + error paths the file is left for the 24-hour
+   *  startup sweep (deliberate per Commit 3 refinement). */
+  share: (filePath: string) => Promise<ShareOutcome>;
   /** True while the share sheet is open or the unlink is in flight. */
   isSharing: boolean;
   /** Last error message from share, or null. Cleared at the start
@@ -43,11 +54,13 @@ export interface UseReportShareResult {
 
 export type ShareOutcome = 'shared' | 'dismissed' | 'error';
 
-export function useReportShare(filePath: string): UseReportShareResult {
+export function useReportShare(): UseReportShareResult {
   const [isSharing, setIsSharing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const share = useCallback(async (): Promise<ShareOutcome> => {
+  const share = useCallback(async (
+    filePath: string,
+  ): Promise<ShareOutcome> => {
     setIsSharing(true);
     setError(null);
     let outcome: ShareOutcome = 'error';
@@ -107,17 +120,19 @@ export function useReportShare(filePath: string): UseReportShareResult {
       setError(msg);
       throw validationErr;
     } finally {
-      // Belt-and-suspenders: unlink the temp file regardless of
-      // outcome. The 24hr startup sweep is the safety net for
-      // when this finally block doesn't run (RN process killed
-      // mid-share); the per-share unlink is the happy + dismiss
-      // path.
-      if (filePath) {
+      // Per-share unlink runs on SUCCESS only (Commit 3 refinement
+      // per pre-dispatch reminder). Dismiss + error paths leave the
+      // file for the 24-hour startup sweep — some share targets
+      // present cancellation UX that user perception treats as
+      // "not done yet" rather than "done and dismissed", and
+      // unlinking on dismiss would prevent a quick retry. The
+      // sweep handles all non-success cases consistently.
+      if (filePath && outcome === 'shared') {
         await unlinkShareFile(filePath);
       }
       setIsSharing(false);
     }
-  }, [filePath]);
+  }, []);
 
   return {share, isSharing, error};
 }

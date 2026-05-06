@@ -86,12 +86,12 @@ describe('useReportShare — happy path', () => {
   it('opens the share sheet with the file URI + PDF type', async () => {
     shareOpenMock.mockResolvedValue({success: true});
     const {result} = renderHook<UseReportShareResult>(() =>
-      useReportShare(FILE_PATH),
+      useReportShare(),
     );
 
     let outcome = '';
     await act(async () => {
-      outcome = await result.current.share();
+      outcome = await result.current.share(FILE_PATH);
     });
 
     expect(outcome).toBe('shared');
@@ -106,11 +106,11 @@ describe('useReportShare — happy path', () => {
     shareOpenMock.mockResolvedValue({success: true});
     const prefixed = `file://${FILE_PATH}`;
     const {result} = renderHook<UseReportShareResult>(() =>
-      useReportShare(prefixed),
+      useReportShare(),
     );
 
     await act(async () => {
-      await result.current.share();
+      await result.current.share(prefixed);
     });
 
     expect(shareOpenMock).toHaveBeenCalledWith(
@@ -121,11 +121,11 @@ describe('useReportShare — happy path', () => {
   it('unlinks the temp file after successful share', async () => {
     shareOpenMock.mockResolvedValue({success: true});
     const {result} = renderHook<UseReportShareResult>(() =>
-      useReportShare(FILE_PATH),
+      useReportShare(),
     );
 
     await act(async () => {
-      await result.current.share();
+      await result.current.share(FILE_PATH);
     });
 
     expect(RNFS_TEST.unlink).toHaveBeenCalledWith(FILE_PATH);
@@ -138,12 +138,12 @@ describe('useReportShare — dismiss path', () => {
     // react-native-share rejects with the cancel error message.
     shareOpenMock.mockRejectedValue(new Error('User did not share'));
     const {result} = renderHook<UseReportShareResult>(() =>
-      useReportShare(FILE_PATH),
+      useReportShare(),
     );
 
     let outcome = '';
     await act(async () => {
-      outcome = await result.current.share();
+      outcome = await result.current.share(FILE_PATH);
     });
 
     expect(outcome).toBe('dismissed');
@@ -153,28 +153,34 @@ describe('useReportShare — dismiss path', () => {
   it('also accepts "cancelled" wording', async () => {
     shareOpenMock.mockRejectedValue(new Error('Operation cancelled'));
     const {result} = renderHook<UseReportShareResult>(() =>
-      useReportShare(FILE_PATH),
+      useReportShare(),
     );
 
     let outcome = '';
     await act(async () => {
-      outcome = await result.current.share();
+      outcome = await result.current.share(FILE_PATH);
     });
     expect(outcome).toBe('dismissed');
   });
 
-  it('unlinks the temp file even on dismiss', async () => {
+  it('does NOT unlink on dismiss — leaves file for 24hr sweep', async () => {
+    // Phase 192B Commit 3 refinement: dismiss path leaves the file
+    // in place because some share targets present cancellation UX
+    // that user perception treats as "not done yet" (e.g., "are
+    // you sure you want to discard?" prompts). Unlinking on dismiss
+    // would prevent a quick retry. The 24hr startup sweep cleans
+    // up — pinned in shareTempCleanup.test.ts.
     shareOpenMock.mockRejectedValue(new Error('User did not share'));
     const {result} = renderHook<UseReportShareResult>(() =>
-      useReportShare(FILE_PATH),
+      useReportShare(),
     );
 
     await act(async () => {
-      await result.current.share();
+      await result.current.share(FILE_PATH);
     });
 
-    expect(RNFS_TEST.unlink).toHaveBeenCalledWith(FILE_PATH);
-    expect(RNFS_TEST.__remaining()).toEqual([]);
+    expect(RNFS_TEST.unlink).not.toHaveBeenCalled();
+    expect(RNFS_TEST.__remaining()).toEqual([FILE_PATH]);
   });
 });
 
@@ -184,42 +190,46 @@ describe('useReportShare — error path', () => {
       new Error('Activity not found for sharing PDFs'),
     );
     const {result} = renderHook<UseReportShareResult>(() =>
-      useReportShare(FILE_PATH),
+      useReportShare(),
     );
 
     let outcome = '';
     await act(async () => {
-      outcome = await result.current.share();
+      outcome = await result.current.share(FILE_PATH);
     });
 
     expect(outcome).toBe('error');
     expect(result.current.error).toMatch(/Activity not found/);
   });
 
-  it('unlinks the temp file even on share error', async () => {
+  it('does NOT unlink on share error — leaves file for 24hr sweep', async () => {
+    // Same refinement as the dismiss path: error → sweep, not
+    // immediate unlink. Lets the user see the failed file via
+    // Files app + retry without re-downloading.
     shareOpenMock.mockRejectedValue(new Error('Internal sharer error'));
     const {result} = renderHook<UseReportShareResult>(() =>
-      useReportShare(FILE_PATH),
+      useReportShare(),
     );
 
     await act(async () => {
-      await result.current.share();
+      await result.current.share(FILE_PATH);
     });
 
-    expect(RNFS_TEST.unlink).toHaveBeenCalledWith(FILE_PATH);
+    expect(RNFS_TEST.unlink).not.toHaveBeenCalled();
+    expect(RNFS_TEST.__remaining()).toEqual([FILE_PATH]);
   });
 });
 
 describe('useReportShare — defensive URI validation', () => {
   it('throws + sets error when filePath is empty string', async () => {
     const {result} = renderHook<UseReportShareResult>(() =>
-      useReportShare(''),
+      useReportShare(),
     );
 
     let thrown: unknown = null;
     await act(async () => {
       try {
-        await result.current.share();
+        await result.current.share('');
       } catch (e) {
         thrown = e;
       }
@@ -237,7 +247,7 @@ describe('useReportShare — defensive URI validation', () => {
 describe('useReportShare — isSharing lifecycle', () => {
   it('starts not-sharing + no error', () => {
     const {result} = renderHook<UseReportShareResult>(() =>
-      useReportShare(FILE_PATH),
+      useReportShare(),
     );
     expect(result.current.isSharing).toBe(false);
     expect(result.current.error).toBeNull();
@@ -246,11 +256,11 @@ describe('useReportShare — isSharing lifecycle', () => {
   it('clears isSharing after share completes', async () => {
     shareOpenMock.mockResolvedValue({success: true});
     const {result} = renderHook<UseReportShareResult>(() =>
-      useReportShare(FILE_PATH),
+      useReportShare(),
     );
 
     await act(async () => {
-      await result.current.share();
+      await result.current.share(FILE_PATH);
     });
 
     expect(result.current.isSharing).toBe(false);

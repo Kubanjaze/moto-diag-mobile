@@ -1,10 +1,11 @@
 // Phase 192 commit 3 — Diagnostic report viewer screen.
+// Phase 192B commit 3 — adds preset-aware Share PDF button.
 //
 // Phase 192 plan v1.0.1:
 //   * Section A: substrate-feature boundary — composer + route are
 //     Phase 182 + commit 1's video extension; this screen is the
 //     viewer-side substrate. PDF export + Share Sheet/AirDrop are
-//     deferred to Phase 192B.
+//     handled by Phase 192B (this commit closes that loop).
 //   * Section B: mobile fetch shape (i) — useReport(sessionId) hook
 //     hits GET /v1/reports/session/{session_id} (Phase 182 surface,
 //     extended by commit 1's videos section variant 5).
@@ -20,9 +21,25 @@
 //     (F29 ADR); cross-owner returns 404 (F29 ADR). Hook surfaces
 //     responses unchanged.
 //
+// Phase 192B commit 3 additions:
+//   * Share PDF button placed adjacent to SectionToggle (NOT in a
+//     nav-bar overflow menu) per the user's mental-model reminder:
+//     the user's task sequence is "choose preset → share". Co-
+//     locating the controls makes the two-step flow discoverable.
+//   * Button uses the current preset state — WYSIWYG mobile/PDF
+//     symmetry. Customer preset filter applied at composer level
+//     (backend Commit 1) means the rendered PDF matches what the
+//     viewer shows.
+//   * Error-kind-aware copy via shareErrorCopy() helper. Each
+//     PdfDownloadError kind maps to a distinct user-facing string;
+//     retryable kinds get a Retry button + Dismiss; non-retryable
+//     get Dismiss only.
+//
 // Composition:
 //   ReportViewerScreen
-//     ├── SectionToggle (preset selector)
+//     ├── HeaderControls
+//     │     ├── SectionToggle (preset selector)
+//     │     └── Share PDF button (Phase 192B commit 3)
 //     ├── Title + subtitle + issued-at + footer
 //     └── ScrollView of ReportSectionCard
 //           └── (videos variant) per-card stuck-detection + findings
@@ -32,6 +49,7 @@ import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useFocusEffect} from '@react-navigation/native';
 import {
   ActivityIndicator,
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -42,7 +60,9 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {Button} from '../components/Button';
 import {ReportSectionCard} from '../components/ReportSectionCard';
 import {SectionToggle} from '../components/SectionToggle';
+import {usePdfDownload} from '../hooks/usePdfDownload';
 import {useReport} from '../hooks/useReport';
+import {useReportShare} from '../hooks/useReportShare';
 import type {SessionsStackParamList} from '../navigation/types';
 import {formatIssuedAt} from './reportFormatters';
 import {
@@ -50,6 +70,7 @@ import {
   type ReportPreset,
   type SectionOverrides,
 } from './reportPresets';
+import {shareErrorCopy} from './reportShareErrorCopy';
 
 type Props = NativeStackScreenProps<SessionsStackParamList, 'ReportViewer'>;
 
@@ -68,6 +89,48 @@ export function ReportViewerScreen({navigation, route}: Props) {
   // _setOverrides is intentionally unused this commit; it's surfaced
   // with the leading underscore so the future per-card UI can wire
   // it without re-deriving the state shape.
+
+  // Phase 192B Commit 3 — share-flow hooks. usePdfDownload binds to
+  // the current preset state so the rendered PDF reflects what the
+  // user sees in the viewer (WYSIWYG). useReportShare is preset-
+  // agnostic; share() takes the file URI returned by download().
+  const {download, isDownloading} = usePdfDownload(sessionId, preset);
+  const {share, isSharing} = useReportShare();
+
+  const handleShare = useCallback(async () => {
+    try {
+      const filePath = await download();
+      await share(filePath);
+      // Outcome (shared / dismissed / error) deliberately unused —
+      // the share-sheet UI itself is the user-facing feedback.
+      // Dismiss is a normal exit, not surfaced as a toast.
+    } catch (downloadErr) {
+      // Typed PdfDownloadError — map to user-facing copy.
+      // Defensive: if some other error shape escapes, fall through
+      // to a generic Alert rather than swallowing.
+      if (
+        typeof downloadErr === 'object' &&
+        downloadErr !== null &&
+        'kind' in downloadErr
+      ) {
+        const copy = shareErrorCopy(downloadErr as Parameters<typeof shareErrorCopy>[0]);
+        const buttons: Array<{text: string; onPress?: () => void}> =
+          copy.retryable
+            ? [
+                {text: 'Dismiss'},
+                {text: 'Retry', onPress: () => void handleShare()},
+              ]
+            : [{text: 'Dismiss'}];
+        Alert.alert(copy.title, copy.message, buttons);
+      } else {
+        Alert.alert(
+          "Can't share report",
+          'Something went wrong generating the PDF.',
+          [{text: 'Dismiss'}],
+        );
+      }
+    }
+  }, [download, share]);
 
   // Refetch on screen focus — same posture as VehicleDetailScreen.
   // Cheap (single GET) + ensures the user sees fresh data after
@@ -133,11 +196,29 @@ export function ReportViewerScreen({navigation, route}: Props) {
       style={styles.container}
       edges={['bottom', 'left', 'right']}
     >
-      <SectionToggle
-        value={preset}
-        onChange={setPreset}
-        testID="report-viewer-toggle"
-      />
+      <View style={styles.headerStrip}>
+        <SectionToggle
+          value={preset}
+          onChange={setPreset}
+          testID="report-viewer-toggle"
+        />
+        <View style={styles.shareRow}>
+          <Button
+            title={
+              isDownloading
+                ? 'Preparing PDF…'
+                : isSharing
+                ? 'Opening share sheet…'
+                : 'Share PDF'
+            }
+            variant="primary"
+            compact
+            disabled={isDownloading || isSharing}
+            onPress={handleShare}
+            testID="report-viewer-share-pdf"
+          />
+        </View>
+      </View>
       <ScrollView
         contentContainerStyle={styles.scroll}
         testID="report-viewer-scroll"
@@ -185,6 +266,22 @@ const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#f5f5f7'},
   centered: {justifyContent: 'center', alignItems: 'center'},
   scroll: {padding: 16, paddingBottom: 40},
+  // Phase 192B Commit 3 — header strip co-locates SectionToggle +
+  // Share PDF button. SectionToggle owns its own bottom border;
+  // we stack the share button below in the same strip + add a
+  // bottom border on shareRow to maintain the visual divider.
+  headerStrip: {
+    backgroundColor: '#fff',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#ddd',
+  },
+  shareRow: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 10,
+    // SectionToggle's own bottom border becomes the divider
+    // between the toggle chips + this row.
+  },
   title: {
     fontSize: 22,
     fontWeight: '700',
