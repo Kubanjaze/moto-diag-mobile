@@ -780,10 +780,20 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Download a diagnostic session report (PDF) */
+        /** Download a diagnostic session report (PDF, full) */
         get: operations["get_session_report_pdf_v1_reports_session__session_id__pdf_get"];
         put?: never;
-        post?: never;
+        /**
+         * Download a diagnostic session report (PDF, preset-filtered)
+         * @description Phase 192B: preset-filtered session PDF.
+         *
+         *     Same auth posture as the GET sibling (owner-only with 404 for
+         *     cross-owner). The composer applies the section-visibility
+         *     filter BEFORE handing the document to the PDF renderer, so PDF
+         *     output is exactly what the in-app viewer shows under the same
+         *     preset (WYSIWYG mobile/PDF symmetry).
+         */
+        post: operations["post_session_report_pdf_v1_reports_session__session_id__pdf_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1142,6 +1152,26 @@ export interface components {
             extra_context?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /**
+         * PdfRenderRequest
+         * @description Body for POST ``/v1/reports/session/{id}/pdf`` (Phase 192B).
+         *
+         *     ``preset`` is required (FastAPI returns 422 if absent); the
+         *     sibling GET route is kept for the unfiltered "full PDF" case.
+         *     ``overrides`` is reserved for the future per-card-toggle UI
+         *     (filed as F28 in mobile FOLLOWUPS) — accepted by the composer
+         *     but NOT yet exposed by this route. Adding it to the schema now
+         *     would build unused API surface; it'll land alongside the
+         *     matching mobile UI when F28 ships.
+         */
+        PdfRenderRequest: {
+            /**
+             * Preset
+             * @description Section-visibility preset. 'customer' hides diagnostic-internal sections (currently 'Notes'); 'insurance' + 'full' hide nothing. Mirrors the mobile-side preset semantics in src/screens/reportPresets.ts exactly.
+             * @enum {string}
+             */
+            preset: "full" | "customer" | "insurance";
         };
         /** PortalSessionResponse */
         PortalSessionResponse: {
@@ -3948,6 +3978,47 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            402: components["responses"]["SubscriptionRequired"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    post_session_report_pdf_v1_reports_session__session_id__pdf_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PdfRenderRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

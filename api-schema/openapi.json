@@ -5746,7 +5746,7 @@
         "tags": [
           "reports"
         ],
-        "summary": "Download a diagnostic session report (PDF)",
+        "summary": "Download a diagnostic session report (PDF, full)",
         "operationId": "get_session_report_pdf_v1_reports_session__session_id__pdf_get",
         "parameters": [
           {
@@ -5791,6 +5791,105 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Download a diagnostic session report (PDF, preset-filtered)",
+        "description": "Phase 192B: preset-filtered session PDF.\n\nSame auth posture as the GET sibling (owner-only with 404 for\ncross-owner). The composer applies the section-visibility\nfilter BEFORE handing the document to the PDF renderer, so PDF\noutput is exactly what the in-app viewer shows under the same\npreset (WYSIWYG mobile/PDF symmetry).",
+        "operationId": "post_session_report_pdf_v1_reports_session__session_id__pdf_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PdfRenderRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response"
@@ -7424,6 +7523,26 @@
           "event"
         ],
         "title": "NotificationTriggerRequest"
+      },
+      "PdfRenderRequest": {
+        "properties": {
+          "preset": {
+            "type": "string",
+            "enum": [
+              "full",
+              "customer",
+              "insurance"
+            ],
+            "title": "Preset",
+            "description": "Section-visibility preset. 'customer' hides diagnostic-internal sections (currently 'Notes'); 'insurance' + 'full' hide nothing. Mirrors the mobile-side preset semantics in src/screens/reportPresets.ts exactly."
+          }
+        },
+        "type": "object",
+        "required": [
+          "preset"
+        ],
+        "title": "PdfRenderRequest",
+        "description": "Body for POST ``/v1/reports/session/{id}/pdf`` (Phase 192B).\n\n``preset`` is required (FastAPI returns 422 if absent); the\nsibling GET route is kept for the unfiltered \"full PDF\" case.\n``overrides`` is reserved for the future per-card-toggle UI\n(filed as F28 in mobile FOLLOWUPS) \u2014 accepted by the composer\nbut NOT yet exposed by this route. Adding it to the schema now\nwould build unused API surface; it'll land alongside the\nmatching mobile UI when F28 ships."
       },
       "PortalSessionResponse": {
         "properties": {
@@ -9245,10 +9364,6 @@
       "description": "Health checks and version metadata. No authentication required; used by load balancers and client startup probes."
     },
     {
-      "name": "auth",
-      "description": "API keys, subscriptions, and Stripe webhooks. This is the entry point for the paywall \u2014 every non-meta endpoint requires an active API key."
-    },
-    {
       "name": "shops",
       "description": "Global shop registry. Read-only at this tier; see `shop-management` for writes."
     },
@@ -9279,6 +9394,10 @@
     {
       "name": "live",
       "description": "WebSocket live sensor-data streams keyed to a diagnostic session. Paid-tier required."
+    },
+    {
+      "name": "videos",
+      "description": "Video diagnostic uploads + Claude Vision AI analysis nested under a session. POST upload (shop-tier + multipart) / GET list / GET single / DELETE soft-delete / GET binary file-stream. Per-session caps: 10 videos / 1 GB. Per-tier monthly: 0/200/unlimited for individual/shop/company. ffmpeg subprocess + Vision pipeline drive the analysis worker through pending \u2192 analyzing \u2192 analyzed | analysis_failed | unsupported. Phase 191B."
     }
   ],
   "servers": [
