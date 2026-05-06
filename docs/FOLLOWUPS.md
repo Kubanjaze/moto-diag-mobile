@@ -111,6 +111,24 @@ When picking one up, file it as a tiny phase OR fold it into the next phase that
   - **(b) Per-card toggle UI (medium):** long-press or right-side toggle on each section card to flip its visibility under the current preset. Tap-state persists into the override map (per-section true/false). Visual cue: dimmed/hidden card with an "Show" reveal control when override-hidden under the preset's default-show; brightened card with a "Hide" control when override-shown under the preset's default-hide. UX validation needed before shipping — could be tap-target overload on dense screens.
 - **Decision:** **Recommended target Phase 192B+** alongside the PDF export feature work. Persistence (a) lands first as a 1-day cleanup; the per-card toggle UI (b) waits for a real customer surface that demands it. The data-shape forward-compatibility (override map already wired through `isSectionHidden`) means (b) is purely additive UI work — no architectural migration when it lands.
 
+### F34 (NEW) — Reportlab PDF non-deterministic metadata (CreationDate / ModDate / trailer-/ID)
+
+- **Surfaced:** Phase 192B Commit 1 (2026-05-05). Deterministic-rendering pytest at `tests/test_phase192b_deterministic_pdf_render.py` failed on first run as anticipated by plan v1.0 risks. Two renders of the same `ReportDocument` produce different bytes:
+  - `CreationDate` field embeds the wall-clock time of render: `D:20260505234509-04'00'`
+  - `ModDate` field embeds the same wall-clock value
+  - Trailer `/ID` pair is a random hex pair, e.g., `<fd436fab3303e0f0a485ad292922716c>` — different on every render, even from the same renderer instance
+  - First diff at byte index ~2310 of a representative session render (in the trailer `/ID` block). Sample diff: `b'<fd436fab...>'` vs `b'<ae8daeea...>'`.
+- **Severity:** load-bearing for Phase 192B's share-flow correctness + cache-ability + audit-trail consistency. Not a Commit 1 blocker per pre-dispatch discipline ("test added; failure documents F34's first concrete reproduction; fix lands in follow-up commit"). Currently 3 tests xfailed (`strict=True`) pending fix:
+  - `test_phase192b_deterministic_pdf_render::test_same_doc_same_renderer_produces_identical_bytes`
+  - `test_phase192b_deterministic_pdf_render::test_same_doc_fresh_renderer_each_call_produces_identical_bytes`
+  - `test_phase192b_post_pdf_route::test_get_pdf_still_returns_full_document` (downstream consumer of determinism)
+- **Scope estimate:** small. Three fix paths in order of preference:
+  1. **`SimpleDocTemplate(invariant=True)`** — reportlab's documented deterministic-output flag. Verify it exists in the installed version (`reportlab.platypus.SimpleDocTemplate.__init__` signature). If yes, single-line change in `src/motodiag/reporting/renderers.py:PdfReportRenderer.render()`.
+  2. **Override metadata at canvas-build time** — `canvas.setProducer("MotoDiag")` + `canvas.setCreator("MotoDiag")` + zero the `CreationDate` / `ModDate` (set to a fixed epoch like `D:20000101000000+00'00'`).
+  3. **Seed PDF trailer ID deterministically** — derive the `/ID` from a hash of the `ReportDocument` JSON-stringified content. Most invasive but most thorough.
+- **Decision:** **Recommended target Phase 192B Commit 1.5** — a follow-up commit BEFORE mobile Commit 2 starts, since share-flow correctness depends on deterministic bytes (Commit 2's smoke gate Step 9 is byte-compare). Commit 1.5 lands the fix + un-xfails the 3 tests + bumps pyproject.toml if applicable.
+- **Note**: This F-ticket lives in mobile FOLLOWUPS by convention (cross-repo F-ticket numbering shared between repos), but the fix is purely backend.
+
 ### F30 (NEW) — Backend observability on composer malformed-payload + share-flow telemetry
 
 - **Surfaced:** Phase 192 plan v1.0 Section I9 (defensive-empty-payload edge case) + Phase 192B pre-plan Q&A (2026-05-05). Two adjacent telemetry surfaces consolidated into one ticket since they share the same instrumentation substrate.
