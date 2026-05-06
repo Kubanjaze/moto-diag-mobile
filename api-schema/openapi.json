@@ -4109,6 +4109,7 @@
           "shop-management"
         ],
         "summary": "List work orders for the shop",
+        "description": "List shop work orders with optional sort dispatch.\n\nPhase 193 Commit 0: ``sort`` query param added for the mobile\nShop Dashboard's `Newest / Priority / Triage` toggle. Default\nbehavior preserved (omitting `sort` matches existing\n`list_work_orders` ordering \u2014 backward compatible).\n\nTriage sort calls :func:`build_triage_queue` server-side and\nunwraps each :class:`TriageItem` to its plain ``work_order``\ndict \u2014 clients get a uniform response shape regardless of sort.\nTriage rank / score / parts-ready context stay server-side this\nphase; explainability surface is filed as F35 (mobile FOLLOWUPS).",
         "operationId": "list_work_orders_endpoint_v1_shop__shop_id__work_orders_get",
         "parameters": [
           {
@@ -4147,6 +4148,29 @@
               "default": 50,
               "title": "Limit"
             }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "newest",
+                    "priority",
+                    "triage"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Order: 'newest' (created_at DESC), 'priority' (priority ASC then created_at DESC \u2014 same as omitting), or 'triage' (build_triage_queue scoring; rich score / rank / parts-ready context computed server-side, response shape stays uniform \u2014 see Phase 193 plan v1.0 + F35 candidate).",
+              "title": "Sort"
+            },
+            "description": "Order: 'newest' (created_at DESC), 'priority' (priority ASC then created_at DESC \u2014 same as omitting), or 'triage' (build_triage_queue scoring; rich score / rank / parts-ready context computed server-side, response shape stays uniform \u2014 see Phase 193 plan v1.0 + F35 candidate)."
           },
           {
             "name": "X-API-Key",

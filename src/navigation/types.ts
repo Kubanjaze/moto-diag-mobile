@@ -15,6 +15,13 @@ export type RootTabParamList = {
   HomeTab: undefined;
   GarageTab: undefined;
   SessionsTab: undefined;
+  /** Phase 193 commit 1 — Shop tab. Tier-reactive: visible only
+   *  when the user's subscription tier grants shop access (per
+   *  `hasShopAccess` in src/hooks/useTier.ts). When a free-tier
+   *  user upgrades mid-session, the next AppState 'active'
+   *  transition refetches tier → ShopTab appears WITHOUT app
+   *  restart. Smoke-gate Step 10 verifies. */
+  ShopTab: undefined;
 };
 
 /** DTC detail route params. Same shape registered in both
@@ -65,4 +72,33 @@ export type SessionsStackParamList = {
    *  navigator-side screen registration + the SessionDetailScreen
    *  cross-link land in commit 4. */
   ReportViewer: {sessionId: number};
+};
+
+/** Phase 193 commit 1 — Shop tab native-stack param list.
+ *
+ *  ShopPicker: modal shown on first navigate when the user has
+ *  multiple shop memberships; auto-skipped for single-membership
+ *  users (Phase 193 plan v1.0 Section D refinement).
+ *
+ *  WorkOrderList: the dashboard root once a shop is active in the
+ *  session. Sort + status filter live on the screen, not in the
+ *  route params (transient UI state).
+ *
+ *  WorkOrderDetail: full WO detail with data-driven section list
+ *  (WorkOrderSection discriminated union — Phase 193 plan v1.0
+ *  Architectural Commitment + Phase 192's ReportSection precedent).
+ *  Future phases (194 photos, 195 voice, 196 OBD) extend the
+ *  union without screen-rewrite.
+ *
+ *  Screens themselves land in Commit 2; this param-list entry is
+ *  added in Commit 1 so the typed-error-at-hook-boundary surfaces
+ *  + nav scaffolding can type their NativeStackScreenProps. */
+export type ShopStackParamList = {
+  /** Modal route — params not used today; reserved for future
+   *  "skip-picker hint when single-membership". */
+  ShopPicker: undefined;
+  /** Active-shop scoped list. shopId comes from session-storage,
+   *  not route param (sticky session picker per Section D). */
+  WorkOrderList: undefined;
+  WorkOrderDetail: {shopId: number; woId: number};
 };

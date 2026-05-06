@@ -574,7 +574,21 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List work orders for the shop */
+        /**
+         * List work orders for the shop
+         * @description List shop work orders with optional sort dispatch.
+         *
+         *     Phase 193 Commit 0: ``sort`` query param added for the mobile
+         *     Shop Dashboard's `Newest / Priority / Triage` toggle. Default
+         *     behavior preserved (omitting `sort` matches existing
+         *     `list_work_orders` ordering — backward compatible).
+         *
+         *     Triage sort calls :func:`build_triage_queue` server-side and
+         *     unwraps each :class:`TriageItem` to its plain ``work_order``
+         *     dict — clients get a uniform response shape regardless of sort.
+         *     Triage rank / score / parts-ready context stay server-side this
+         *     phase; explainability surface is filed as F35 (mobile FOLLOWUPS).
+         */
         get: operations["list_work_orders_endpoint_v1_shop__shop_id__work_orders_get"];
         put?: never;
         /** Create a work order */
@@ -3353,6 +3367,8 @@ export interface operations {
             query?: {
                 status?: string | null;
                 limit?: number;
+                /** @description Order: 'newest' (created_at DESC), 'priority' (priority ASC then created_at DESC — same as omitting), or 'triage' (build_triage_queue scoring; rich score / rank / parts-ready context computed server-side, response shape stays uniform — see Phase 193 plan v1.0 + F35 candidate). */
+                sort?: ("newest" | "priority" | "triage") | null;
             };
             header?: {
                 "X-API-Key"?: string | null;
