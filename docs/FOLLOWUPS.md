@@ -170,7 +170,21 @@ When picking one up, file it as a tiny phase OR fold it into the next phase that
   2. **OR** any production occurrence of the composer malformed-payload defensive case forces immediate (a)-only escalation. Same shape as F22's escalation criterion (3-strike-then-promote).
 - **Explicitly NOT in Phase 192B**: telemetry instrumentation fragments the data model + adds friction to feature shipping. 192B ships the share surface; F30 ships the visibility into how it gets used.
 
-### F33 (NEW) — Plan-writing template should include explicit "existing-code overlap audit" step
+### F33 — Plan-writing template should include explicit "existing-code overlap audit" step — CLOSED Phase 193 kickoff
+
+**Closed:** 2026-05-06 at Phase 193 kickoff. Promoted from F-ticket to CLAUDE.md canonical process via the workspace-root `CLAUDE.md` edit (Step 0 of "Phase build workflow").
+
+**Promotion rationale**: validated on first use during Phase 192B pre-plan (Section A "F33 audit" on `pdf|PDF`, `preset|hidden|visibility`, `Share|UIActivityView|ACTION_SEND` keywords) caught Phase 182's existing `/v1/reports/session/{id}/pdf` route + Phase 192 Commit 1's renderer extension. Plan v1.0 was honestly framed as extension/orchestration from the start; NO v1.0.1 reshape needed (compare: Phase 192 itself needed one). Two consecutive phases of substrate-state-mismatch evidence (Phase 191B fix-cycle-3 surfaced it; Phase 192 v1.0 → v1.0.1 reshape demonstrated cost; Phase 192B's audit prevented recurrence) is sufficient signal for promotion.
+
+**CLAUDE.md placement**: inserted as **Step 0** of the Phase build workflow, BEFORE Step 1 (Implementation plan). Five sub-steps: (1) identify primary nouns; (2) grep `src/` both repos; (3) read matching files; (4) reshape plan if territory mismatches greenfield assumption; (5) document findings in pre-plan Q&A or dedicated subsection. Includes the two precedent cases (191B serve-init_db + Phase 192 PDF route discovery) + Phase 192B validation note.
+
+**Why CLAUDE.md timing matters** (per Kerwyn's pre-dispatch reminder): F33 is the process refinement governing how plan v1.0 itself gets written. Landing it in CLAUDE.md FIRST means future plan v1.0 docs can reference CLAUDE.md as canonical source rather than self-referentially documenting their own process. Atomic-per-concern git hygiene; visible architectural-decision audit trail.
+
+**Original surfacing context preserved below for audit-trail discipline.**
+
+---
+
+### F33 (HISTORICAL) — Plan-writing template should include explicit "existing-code overlap audit" step
 
 - **Surfaced:** Phase 192 retrospective (2026-05-05). Second instance in the chain of a phase being reshaped mid-flight by a substrate-state mismatch with documented assumptions:
   - **Phase 191B fix-cycle-3** (2026-05-04): `motodiag serve` never called `init_db()` at startup → backend ran on stale schema; latent since Phase 175. Plan v1.0 assumed serve applied migrations because that's what the documented contract said. Surfaced when Phase 191B's migration v39 hit the runtime path that was actually skipping init.
