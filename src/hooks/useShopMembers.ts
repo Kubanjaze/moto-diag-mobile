@@ -31,9 +31,16 @@ export interface ShopMember {
    *  resolution. */
   username?: string | null;
   display_name?: string | null;
-  /** RBAC role per Phase 172. Used for the picker's default
-   *  mechanic-eligible filter. */
-  role: 'owner' | 'manager' | 'mechanic' | 'apprentice' | 'viewer';
+  /** RBAC role per Phase 172. Backend enum is
+   *  ``('owner', 'tech', 'service_writer', 'apprentice')`` — Phase
+   *  193 Commit 0.5 audit corrected the assumption from plan v1.0
+   *  Section E (which referenced 'mechanic' / 'manager' / 'viewer'
+   *  — none of which exist in the backend). 'tech' + 'apprentice'
+   *  are the mechanic-eligible roles for the assignment picker's
+   *  default filter; 'owner' + 'service_writer' are admin-eligible.
+   *  See Phase 193 plan v1.0.2 amendment for the full surfacing
+   *  context + role-name correction. */
+  role: 'owner' | 'tech' | 'service_writer' | 'apprentice';
   is_active: boolean;
   /** Optional workload (active WO count). Backend MAY surface
    *  this; F36 ticket if absent + Commit 2 ships without the

@@ -62,8 +62,8 @@ const ok = (data: unknown) =>
   });
 
 const sampleMembers: ShopMember[] = [
-  {user_id: 1, username: 'jose', role: 'mechanic', is_active: true},
-  {user_id: 2, display_name: 'María Manager', role: 'manager', is_active: true},
+  {user_id: 1, username: 'jose', role: 'tech', is_active: true},
+  {user_id: 2, display_name: 'María Manager', role: 'service_writer', is_active: true},
   {user_id: 3, role: 'apprentice', is_active: true},  // no name fields
 ];
 
@@ -77,7 +77,7 @@ describe('formatMemberName', () => {
       user_id: 1,
       username: 'janedoe',
       display_name: 'Jane Doe',
-      role: 'mechanic',
+      role: 'tech',
       is_active: true,
     };
     expect(formatMemberName(m)).toBe('Jane Doe');
@@ -100,7 +100,7 @@ describe('formatMemberName', () => {
       user_id: 4,
       username: 'fallback',
       display_name: '   ',
-      role: 'mechanic',
+      role: 'tech',
       is_active: true,
     };
     expect(formatMemberName(m)).toBe('fallback');
@@ -110,7 +110,7 @@ describe('formatMemberName', () => {
     const m: ShopMember = {
       user_id: 5,
       username: '  ',
-      role: 'mechanic',
+      role: 'tech',
       is_active: true,
     };
     expect(formatMemberName(m)).toBe('User #5');
@@ -151,7 +151,7 @@ describe('useShopMembers', () => {
     // passes it through unchanged.
     const withWorkload: ShopMember[] = [
       {
-        user_id: 1, username: 'jose', role: 'mechanic',
+        user_id: 1, username: 'jose', role: 'tech',
         is_active: true, active_wo_count: 4,
       },
     ];
