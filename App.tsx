@@ -6,6 +6,7 @@ import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {ApiKeyProvider} from './src/contexts/ApiKeyProvider';
 import {RootNavigator} from './src/navigation/RootNavigator';
 import {clearActiveShopId} from './src/services/activeShopStorage';
+import {photoStorageCache} from './src/services/photoStorageCache';
 import {cleanupOldShares} from './src/services/shareTempCleanup';
 
 // Provider order:
@@ -31,10 +32,19 @@ function App() {
   // clearActiveShopId() here implements the cold-relaunch reset
   // semantically. OS-killing the process triggers a fresh cold-
   // mount → clear → ShopPicker re-prompts on next ShopTab navigate.
+  // Phase 194 Commit 2 — photo cache 7-day cold-start sweep.
+  // Section F refinement: captured-but-never-uploaded orphans get
+  // unlinked. Threshold is longer than share-temp's 24h since photo
+  // capture is a more deliberate action (a mechanic may legitimately
+  // have a captured-but-deferred-upload photo for a few days; a
+  // week is the bound).
   useEffect(() => {
     void cleanupOldShares(Date.now()).catch(() => {
       // Best-effort sweep; cold-start shouldn't depend on cleanup
       // success. The next cold-start will retry.
+    });
+    void photoStorageCache.cleanupOldPhotos(Date.now()).catch(() => {
+      // Best-effort photo orphan sweep. Same posture.
     });
     void clearActiveShopId().catch(() => {
       // Best-effort clear; if it fails the user just keeps their

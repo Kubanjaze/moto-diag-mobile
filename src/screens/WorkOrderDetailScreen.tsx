@@ -43,6 +43,7 @@ import {
   type TransitionAction,
 } from '../hooks/useTransitionWorkOrder';
 import {useWorkOrder} from '../hooks/useWorkOrder';
+import {useWorkOrderPhotos} from '../hooks/useWorkOrderPhotos';
 import type {ShopStackParamList} from '../navigation/types';
 import {buildWorkOrderSections} from './buildWorkOrderSections';
 import {shopAccessErrorCopy} from './shopAccessErrorCopy';
@@ -53,6 +54,10 @@ type Props = NativeStackScreenProps<ShopStackParamList, 'WorkOrderDetail'>;
 export function WorkOrderDetailScreen({navigation, route}: Props) {
   const {shopId, woId} = route.params;
   const {workOrder, isLoading, error, refetch} = useWorkOrder(shopId, woId);
+  // Phase 194 — work-order photos. Fetched in parallel; passed to the
+  // section builder as the 4th param. Refresh on focus + post-capture
+  // is automatic via the hook's useEffect on shopId/woId.
+  const {photos, refresh: refreshPhotos} = useWorkOrderPhotos(shopId, woId);
   const {transition, isTransitioning} = useTransitionWorkOrder(shopId);
   const {reassign, isReassigning} = useReassignWorkOrder(shopId);
   const membersResult = useShopMembers(shopId);
@@ -62,11 +67,14 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
   const [pauseReason, setPauseReason] = useState<string>('');
 
   // Refresh on focus — covers the "user comes back from another
-  // tab" path.
+  // tab" path. Phase 194: also refetch photos so the WO detail
+  // updates immediately when PhotoCaptureScreen navigates back
+  // post-upload.
   useFocusEffect(
     useCallback(() => {
       void refetch();
-    }, [refetch]),
+      void refreshPhotos();
+    }, [refetch, refreshPhotos]),
   );
 
   const handleTransition = useCallback(
@@ -201,14 +209,19 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
     ? (issues as WorkOrderIssue[])
     : [];
 
-  const sections = buildWorkOrderSections(workOrder, issuesArray, {
-    vehicle: (workOrder as Record<string, unknown>).vehicle as
-      | Record<string, unknown>
-      | undefined ?? null,
-    customer: (workOrder as Record<string, unknown>).customer as
-      | Record<string, unknown>
-      | undefined ?? null,
-  });
+  const sections = buildWorkOrderSections(
+    workOrder,
+    issuesArray,
+    {
+      vehicle: (workOrder as Record<string, unknown>).vehicle as
+        | Record<string, unknown>
+        | undefined ?? null,
+      customer: (workOrder as Record<string, unknown>).customer as
+        | Record<string, unknown>
+        | undefined ?? null,
+    },
+    photos,
+  );
 
   const status = workOrder.status;
   const canMarkInProgress = status === 'open' || status === 'on_hold';
@@ -234,8 +247,35 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
             key={`${section.kind}-${idx}`}
             section={section}
             testID={`wo-detail-section-${idx}`}
+            onUndecidedBannerPress={
+              section.kind === 'photos' && section.undecided_count > 0
+                ? () =>
+                    navigation.navigate('ClassifyPhotos', {shopId, woId})
+                : undefined
+            }
           />
         ))}
+
+        {/* Phase 194 — Take photo entry-point card. Lives between the
+            section list and the lifecycle/actions card so it's reachable
+            without scrolling past Lifecycle. Tapping navigates to the
+            camera capture screen with WO scope (and optional issue/pair
+            params for post-issue-creation flows; not wired in 194). */}
+        <View style={styles.photosCard}>
+          <Text style={styles.photosCardTitle}>Photos</Text>
+          <Text style={styles.photosCardSubtitle}>
+            Document the bike, the issue, before/after fixes. Photos
+            attach to this work order; classify them now or later.
+          </Text>
+          <Button
+            title="Take photo"
+            variant="primary"
+            onPress={() => {
+              navigation.navigate('PhotoCapture', {shopId, woId});
+            }}
+            testID="wo-detail-take-photo-button"
+          />
+        </View>
 
         <View style={styles.actionsCard}>
           <Text style={styles.actionsTitle}>Actions</Text>
@@ -346,6 +386,29 @@ const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#f5f5f7'},
   centered: {justifyContent: 'center', alignItems: 'center'},
   scroll: {padding: 16, paddingBottom: 40},
+  photosCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 6,
+    marginBottom: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#ddd',
+    gap: 8,
+  },
+  photosCardTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#888',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  photosCardSubtitle: {
+    fontSize: 13,
+    color: '#555',
+    lineHeight: 18,
+    marginBottom: 4,
+  },
   title: {
     fontSize: 22,
     fontWeight: '700',
