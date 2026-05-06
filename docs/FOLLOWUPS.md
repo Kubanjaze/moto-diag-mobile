@@ -170,6 +170,24 @@ When picking one up, file it as a tiny phase OR fold it into the next phase that
   2. **OR** any production occurrence of the composer malformed-payload defensive case forces immediate (a)-only escalation. Same shape as F22's escalation criterion (3-strike-then-promote).
 - **Explicitly NOT in Phase 192B**: telemetry instrumentation fragments the data model + adds friction to feature shipping. 192B ships the share surface; F30 ships the visibility into how it gets used.
 
+### F36 (NEW) — Backend `ShopMember` workload counts + member-picker workload column
+
+- **Surfaced:** Phase 193 Mobile Commit 2 build (2026-05-06). Plan v1.0 Section E refinement specified the `MemberPickerModal` should show member workload counts ("Jose — 4 active WOs") IF backend exposed them. Commit 2 audit verified backend `ShopMember` Pydantic model in `src/motodiag/shop/rbac.py:72` exposes `user_id / shop_id / role / joined_at / is_active / username / full_name` — NO `active_wo_count` field. Separate `MechanicWorkload` model exists at `rbac.py:95` (`mechanic_user_id / open_count / in_progress_count / on_hold_count / total_open`) but isn't joined into the `/v1/shop/{shop_id}/members` endpoint response.
+- **Severity:** UX polish. Mechanics + shop owners benefit from seeing "who's the most loaded right now" when reassigning WOs. Without it, the picker shows raw member list with no workload signal — defaults can be guessed but not confirmed.
+- **Scope estimate:** small. Two pieces:
+  - **(a) Backend route extension:** join `MechanicWorkload.total_open` into `list_shop_members` endpoint response. Add a query param `include_workload=true` for opt-in. ~15 LoC + 2 tests.
+  - **(b) Mobile picker rendering:** `MemberPickerModal` already accepts `active_wo_count` field on `ShopMember` shape (typed at Commit 1). When backend surfaces it, picker rows render "{name} — {N} active WOs" inline. ~5 LoC change in `MemberPickerModal.tsx`.
+- **Decision:** **Recommended target Phase 193+ follow-up phase OR fold into a future shop-management UI phase.** NOT urgent — picker works without it; mechanics can ask each other or check a separate workload-summary surface (deferred). Promotion trigger: shop-owner user feedback OR mechanics reporting "I don't know who to assign to" friction.
+- **Mobile-side already-prepared**: `useShopMembers` hook + `ShopMember` interface accept `active_wo_count` field as optional. When backend exposes it, mobile picks it up automatically via OpenAPI regen + the typed pass-through.
+
+### F37 (NEW) — Extend F33 audit step to include enum-value verification
+
+- **Surfaced:** Phase 193 Commit 0.5 build (2026-05-06). Plan v1.0 Section E + Commit 1's `useShopMembers.ts` declared `ShopMember.role` as `'owner' | 'manager' | 'mechanic' | 'apprentice' | 'viewer'`. Backend's actual enum is `('owner', 'tech', 'service_writer', 'apprentice')` per `src/motodiag/shop/rbac.py:111` `_validate_role`. Surfaced when test fixture `add_shop_member(role="mechanic")` raised `InvalidRoleError`.
+- **Severity:** process / discipline. F33 (existing-code overlap audit) catches structural overlaps via grep on functionality keywords. It does NOT catch enum-value mismatches when the plan references specific values that don't exist in the backend enum. Phase 193's `mechanic` / `manager` / `viewer` were intuitive role names but mismatched backend's actual choices.
+- **Pattern:** Plan v1.0 mental-model assumptions about specific enum values (role names, status strings, action verbs) can mismatch backend reality. F33 doesn't run a value-level audit; it runs a name-level audit.
+- **Scope estimate:** small. Extend F33's "Step 0 — existing-code overlap audit" in `CLAUDE.md` with a sub-step: "(6) When the plan references specific enum values (role names, status strings, action verbs), verify against the backend's actual enum definition. Search `src/motodiag/shop/*.py` for the enum declaration; confirm spelling + completeness."
+- **Decision:** **Recommended trigger: third instance of plan-vs-reality enum mismatch surfaces.** Phase 191B's `analysis_state` naming was a near-miss (caught at Phase 191B Commit 6 when state-machine tests revealed the enum). Phase 193's role enum is data point 1 explicitly catching a mismatch. Defer F37 filing until 3rd instance to avoid premature process refinement. **NOT load-bearing for current phases** — Phase 193's mismatch was caught at build-time + corrected at v1.0.2 amendment.
+
 ### F33 — Plan-writing template should include explicit "existing-code overlap audit" step — CLOSED Phase 193 kickoff
 
 **Closed:** 2026-05-06 at Phase 193 kickoff. Promoted from F-ticket to CLAUDE.md canonical process via the workspace-root `CLAUDE.md` edit (Step 0 of "Phase build workflow").
