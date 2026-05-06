@@ -1,86 +1,66 @@
-// Phase 193 Mobile Commit 1 — ShopTab native-stack scaffold.
+// Phase 193 Mobile Commit 2 — ShopTab native-stack with real screens.
 //
-// Stack-internal screens (WorkOrderListScreen / WorkOrderDetailScreen
-// / ShopPickerScreen) land in Commit 2. This file ships the
-// stack scaffolding + a placeholder root screen so RootNavigator
-// can mount the tab + smoke testing has a target. Commit 2 swaps
-// the placeholder out for real screens without touching the
-// stack's structure.
+// Stack initial route: WorkOrderList. WorkOrderListScreen reads
+// AsyncStorage on mount + redirects to ShopPicker if no active
+// shop is set (Section D sticky picker semantics — App.tsx clears
+// the storage on cold-relaunch). Single-membership users hit a
+// future auto-skip path (deferred); for now ShopPicker shows
+// regardless when activeShopId is null.
+//
+// Plan v1.0 + v1.0.2 architectural commitments hold: data-driven
+// section composition (WorkOrderSectionCard renders the
+// WorkOrderSection discriminated union); RBAC-aware member picker
+// (corrected role enum: tech / apprentice for default filter).
 
 import React from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {StyleSheet, Text, View} from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
 
+import {ShopPickerScreen} from '../screens/ShopPickerScreen';
+import {WorkOrderDetailScreen} from '../screens/WorkOrderDetailScreen';
+import {WorkOrderListScreen} from '../screens/WorkOrderListScreen';
 import type {ShopStackParamList} from './types';
 
 const Stack = createNativeStackNavigator<ShopStackParamList>();
 
-/** Placeholder root for the ShopTab in Commit 1. Commit 2 replaces
- *  this with `WorkOrderListScreen` (after `ShopPickerScreen` resolves
- *  the active-shop selection). The placeholder exists so:
- *  - RootNavigator's tier-reactive tab rendering can be smoke-tested
- *    in Commit 1 (Step 10 of the architect-gate) before Commit 2's
- *    screens land.
- *  - The hooks layer + ShopAccessError typed union have a consumer-
- *    side surface that compiles + runs end-to-end.
- *
- *  Copy is deliberately minimal — no marketing fluff, no roadmap
- *  hints. Just "this surface arrives in Commit 2" so a tester who
- *  taps the tab during Commit 1 verification doesn't think it's
- *  broken. */
-function ShopPlaceholderScreen() {
-  return (
-    <SafeAreaView
-      style={styles.container}
-      edges={['top', 'bottom', 'left', 'right']}
-    >
-      <View style={styles.pane}>
-        <Text style={styles.title}>Shop dashboard</Text>
-        <Text style={styles.subtitle}>
-          Work orders, triage queue, and reassignment land in
-          Phase 193 Commit 2.
-        </Text>
-      </View>
-    </SafeAreaView>
-  );
-}
-
 export function ShopStack() {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator initialRouteName="WorkOrderList">
       <Stack.Screen
         name="WorkOrderList"
-        component={ShopPlaceholderScreen}
+        component={WorkOrderListScreen}
         options={{title: 'Shop'}}
       />
-      {/* ShopPicker + WorkOrderDetail Stack.Screen registrations
-          land in Commit 2 alongside their real screen components.
-          Adding them here in Commit 1 with placeholder components
-          would surface "this isn't ready yet" UX rather than the
-          honest "the whole tab arrives in Commit 2" framing. */}
+      <Stack.Screen
+        name="WorkOrderDetail"
+        component={WorkOrderDetailScreen}
+        options={{title: 'Work order'}}
+      />
+      <Stack.Screen
+        name="ShopPicker"
+        // ShopPickerScreen takes onShopPicked callback prop, but
+        // React Navigation only passes route + navigation. Wrap to
+        // bridge: pop back to WorkOrderList after pick (which then
+        // re-reads AsyncStorage on focus + finds the new shop).
+        // ShopPickerScreen's setActiveShopId write happens BEFORE
+        // onShopPicked fires, so the back-nav surfaces a populated
+        // active-shop state.
+        options={{
+          title: 'Choose shop',
+          presentation: 'modal',
+          headerShown: true,
+        }}
+      >
+        {({navigation}) => (
+          <ShopPickerScreen
+            onShopPicked={() => {
+              // Pop back to WorkOrderList — its useFocusEffect
+              // re-reads activeShopId + the new value drives the
+              // useWorkOrders hook automatically.
+              if (navigation.canGoBack()) navigation.goBack();
+            }}
+          />
+        )}
+      </Stack.Screen>
     </Stack.Navigator>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f5f5f7'},
-  pane: {
-    flex: 1,
-    padding: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#111',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#555',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-});

@@ -46,8 +46,9 @@ function renderHook<Result>(callback: () => Result) {
     ref.current = callback();
     return null;
   }
+  let renderer: ReactTestRenderer.ReactTestRenderer;
   ReactTestRenderer.act(() => {
-    ReactTestRenderer.create(React.createElement(HookRunner));
+    renderer = ReactTestRenderer.create(React.createElement(HookRunner));
   });
   return {
     result: {
@@ -56,8 +57,37 @@ function renderHook<Result>(callback: () => Result) {
         return ref.current;
       },
     },
+    unmount: () => {
+      ReactTestRenderer.act(() => {
+        renderer.unmount();
+      });
+    },
   };
 }
+
+// Auto-track hooks so afterEach can unmount them all (avoids
+// cross-test bleed where prior renderHook's fetchTier closure
+// fires api.GET against the next test's mock).
+const _activeHooks: Array<{unmount: () => void}> = [];
+const _origRenderHook = renderHook;
+function trackedRenderHook<Result>(callback: () => Result) {
+  const h = _origRenderHook(callback);
+  _activeHooks.push(h);
+  return h;
+}
+
+afterEach(() => {
+  while (_activeHooks.length > 0) {
+    const h = _activeHooks.pop();
+    if (h !== undefined) {
+      try {
+        h.unmount();
+      } catch {
+        // best-effort cleanup
+      }
+    }
+  }
+});
 
 async function waitFor(
   check: () => void,
@@ -120,7 +150,7 @@ describe('hasShopAccess', () => {
 describe('useTier', () => {
   it('fetches tier on mount when apiKey present', async () => {
     getMock.mockImplementation(() => ok({tier: 'shop', status: 'active'}));
-    const {result} = renderHook<UseTierResult>(() => useTier());
+    const {result} = trackedRenderHook<UseTierResult>(() => useTier());
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
@@ -130,7 +160,7 @@ describe('useTier', () => {
 
   it('skips fetch + sets tier=null when apiKey is null (sign-out path)', async () => {
     mockApiKey = null;
-    const {result} = renderHook<UseTierResult>(() => useTier());
+    const {result} = trackedRenderHook<UseTierResult>(() => useTier());
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
@@ -146,7 +176,7 @@ describe('useTier', () => {
     getMock.mockImplementation(() =>
       err(402, {title: 'Subscription required', status: 402}),
     );
-    const {result} = renderHook<UseTierResult>(() => useTier());
+    const {result} = trackedRenderHook<UseTierResult>(() => useTier());
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
@@ -158,7 +188,7 @@ describe('useTier', () => {
     getMock.mockImplementation(() =>
       err(404, {title: 'Not Found', status: 404}),
     );
-    const {result} = renderHook<UseTierResult>(() => useTier());
+    const {result} = trackedRenderHook<UseTierResult>(() => useTier());
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
@@ -170,18 +200,23 @@ describe('useTier', () => {
       'anonymous', 'individual', 'shop', 'company',
     ];
     for (const t of validTiers) {
-      getMock.mockImplementationOnce(() => ok({tier: t}));
-      const {result} = renderHook<UseTierResult>(() => useTier());
+      getMock.mockReset();
+      getMock.mockImplementation(() => ok({tier: t}));
+      const hook = trackedRenderHook<UseTierResult>(() => useTier());
       await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
+        expect(hook.result.current.isLoading).toBe(false);
       });
-      expect(result.current.tier).toBe(t);
+      expect(hook.result.current.tier).toBe(t);
+      // Unmount between iterations so each is fully isolated —
+      // prior iteration's fetchTier closure can't leak into the
+      // next via the mockImplementationOnce queue.
+      hook.unmount();
     }
   });
 
   it('falls back to individual on unknown tier string (defensive)', async () => {
     getMock.mockImplementation(() => ok({tier: 'enterprise_plus_pro'}));
-    const {result} = renderHook<UseTierResult>(() => useTier());
+    const {result} = trackedRenderHook<UseTierResult>(() => useTier());
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
@@ -190,7 +225,7 @@ describe('useTier', () => {
 
   it('exposes refetch for explicit caller-driven re-fetch', async () => {
     getMock.mockImplementationOnce(() => ok({tier: 'individual'}));
-    const {result} = renderHook<UseTierResult>(() => useTier());
+    const {result} = trackedRenderHook<UseTierResult>(() => useTier());
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
