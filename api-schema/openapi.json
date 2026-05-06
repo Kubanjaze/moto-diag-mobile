@@ -23,7 +23,7 @@
           "meta"
         ],
         "summary": "Liveness + DB connectivity check",
-        "description": "Returns 200 when the DB responds; 503 otherwise.\n\nUsed by load balancers / container schedulers. Does not exercise\nany downstream repos \u2014 minimal work per probe.",
+        "description": "Returns 200 when the DB responds; 503 otherwise.\n\nUsed by load balancers / container schedulers. Does not exercise\nany downstream repos — minimal work per probe.",
         "operationId": "healthz_healthz_get",
         "responses": {
           "200": {
@@ -93,6 +93,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -103,17 +109,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -189,6 +189,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -198,9 +201,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
@@ -272,6 +272,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -281,9 +284,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
@@ -354,6 +354,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -363,9 +366,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
@@ -516,6 +516,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -526,17 +532,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
           }
         },
         "security": [
@@ -609,6 +609,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -619,17 +625,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
           }
         },
         "security": [
@@ -703,6 +703,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -713,20 +722,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -808,6 +808,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -818,20 +827,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -896,6 +896,15 @@
           "204": {
             "description": "Successful Response"
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -906,20 +915,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -993,6 +993,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1003,20 +1012,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -1144,6 +1144,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1154,17 +1160,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
           }
         },
         "security": [
@@ -1237,6 +1237,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1247,17 +1253,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
           }
         },
         "security": [
@@ -1331,6 +1331,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1341,20 +1350,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -1436,6 +1436,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1446,20 +1455,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -1533,6 +1533,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1543,20 +1552,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -1630,6 +1630,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1640,20 +1649,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -1737,6 +1737,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1747,20 +1756,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -1844,6 +1844,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1854,20 +1863,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -1951,6 +1951,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -1961,20 +1970,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -2043,6 +2043,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -2052,9 +2055,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
@@ -2201,6 +2201,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -2210,9 +2213,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
@@ -2308,6 +2308,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -2318,17 +2324,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -2437,6 +2437,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -2446,9 +2449,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
@@ -2595,6 +2595,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -2604,9 +2607,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
@@ -2686,6 +2686,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -2696,17 +2702,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -2830,6 +2830,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -2839,9 +2842,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
@@ -2914,6 +2914,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -2924,17 +2930,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
           }
         },
         "security": [
@@ -3011,6 +3011,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -3021,17 +3027,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
           }
         },
         "security": [
@@ -3107,6 +3107,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -3117,20 +3126,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -3214,6 +3214,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -3224,20 +3233,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -3313,6 +3313,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -3323,20 +3332,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -3420,6 +3420,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -3430,20 +3439,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -3519,6 +3519,15 @@
           "204": {
             "description": "Successful Response"
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -3529,20 +3538,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -3618,6 +3618,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -3628,20 +3637,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -3725,6 +3725,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -3735,20 +3744,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -3833,6 +3833,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -3843,20 +3852,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -3960,6 +3960,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -3970,20 +3979,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -4067,6 +4067,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -4077,20 +4086,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -4109,7 +4109,7 @@
           "shop-management"
         ],
         "summary": "List work orders for the shop",
-        "description": "List shop work orders with optional sort dispatch.\n\nPhase 193 Commit 0: ``sort`` query param added for the mobile\nShop Dashboard's `Newest / Priority / Triage` toggle. Default\nbehavior preserved (omitting `sort` matches existing\n`list_work_orders` ordering \u2014 backward compatible).\n\nTriage sort calls :func:`build_triage_queue` server-side and\nunwraps each :class:`TriageItem` to its plain ``work_order``\ndict \u2014 clients get a uniform response shape regardless of sort.\nTriage rank / score / parts-ready context stay server-side this\nphase; explainability surface is filed as F35 (mobile FOLLOWUPS).",
+        "description": "List shop work orders with optional sort dispatch.\n\nPhase 193 Commit 0: ``sort`` query param added for the mobile\nShop Dashboard's `Newest / Priority / Triage` toggle. Default\nbehavior preserved (omitting `sort` matches existing\n`list_work_orders` ordering — backward compatible).\n\nTriage sort calls :func:`build_triage_queue` server-side and\nunwraps each :class:`TriageItem` to its plain ``work_order``\ndict — clients get a uniform response shape regardless of sort.\nTriage rank / score / parts-ready context stay server-side this\nphase; explainability surface is filed as F35 (mobile FOLLOWUPS).",
         "operationId": "list_work_orders_endpoint_v1_shop__shop_id__work_orders_get",
         "parameters": [
           {
@@ -4167,10 +4167,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Order: 'newest' (created_at DESC), 'priority' (priority ASC then created_at DESC \u2014 same as omitting), or 'triage' (build_triage_queue scoring; rich score / rank / parts-ready context computed server-side, response shape stays uniform \u2014 see Phase 193 plan v1.0 + F35 candidate).",
+              "description": "Order: 'newest' (created_at DESC), 'priority' (priority ASC then created_at DESC — same as omitting), or 'triage' (build_triage_queue scoring; rich score / rank / parts-ready context computed server-side, response shape stays uniform — see Phase 193 plan v1.0 + F35 candidate).",
               "title": "Sort"
             },
-            "description": "Order: 'newest' (created_at DESC), 'priority' (priority ASC then created_at DESC \u2014 same as omitting), or 'triage' (build_triage_queue scoring; rich score / rank / parts-ready context computed server-side, response shape stays uniform \u2014 see Phase 193 plan v1.0 + F35 candidate)."
+            "description": "Order: 'newest' (created_at DESC), 'priority' (priority ASC then created_at DESC — same as omitting), or 'triage' (build_triage_queue scoring; rich score / rank / parts-ready context computed server-side, response shape stays uniform — see Phase 193 plan v1.0 + F35 candidate)."
           },
           {
             "name": "X-API-Key",
@@ -4218,6 +4218,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -4228,20 +4237,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -4325,6 +4325,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -4335,20 +4344,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -4433,6 +4433,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -4443,20 +4452,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -4551,6 +4551,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -4561,20 +4570,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -4593,7 +4593,7 @@
           "shop-management"
         ],
         "summary": "Assign or unassign a mechanic on a work order",
-        "description": "Phase 193 Commit 0.5 \u2014 assign / unassign a mechanic on a WO.\n\nMirrors the transition endpoint's auth posture (basic shop\nmembership check via ``require_shop_access``). Backend's\n``assign_mechanic`` validates the target user exists; cross-shop\nWOs return 404 (matches transition endpoint's posture).\n\nBody shape: ``{mechanic_user_id: int | null}`` \u2014 ``null`` is\nexplicit unassign (required field; can't omit). Returns the\nupdated WO dict on success.",
+        "description": "Phase 193 Commit 0.5 — assign / unassign a mechanic on a WO.\n\nMirrors the transition endpoint's auth posture (basic shop\nmembership check via ``require_shop_access``). Backend's\n``assign_mechanic`` validates the target user exists; cross-shop\nWOs return 404 (matches transition endpoint's posture).\n\nBody shape: ``{mechanic_user_id: int | null}`` — ``null`` is\nexplicit unassign (required field; can't omit). Returns the\nupdated WO dict on success.",
         "operationId": "assign_work_order_mechanic_v1_shop__shop_id__work_orders__wo_id__assign_post",
         "parameters": [
           {
@@ -4670,6 +4670,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -4680,20 +4689,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -4813,6 +4813,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -4823,20 +4832,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -4920,6 +4920,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -4930,20 +4939,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -5047,6 +5047,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -5057,20 +5066,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -5156,6 +5156,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -5166,20 +5175,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -5283,6 +5283,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -5293,20 +5302,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -5392,6 +5392,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -5402,20 +5411,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -5513,6 +5513,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -5523,20 +5532,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -5628,6 +5628,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -5638,20 +5647,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -5749,6 +5749,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -5759,20 +5768,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -5848,6 +5848,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -5858,20 +5867,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -5938,6 +5938,15 @@
           "200": {
             "description": "Successful Response"
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -5948,20 +5957,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -6037,6 +6037,15 @@
           "200": {
             "description": "Successful Response"
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -6047,20 +6056,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -6136,6 +6136,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -6146,20 +6155,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -6226,6 +6226,15 @@
           "200": {
             "description": "Successful Response"
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -6236,20 +6245,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -6325,6 +6325,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -6335,20 +6344,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -6415,6 +6415,15 @@
           "200": {
             "description": "Successful Response"
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -6425,20 +6434,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "402": {
-            "$ref": "#/components/responses/SubscriptionRequired"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -6524,6 +6524,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -6534,17 +6540,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -6621,6 +6621,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -6631,17 +6637,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -6726,6 +6726,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -6736,17 +6742,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -6763,7 +6763,7 @@
           "videos"
         ],
         "summary": "Soft-delete a video",
-        "description": "Soft-delete via ``deleted_at``. Idempotent \u2014 second call also 204.",
+        "description": "Soft-delete via ``deleted_at``. Idempotent — second call also 204.",
         "operationId": "delete_video_v1_sessions__session_id__videos__video_id__delete",
         "parameters": [
           {
@@ -6823,6 +6823,12 @@
           "204": {
             "description": "Successful Response"
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -6833,17 +6839,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
@@ -6927,6 +6927,12 @@
               "video/mp4": {}
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -6937,17 +6943,694 @@
               }
             }
           },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/photos": {
+      "post": {
+        "tags": [
+          "work-order-photos"
+        ],
+        "summary": "Upload a photo to a work order (and optionally an issue)",
+        "description": "Multipart upload: ``file`` (image bytes) + ``metadata`` (JSON).\n\nPipeline (per Section K):\n1. Validate WO + shop scope (403/404).\n2. Parse + validate metadata JSON (422 on shape error).\n3. Read multipart payload.\n4. Enforce quotas BEFORE running the pipeline (avoid wasted CPU\n   on quota-exceeded calls).\n5. Run ``photo_pipeline.normalize_photo`` — surfaces decode errors\n   as 422 and unsupported-format (HEIC without pillow-heif) as 415.\n6. Validate ``pair_id`` if present (must reference a live photo on\n   the same WO; 422 otherwise).\n7. Insert DB row with placeholder file_path; resolve canonical disk\n   path; write JPEG bytes; update DB row with the real path.\n8. Return 201 with the freshly-written row.",
+        "operationId": "upload_wo_photo_v1_shop__shop_id__work_orders__wo_id__photos_post",
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "wo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Wo Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_wo_photo_v1_shop__shop_id__work_orders__wo_id__photos_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkOrderPhotoResponse"
+                }
+              }
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "work-order-photos"
+        ],
+        "summary": "List photos attached to a work order",
+        "operationId": "list_wo_photos_endpoint_v1_shop__shop_id__work_orders__wo_id__photos_get",
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "wo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Wo Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkOrderPhotoResponse"
+                  },
+                  "title": "Response List Wo Photos Endpoint V1 Shop  Shop Id  Work Orders  Wo Id  Photos Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/photos/{photo_id}": {
+      "get": {
+        "tags": [
+          "work-order-photos"
+        ],
+        "summary": "Get one photo by id",
+        "operationId": "get_wo_photo_endpoint_v1_shop__shop_id__work_orders__wo_id__photos__photo_id__get",
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "wo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Wo Id"
+            }
+          },
+          {
+            "name": "photo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Photo Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkOrderPhotoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "work-order-photos"
+        ],
+        "summary": "Re-classify a photo (post-capture role / pair / issue updates)",
+        "description": "Post-capture re-classification surface.\n\nUsed by the \"X photos waiting to be classified\" affordance — moves\nphotos from ``role='undecided'`` to a typed role + optionally pairs\nthem. Only fields present in the request body are updated.",
+        "operationId": "patch_wo_photo_v1_shop__shop_id__work_orders__wo_id__photos__photo_id__patch",
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "wo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Wo Id"
+            }
+          },
+          {
+            "name": "photo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Photo Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkOrderPhotoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "work-order-photos"
+        ],
+        "summary": "Soft-delete a photo",
+        "description": "Soft-delete via ``deleted_at``. Idempotent — second call also 204.\n\nPhotos that referenced this one as ``pair_id`` will see their\n``pair_id`` SET NULL via the FK constraint (migration 041).",
+        "operationId": "delete_wo_photo_v1_shop__shop_id__work_orders__wo_id__photos__photo_id__delete",
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "wo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Wo Id"
+            }
+          },
+          {
+            "name": "photo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Photo Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/photos/{photo_id}/file": {
+      "get": {
+        "tags": [
+          "work-order-photos"
+        ],
+        "summary": "Stream the binary JPEG file",
+        "operationId": "get_wo_photo_file_v1_shop__shop_id__work_orders__wo_id__photos__photo_id__file_get",
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "wo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Wo Id"
+            }
+          },
+          {
+            "name": "photo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Photo Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/jpeg": {}
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
           }
         },
         "security": [
@@ -6981,6 +7664,25 @@
           "metadata"
         ],
         "title": "Body_upload_video_v1_sessions__session_id__videos_post"
+      },
+      "Body_upload_wo_photo_v1_shop__shop_id__work_orders__wo_id__photos_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "metadata": {
+            "type": "string",
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "metadata"
+        ],
+        "title": "Body_upload_wo_photo_v1_shop__shop_id__work_orders__wo_id__photos_post"
       },
       "CheckoutSessionRequest": {
         "properties": {
@@ -7280,7 +7982,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -7304,27 +8006,27 @@
           },
           "tax_rate": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Tax Rate",
-            "default": 0.0
+            "default": 0
           },
           "shop_supplies_pct": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Shop Supplies Pct",
-            "default": 0.0
+            "default": 0
           },
           "shop_supplies_flat_cents": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Shop Supplies Flat Cents",
             "default": 0
           },
           "diagnostic_fee_cents": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Diagnostic Fee Cents",
             "default": 0
           },
@@ -7332,7 +8034,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -7685,7 +8387,55 @@
           "preset"
         ],
         "title": "PdfRenderRequest",
-        "description": "Body for POST ``/v1/reports/session/{id}/pdf`` (Phase 192B).\n\n``preset`` is required (FastAPI returns 422 if absent); the\nsibling GET route is kept for the unfiltered \"full PDF\" case.\n``overrides`` is reserved for the future per-card-toggle UI\n(filed as F28 in mobile FOLLOWUPS) \u2014 accepted by the composer\nbut NOT yet exposed by this route. Adding it to the schema now\nwould build unused API surface; it'll land alongside the\nmatching mobile UI when F28 ships."
+        "description": "Body for POST ``/v1/reports/session/{id}/pdf`` (Phase 192B).\n\n``preset`` is required (FastAPI returns 422 if absent); the\nsibling GET route is kept for the unfiltered \"full PDF\" case.\n``overrides`` is reserved for the future per-card-toggle UI\n(filed as F28 in mobile FOLLOWUPS) — accepted by the composer\nbut NOT yet exposed by this route. Adding it to the schema now\nwould build unused API surface; it'll land alongside the\nmatching mobile UI when F28 ships."
+      },
+      "PhotoPatchRequest": {
+        "properties": {
+          "role": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "before",
+                  "after",
+                  "general",
+                  "undecided"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "pair_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pair Id"
+          },
+          "issue_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issue Id"
+          }
+        },
+        "type": "object",
+        "title": "PhotoPatchRequest",
+        "description": "PATCH body for post-capture re-classification + pairing updates."
       },
       "PortalSessionResponse": {
         "properties": {
@@ -7716,8 +8466,8 @@
           },
           "vehicle_year": {
             "type": "integer",
-            "maximum": 2100.0,
-            "minimum": 1900.0,
+            "maximum": 2100,
+            "minimum": 1900,
             "title": "Vehicle Year"
           },
           "symptoms": {
@@ -8041,8 +8791,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 1.0,
-                "minimum": 0.0
+                "maximum": 1,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -8065,7 +8815,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -8088,7 +8838,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -8549,15 +9299,15 @@
           },
           "year": {
             "type": "integer",
-            "maximum": 2100.0,
-            "minimum": 1900.0,
+            "maximum": 2100,
+            "minimum": 1900,
             "title": "Year"
           },
           "engine_cc": {
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -8646,7 +9396,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -8663,7 +9413,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -8925,8 +9675,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 2100.0,
-                "minimum": 1900.0
+                "maximum": 2100,
+                "minimum": 1900
               },
               {
                 "type": "null"
@@ -8938,7 +9688,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -9045,7 +9795,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -9068,7 +9818,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -9079,7 +9829,7 @@
         },
         "type": "object",
         "title": "VehicleUpdateRequest",
-        "description": "Partial update \u2014 every field optional."
+        "description": "Partial update — every field optional."
       },
       "VersionInfo": {
         "properties": {
@@ -9120,7 +9870,7 @@
           "unsupported"
         ],
         "title": "VideoAnalysisState",
-        "description": "Analysis state machine for a session video.\n\nTransitions (per Phase 191B v1.0 plan):\n    pending      \u2500\u2500worker-picks-up\u2500\u2500\u25b6 analyzing\n    analyzing    \u2500\u2500findings-saved\u2500\u2500\u25b6  analyzed\n    analyzing    \u2500\u2500ffmpeg-failed\u2500\u2500\u25b6   unsupported  (terminal)\n    analyzing    \u2500\u2500vision-failed\u2500\u2500\u25b6   analysis_failed  (retryable)"
+        "description": "Analysis state machine for a session video.\n\nTransitions (per Phase 191B v1.0 plan):\n    pending      ──worker-picks-up──▶ analyzing\n    analyzing    ──findings-saved──▶  analyzed\n    analyzing    ──ffmpeg-failed──▶   unsupported  (terminal)\n    analyzing    ──vision-failed──▶   analysis_failed  (retryable)"
       },
       "VideoResponse": {
         "properties": {
@@ -9131,25 +9881,25 @@
           },
           "duration_ms": {
             "type": "integer",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Duration Ms",
             "description": "Recording duration in milliseconds"
           },
           "width": {
             "type": "integer",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Width",
             "description": "Pixel width"
           },
           "height": {
             "type": "integer",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Height",
             "description": "Pixel height"
           },
           "file_size_bytes": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "File Size Bytes",
             "description": "File size in bytes"
           },
@@ -9234,7 +9984,7 @@
           "created_at"
         ],
         "title": "VideoResponse",
-        "description": "API response shape \u2014 includes server-managed fields + analysis state.\n\nNote: `file_path` and `sha256` are deliberately omitted from this\nresponse model. They are internal storage details and exposing them\non the wire leaks information about the backend's filesystem layout\nand dedup pipeline. Mobile reads videos via the dedicated\n`/v1/sessions/{id}/videos/{video_id}/file` stream endpoint."
+        "description": "API response shape — includes server-managed fields + analysis state.\n\nNote: `file_path` and `sha256` are deliberately omitted from this\nresponse model. They are internal storage details and exposing them\non the wire leaks information about the backend's filesystem layout\nand dedup pipeline. Mobile reads videos via the dedicated\n`/v1/sessions/{id}/videos/{video_id}/file` stream endpoint."
       },
       "VideoUploadState": {
         "type": "string",
@@ -9242,7 +9992,7 @@
           "uploaded"
         ],
         "title": "VideoUploadState",
-        "description": "Upload-side state for a session video.\n\nPhase 191B reserves only `uploaded` \u2014 Phase 192+ may add `pending`\n(multi-part upload in progress) and `failed` (network drop mid-upload)."
+        "description": "Upload-side state for a session video.\n\nPhase 191B reserves only `uploaded` — Phase 192+ may add `pending`\n(multi-part upload in progress) and `failed` (network drop mid-upload)."
       },
       "WorkOrderAssignRequest": {
         "properties": {
@@ -9256,7 +10006,7 @@
               }
             ],
             "title": "Mechanic User Id",
-            "description": "User id of the mechanic to assign. ``null`` (explicit) unassigns the WO. Required field \u2014 pass ``null`` rather than omitting to unassign."
+            "description": "User id of the mechanic to assign. ``null`` (explicit) unassigns the WO. Required field — pass ``null`` rather than omitting to unassign."
           }
         },
         "type": "object",
@@ -9264,7 +10014,7 @@
           "mechanic_user_id"
         ],
         "title": "WorkOrderAssignRequest",
-        "description": "Phase 193 Commit 0.5 \u2014 assign / unassign a mechanic on a WO.\n\n``mechanic_user_id`` is required (None means explicit unassign).\nSame auth posture as the transition endpoint: caller must be a\nmember of the shop. RBAC tightening (e.g., manager/owner-only\nreassignment of OTHER mechanics' WOs) is its own follow-up;\nPhase 193 keeps parity with transition's basic membership check."
+        "description": "Phase 193 Commit 0.5 — assign / unassign a mechanic on a WO.\n\n``mechanic_user_id`` is required (None means explicit unassign).\nSame auth posture as the transition endpoint: caller must be a\nmember of the shop. RBAC tightening (e.g., manager/owner-only\nreassignment of OTHER mechanics' WOs) is its own follow-up;\nPhase 193 keeps parity with transition's basic membership check."
       },
       "WorkOrderCreateRequest": {
         "properties": {
@@ -9295,8 +10045,8 @@
           },
           "priority": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Priority",
             "default": 3
           },
@@ -9304,7 +10054,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -9331,6 +10081,127 @@
           "title"
         ],
         "title": "WorkOrderCreateRequest"
+      },
+      "WorkOrderPhotoResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "work_order_id": {
+            "type": "integer",
+            "title": "Work Order Id"
+          },
+          "issue_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issue Id"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "before",
+              "after",
+              "general",
+              "undecided"
+            ],
+            "title": "Role"
+          },
+          "pair_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pair Id"
+          },
+          "width": {
+            "type": "integer",
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "title": "Height"
+          },
+          "file_size_bytes": {
+            "type": "integer",
+            "title": "File Size Bytes"
+          },
+          "captured_at": {
+            "type": "string",
+            "title": "Captured At"
+          },
+          "uploaded_by_user_id": {
+            "type": "integer",
+            "title": "Uploaded By User Id"
+          },
+          "analysis_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis State"
+          },
+          "analysis_findings": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Findings"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "work_order_id",
+          "issue_id",
+          "role",
+          "pair_id",
+          "width",
+          "height",
+          "file_size_bytes",
+          "captured_at",
+          "uploaded_by_user_id",
+          "analysis_state",
+          "analysis_findings",
+          "source",
+          "created_at"
+        ],
+        "title": "WorkOrderPhotoResponse",
+        "description": "Wire response — internal storage details (sha256, file_path) omitted."
       },
       "WorkOrderTransitionRequest": {
         "properties": {
@@ -9362,7 +10233,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -9462,7 +10333,7 @@
         }
       },
       "NotFound": {
-        "description": "Resource does not exist OR belongs to another owner \u2014 both cases return 404 to avoid enumeration attacks.",
+        "description": "Resource does not exist OR belongs to another owner — both cases return 404 to avoid enumeration attacks.",
         "content": {
           "application/json": {
             "schema": {
@@ -9512,7 +10383,7 @@
         }
       },
       "InternalError": {
-        "description": "Unexpected server error. `detail` is intentionally omitted on 5xx responses \u2014 check the correlation `request_id` and server logs.",
+        "description": "Unexpected server error. `detail` is intentionally omitted on 5xx responses — check the correlation `request_id` and server logs.",
         "content": {
           "application/json": {
             "schema": {
@@ -9538,7 +10409,7 @@
     },
     {
       "name": "vehicles",
-      "description": "Caller's garage \u2014 add, list, update, or remove bikes you own. Tier-quota gated (individual=5, shop=50, company=unlimited)."
+      "description": "Caller's garage — add, list, update, or remove bikes you own. Tier-quota gated (individual=5, shop=50, company=unlimited)."
     },
     {
       "name": "sessions",
@@ -9554,7 +10425,7 @@
     },
     {
       "name": "reports",
-      "description": "Downloadable reports in JSON or PDF \u2014 diagnostic session reports (session owner), work-order receipts (shop-tier), invoice PDFs (shop-tier)."
+      "description": "Downloadable reports in JSON or PDF — diagnostic session reports (session owner), work-order receipts (shop-tier), invoice PDFs (shop-tier)."
     },
     {
       "name": "live",
@@ -9562,7 +10433,7 @@
     },
     {
       "name": "videos",
-      "description": "Video diagnostic uploads + Claude Vision AI analysis nested under a session. POST upload (shop-tier + multipart) / GET list / GET single / DELETE soft-delete / GET binary file-stream. Per-session caps: 10 videos / 1 GB. Per-tier monthly: 0/200/unlimited for individual/shop/company. ffmpeg subprocess + Vision pipeline drive the analysis worker through pending \u2192 analyzing \u2192 analyzed | analysis_failed | unsupported. Phase 191B."
+      "description": "Video diagnostic uploads + Claude Vision AI analysis nested under a session. POST upload (shop-tier + multipart) / GET list / GET single / DELETE soft-delete / GET binary file-stream. Per-session caps: 10 videos / 1 GB. Per-tier monthly: 0/200/unlimited for individual/shop/company. ffmpeg subprocess + Vision pipeline drive the analysis worker through pending → analyzing → analyzed | analysis_failed | unsupported. Phase 191B."
     }
   ],
   "servers": [

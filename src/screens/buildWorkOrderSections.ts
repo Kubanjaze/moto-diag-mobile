@@ -23,6 +23,7 @@
 import type {WorkOrderListRow} from '../hooks/useWorkOrders';
 import type {
   WorkOrderIssue,
+  WorkOrderPhoto,
   WorkOrderSection,
 } from '../types/workOrder';
 
@@ -47,6 +48,18 @@ export function buildWorkOrderSections(
     vehicle?: Record<string, unknown> | null;
     customer?: Record<string, unknown> | null;
   } = {},
+  /** Phase 194 — work-order photos. Caller (the WO detail screen)
+   *  fetches these in parallel via `useWorkOrderPhotos` and passes
+   *  the flat newest-first array in. The builder slots in a
+   *  WorkOrderPhotosSection variant + computes `undecided_count`
+   *  for the "X photos waiting to be classified" sticky banner.
+   *  Omit-when-empty: no photos = no Photos card (matches Notes
+   *  convention). The fourth-parameter expansion is the F9-discipline
+   *  answer to Section E's anticipated friction — photos are
+   *  structurally different from text-shaped variants, so the
+   *  function signature widens (NOT the photo data deforms into
+   *  label/value rows). */
+  photos: WorkOrderPhoto[] = [],
 ): WorkOrderSection[] {
   const sections: WorkOrderSection[] = [];
 
@@ -74,6 +87,23 @@ export function buildWorkOrderSections(
   const notes = (wo.description ?? '').trim();
   if (notes) {
     sections.push({kind: 'notes', body: notes});
+  }
+
+  // Photos — omit-when-empty per the convention. Phase 194 inserts
+  // BEFORE Lifecycle so the visual flow is "documentation media first,
+  // bookkeeping timestamps last" — mechanic mental model is to scroll
+  // through the visible artifacts of work, then check status. Order
+  // is not load-bearing in the discriminated union; this is just a
+  // UX call that future variants can re-order without re-litigation.
+  if (photos.length > 0) {
+    const undecidedCount = photos.filter(
+      (p) => p.role === 'undecided',
+    ).length;
+    sections.push({
+      kind: 'photos',
+      photos,
+      undecided_count: undecidedCount,
+    });
   }
 
   // Lifecycle — always present.

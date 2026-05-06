@@ -976,12 +976,103 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List photos attached to a work order */
+        get: operations["list_wo_photos_endpoint_v1_shop__shop_id__work_orders__wo_id__photos_get"];
+        put?: never;
+        /**
+         * Upload a photo to a work order (and optionally an issue)
+         * @description Multipart upload: ``file`` (image bytes) + ``metadata`` (JSON).
+         *
+         *     Pipeline (per Section K):
+         *     1. Validate WO + shop scope (403/404).
+         *     2. Parse + validate metadata JSON (422 on shape error).
+         *     3. Read multipart payload.
+         *     4. Enforce quotas BEFORE running the pipeline (avoid wasted CPU
+         *        on quota-exceeded calls).
+         *     5. Run ``photo_pipeline.normalize_photo`` — surfaces decode errors
+         *        as 422 and unsupported-format (HEIC without pillow-heif) as 415.
+         *     6. Validate ``pair_id`` if present (must reference a live photo on
+         *        the same WO; 422 otherwise).
+         *     7. Insert DB row with placeholder file_path; resolve canonical disk
+         *        path; write JPEG bytes; update DB row with the real path.
+         *     8. Return 201 with the freshly-written row.
+         */
+        post: operations["upload_wo_photo_v1_shop__shop_id__work_orders__wo_id__photos_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/photos/{photo_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one photo by id */
+        get: operations["get_wo_photo_endpoint_v1_shop__shop_id__work_orders__wo_id__photos__photo_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Soft-delete a photo
+         * @description Soft-delete via ``deleted_at``. Idempotent — second call also 204.
+         *
+         *     Photos that referenced this one as ``pair_id`` will see their
+         *     ``pair_id`` SET NULL via the FK constraint (migration 041).
+         */
+        delete: operations["delete_wo_photo_v1_shop__shop_id__work_orders__wo_id__photos__photo_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Re-classify a photo (post-capture role / pair / issue updates)
+         * @description Post-capture re-classification surface.
+         *
+         *     Used by the "X photos waiting to be classified" affordance — moves
+         *     photos from ``role='undecided'`` to a typed role + optionally pairs
+         *     them. Only fields present in the request body are updated.
+         */
+        patch: operations["patch_wo_photo_v1_shop__shop_id__work_orders__wo_id__photos__photo_id__patch"];
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/photos/{photo_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stream the binary JPEG file */
+        get: operations["get_wo_photo_file_v1_shop__shop_id__work_orders__wo_id__photos__photo_id__file_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /** Body_upload_video_v1_sessions__session_id__videos_post */
         Body_upload_video_v1_sessions__session_id__videos_post: {
+            /** File */
+            file: string;
+            /** Metadata */
+            metadata: string;
+        };
+        /** Body_upload_wo_photo_v1_shop__shop_id__work_orders__wo_id__photos_post */
+        Body_upload_wo_photo_v1_shop__shop_id__work_orders__wo_id__photos_post: {
             /** File */
             file: string;
             /** Metadata */
@@ -1215,6 +1306,18 @@ export interface components {
              * @enum {string}
              */
             preset: "full" | "customer" | "insurance";
+        };
+        /**
+         * PhotoPatchRequest
+         * @description PATCH body for post-capture re-classification + pairing updates.
+         */
+        PhotoPatchRequest: {
+            /** Role */
+            role?: ("before" | "after" | "general" | "undecided") | null;
+            /** Pair Id */
+            pair_id?: number | null;
+            /** Issue Id */
+            issue_id?: number | null;
         };
         /** PortalSessionResponse */
         PortalSessionResponse: {
@@ -1718,6 +1821,45 @@ export interface components {
             estimated_hours?: number | null;
             /** Intake Visit Id */
             intake_visit_id?: number | null;
+        };
+        /**
+         * WorkOrderPhotoResponse
+         * @description Wire response — internal storage details (sha256, file_path) omitted.
+         */
+        WorkOrderPhotoResponse: {
+            /** Id */
+            id: number;
+            /** Work Order Id */
+            work_order_id: number;
+            /** Issue Id */
+            issue_id: number | null;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "before" | "after" | "general" | "undecided";
+            /** Pair Id */
+            pair_id: number | null;
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+            /** File Size Bytes */
+            file_size_bytes: number;
+            /** Captured At */
+            captured_at: string;
+            /** Uploaded By User Id */
+            uploaded_by_user_id: number;
+            /** Analysis State */
+            analysis_state: string | null;
+            /** Analysis Findings */
+            analysis_findings: {
+                [key: string]: unknown;
+            } | null;
+            /** Source */
+            source: string | null;
+            /** Created At */
+            created_at: string;
         };
         /** WorkOrderTransitionRequest */
         WorkOrderTransitionRequest: {
@@ -4486,6 +4628,251 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                     "video/mp4": unknown;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    list_wo_photos_endpoint_v1_shop__shop_id__work_orders__wo_id__photos_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkOrderPhotoResponse"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    upload_wo_photo_v1_shop__shop_id__work_orders__wo_id__photos_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_wo_photo_v1_shop__shop_id__work_orders__wo_id__photos_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkOrderPhotoResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_wo_photo_endpoint_v1_shop__shop_id__work_orders__wo_id__photos__photo_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+                photo_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkOrderPhotoResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    delete_wo_photo_v1_shop__shop_id__work_orders__wo_id__photos__photo_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+                photo_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    patch_wo_photo_v1_shop__shop_id__work_orders__wo_id__photos__photo_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+                photo_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PhotoPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkOrderPhotoResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_wo_photo_file_v1_shop__shop_id__work_orders__wo_id__photos__photo_id__file_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+                photo_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "image/jpeg": unknown;
                 };
             };
             401: components["responses"]["Unauthorized"];

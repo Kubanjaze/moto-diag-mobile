@@ -17,6 +17,21 @@
 // instead of a crash. Pin so a future refactor that drops the
 // defensive branch (e.g., switching to exhaustive switch) breaks
 // loudly.
+//
+// Phase 194: photos variant import-pulls photoStorageCache → RNFS.
+// Stub RNFS at module level so jest's babel-jest transform can
+// resolve `import RNFS from 'react-native-fs'` without choking on
+// the lib's untranspiled flow types.
+
+jest.mock('react-native-fs', () => ({
+  DocumentDirectoryPath: '/doc',
+  exists: jest.fn(async () => false),
+  mkdir: jest.fn(async () => {}),
+  readDir: jest.fn(async () => []),
+  moveFile: jest.fn(async () => {}),
+  copyFile: jest.fn(async () => {}),
+  unlink: jest.fn(async () => {}),
+}));
 
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
@@ -69,6 +84,18 @@ describe('Smoke gate Step 9 — data-driven section rendering', () => {
       },
       {kind: 'notes', body: 'Customer reports squeal at low speed.'},
       {kind: 'lifecycle', rows: [['Status', 'in_progress']]},
+      // Phase 194 — photos variant added.
+      {
+        kind: 'photos',
+        photos: [{
+          id: 1, work_order_id: 1, issue_id: null, role: 'general',
+          pair_id: null, width: 2048, height: 1536,
+          captured_at: '2026-05-06', uploaded_by_user_id: 1,
+          analysis_state: null, analysis_findings: null,
+          source: null, created_at: '2026-05-06',
+        }],
+        undecided_count: 0,
+      },
     ];
 
     for (const section of sections) {
@@ -89,14 +116,12 @@ describe('Smoke gate Step 9 — data-driven section rendering', () => {
 
   it('gracefully renders an unknown discriminator type as "(Unknown section variant)"', () => {
     // Mock a future variant that the union doesn't yet cover.
-    // TypeScript would reject this at compile time, hence the
-    // explicit cast — but at runtime the screen could receive
-    // such a section if (a) backend ships a new section kind
-    // ahead of the mobile build OR (b) a test fixture / snapshot
-    // is malformed. The defensive branch must not crash.
+    // Phase 194 added `photos` as a real variant, so this test now
+    // uses `voice_transcripts` (Phase 195's anticipated kind) as the
+    // forward-looking unknown placeholder.
     const futureVariant = {
-      kind: 'photos',
-      photos: [{id: 1, uri: 'file:///fake.jpg'}],
+      kind: 'voice_transcripts',
+      transcripts: [{id: 1, text: 'fake'}],
     } as unknown as WorkOrderSection;
 
     let renderer!: ReactTestRenderer.ReactTestRenderer;
@@ -128,6 +153,95 @@ describe('Smoke gate Step 9 — data-driven section rendering', () => {
     });
     const texts = _allText(renderer);
     expect(texts).toContain('(Unknown section variant)');
+    ReactTestRenderer.act(() => {
+      renderer.unmount();
+    });
+  });
+
+  it('renders the photos variant with the Photos heading', () => {
+    const photos = {
+      kind: 'photos' as const,
+      photos: [{
+        id: 5, work_order_id: 1, issue_id: null, role: 'general' as const,
+        pair_id: null, width: 2048, height: 1536,
+        captured_at: '2026-05-06', uploaded_by_user_id: 1,
+        analysis_state: null, analysis_findings: null,
+        source: null, created_at: '2026-05-06',
+      }],
+      undecided_count: 0,
+    };
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <WorkOrderSectionCard section={photos} />,
+      );
+    });
+    const texts = _allText(renderer);
+    expect(texts).toContain('Photos');
+    expect(texts).not.toContain('(Unknown section variant)');
+    ReactTestRenderer.act(() => {
+      renderer.unmount();
+    });
+  });
+
+  it('renders the undecided banner with the count when undecided_count > 0', () => {
+    const photos = {
+      kind: 'photos' as const,
+      photos: [
+        {
+          id: 1, work_order_id: 1, issue_id: null,
+          role: 'undecided' as const, pair_id: null,
+          width: 2048, height: 1536,
+          captured_at: '2026-05-06', uploaded_by_user_id: 1,
+          analysis_state: null, analysis_findings: null,
+          source: null, created_at: '2026-05-06',
+        },
+        {
+          id: 2, work_order_id: 1, issue_id: null,
+          role: 'undecided' as const, pair_id: null,
+          width: 2048, height: 1536,
+          captured_at: '2026-05-06', uploaded_by_user_id: 1,
+          analysis_state: null, analysis_findings: null,
+          source: null, created_at: '2026-05-06',
+        },
+      ],
+      undecided_count: 2,
+    };
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <WorkOrderSectionCard
+          section={photos}
+          onUndecidedBannerPress={() => {}}
+        />,
+      );
+    });
+    const texts = _allText(renderer);
+    // RN Text + concatenated child expressions split into adjacent
+    // string nodes; the count fragment and the action fragment are
+    // distinct entries in the flattened text list.
+    const joined = texts.join('');
+    expect(joined).toContain('2 photos waiting to be classified');
+    expect(joined).toContain('tap to review');
+    ReactTestRenderer.act(() => {
+      renderer.unmount();
+    });
+  });
+
+  it('renders empty-state copy when photos array is empty', () => {
+    const photos = {
+      kind: 'photos' as const,
+      photos: [],
+      undecided_count: 0,
+    };
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <WorkOrderSectionCard section={photos} />,
+      );
+    });
+    const texts = _allText(renderer);
+    expect(texts).toContain('No photos yet.');
     ReactTestRenderer.act(() => {
       renderer.unmount();
     });

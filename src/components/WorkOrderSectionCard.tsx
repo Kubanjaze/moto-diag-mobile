@@ -9,29 +9,45 @@
 // the defensive default — pinned in smoke-gate Step 9.
 
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {Image, Pressable, StyleSheet, Text, View} from 'react-native';
 
+import {photoStorageCache} from '../services/photoStorageCache';
 import {
   isCustomerSection,
   isIssuesSection,
   isLifecycleSection,
   isNotesSection,
+  isPhotosSection,
   isVehicleSection,
   type WorkOrderIssue,
+  type WorkOrderPhoto,
   type WorkOrderSection,
 } from '../types/workOrder';
 
 interface Props {
   section: WorkOrderSection;
   testID?: string;
+  /** Phase 194 — tap on a photo thumbnail. Phase 194 wires this in
+   *  Mobile Commit 2 to navigate to the classify-later modal for
+   *  undecided photos and to a future PhotoDetailScreen for typed
+   *  photos. Optional; when undefined, photos render as static
+   *  thumbnails. */
+  onPhotoPress?: (photo: WorkOrderPhoto) => void;
+  /** Phase 194 — tap on the "X photos waiting to be classified"
+   *  sticky banner. Mobile Commit 2 wires this to the classify-later
+   *  surface. Optional; when undefined the banner is rendered but
+   *  inert (used by tests + early-prototype rendering). */
+  onUndecidedBannerPress?: () => void;
 }
 
-export function WorkOrderSectionCard({section, testID}: Props) {
+export function WorkOrderSectionCard({
+  section, testID, onPhotoPress, onUndecidedBannerPress,
+}: Props) {
   const heading = _heading(section);
   return (
     <View style={styles.card} testID={testID}>
       <Text style={styles.cardTitle}>{heading}</Text>
-      {_renderBody(section, testID)}
+      {_renderBody(section, testID, onPhotoPress, onUndecidedBannerPress)}
     </View>
   );
 }
@@ -43,21 +59,36 @@ function _heading(section: WorkOrderSection): string {
     case 'issues': return 'Issues';
     case 'notes': return 'Notes';
     case 'lifecycle': return 'Lifecycle';
+    case 'photos': return 'Photos';
   }
 }
 
 function _renderBody(
   section: WorkOrderSection,
   testID?: string,
+  onPhotoPress?: (photo: WorkOrderPhoto) => void,
+  onUndecidedBannerPress?: () => void,
 ): React.ReactNode {
   if (isVehicleSection(section)) return _renderRows(section.rows, testID);
   if (isCustomerSection(section)) return _renderRows(section.rows, testID);
   if (isLifecycleSection(section)) return _renderRows(section.rows, testID);
   if (isNotesSection(section)) return _renderNotes(section.body, testID);
   if (isIssuesSection(section)) return _renderIssues(section.issues, testID);
+  if (isPhotosSection(section)) {
+    return _renderPhotos(
+      section.photos,
+      section.undecided_count,
+      testID,
+      onPhotoPress,
+      onUndecidedBannerPress,
+    );
+  }
 
   // Defensive fallback — unknown variant. Smoke-gate Step 9 pins
-  // this branch.
+  // this branch. Cast to never to encode the exhaustive-switch
+  // guarantee for future maintainers.
+  const _exhaustive: never = section;
+  void _exhaustive;
   return <Text style={styles.unknownVariant}>(Unknown section variant)</Text>;
 }
 
@@ -164,6 +195,177 @@ function _renderIssues(
   );
 }
 
+function _renderPhotos(
+  photos: ReadonlyArray<WorkOrderPhoto>,
+  undecidedCount: number,
+  testID?: string,
+  onPhotoPress?: (photo: WorkOrderPhoto) => void,
+  onUndecidedBannerPress?: () => void,
+): React.ReactNode {
+  // Phase 194 plan Logic + Section D refinement: regroup the flat
+  // backend list into pairs (linked via pair_id, asymmetric roles
+  // before+after) + standalones (general) + undecided (banner).
+  // The backend doesn't pre-shape this — it returns flat newest-
+  // first. F9-discipline: the renderer's grouping logic lives
+  // here, NOT in the section-builder. The builder stays a thin
+  // pass-through; the renderer owns presentation.
+  const pairs = _collectPairs(photos);
+  const standalones = photos.filter(
+    (p) =>
+      p.role !== 'undecided' &&
+      !pairs.some(
+        (pp) => pp.before.id === p.id || pp.after.id === p.id,
+      ),
+  );
+
+  if (photos.length === 0) {
+    return (
+      <Text
+        style={styles.emptyText}
+        testID={testID !== undefined ? `${testID}-photos-empty` : undefined}
+      >
+        No photos yet.
+      </Text>
+    );
+  }
+
+  return (
+    <View testID={testID !== undefined ? `${testID}-photos` : undefined}>
+      {undecidedCount > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onUndecidedBannerPress}
+          style={styles.undecidedBanner}
+          testID={
+            testID !== undefined
+              ? `${testID}-photos-undecided-banner`
+              : undefined
+          }
+        >
+          <Text style={styles.undecidedBannerText}>
+            {undecidedCount === 1
+              ? '1 photo waiting to be classified'
+              : `${undecidedCount} photos waiting to be classified`}
+            {onUndecidedBannerPress ? ' — tap to review' : ''}
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {pairs.length > 0 ? (
+        <View
+          style={styles.pairsBlock}
+          testID={
+            testID !== undefined ? `${testID}-photos-pairs` : undefined
+          }
+        >
+          {pairs.map((pair) => (
+            <View
+              key={`pair-${pair.before.id}-${pair.after.id}`}
+              style={styles.pairRow}
+            >
+              {_renderPhotoSlot(pair.before, 'Before', testID, onPhotoPress)}
+              {_renderPhotoSlot(pair.after, 'After', testID, onPhotoPress)}
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {standalones.length > 0 ? (
+        <View
+          style={styles.standalonesGrid}
+          testID={
+            testID !== undefined
+              ? `${testID}-photos-standalones`
+              : undefined
+          }
+        >
+          {standalones.map((photo) =>
+            _renderPhotoSlot(photo, null, testID, onPhotoPress, photo.id),
+          )}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+interface PhotoPair {
+  before: WorkOrderPhoto;
+  after: WorkOrderPhoto;
+}
+
+function _collectPairs(
+  photos: ReadonlyArray<WorkOrderPhoto>,
+): PhotoPair[] {
+  // Walk newest-first; for each before-photo, find its mate via
+  // pair_id (the partner's pair_id mirrors back). De-dup so a pair
+  // is only emitted once even though both rows reference each other.
+  const byId = new Map<number, WorkOrderPhoto>();
+  for (const p of photos) byId.set(p.id, p);
+  const seen = new Set<number>();
+  const pairs: PhotoPair[] = [];
+  for (const p of photos) {
+    if (seen.has(p.id)) continue;
+    if (p.role !== 'before' && p.role !== 'after') continue;
+    if (p.pair_id === null) continue;
+    const partner = byId.get(p.pair_id);
+    if (partner === undefined) continue;
+    if (partner.role === p.role) continue; // both 'before' or both 'after' — not a pair
+    seen.add(p.id);
+    seen.add(partner.id);
+    const before = p.role === 'before' ? p : partner;
+    const after = p.role === 'after' ? p : partner;
+    pairs.push({before, after});
+  }
+  return pairs;
+}
+
+function _renderPhotoSlot(
+  photo: WorkOrderPhoto,
+  label: string | null,
+  testID?: string,
+  onPhotoPress?: (photo: WorkOrderPhoto) => void,
+  uniqueKeyHint?: number,
+): React.ReactNode {
+  const cachedUri = photoStorageCache.lookup(String(photo.id));
+  const slotTestID =
+    testID !== undefined
+      ? `${testID}-photo-${photo.id}`
+      : undefined;
+  const inner =
+    cachedUri !== null ? (
+      <Image
+        source={{uri: cachedUri}}
+        style={styles.thumbnail}
+        resizeMode="cover"
+        testID={slotTestID !== undefined ? `${slotTestID}-image` : undefined}
+      />
+    ) : (
+      <View
+        style={[styles.thumbnail, styles.thumbnailPlaceholder]}
+        testID={
+          slotTestID !== undefined ? `${slotTestID}-placeholder` : undefined
+        }
+      >
+        <Text style={styles.thumbnailPlaceholderText}>
+          On server only
+        </Text>
+      </View>
+    );
+
+  return (
+    <Pressable
+      key={`photo-${photo.id}-${uniqueKeyHint ?? ''}`}
+      style={styles.photoSlot}
+      accessibilityRole={onPhotoPress ? 'button' : undefined}
+      onPress={onPhotoPress ? () => onPhotoPress(photo) : undefined}
+      testID={slotTestID}
+    >
+      {inner}
+      {label ? <Text style={styles.photoLabel}>{label}</Text> : null}
+    </Pressable>
+  );
+}
+
 function _severityChipStyle(
   severity: WorkOrderIssue['severity'],
 ) {
@@ -250,4 +452,62 @@ const styles = StyleSheet.create({
   severityCritical: {backgroundColor: '#fee'},
   severityTextCritical: {color: '#a00000'},
   unknownVariant: {fontSize: 13, color: '#888', fontStyle: 'italic'},
+  // Phase 194 photos variant
+  undecidedBanner: {
+    backgroundColor: '#fff8d0',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#e6cc66',
+  },
+  undecidedBannerText: {
+    fontSize: 13,
+    color: '#7a5c00',
+    fontWeight: '600',
+  },
+  pairsBlock: {
+    marginBottom: 10,
+  },
+  pairRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 10,
+  },
+  standalonesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  photoSlot: {
+    flex: 1,
+    minWidth: 100,
+    maxWidth: 160,
+  },
+  thumbnail: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 6,
+    backgroundColor: '#f1f1f1',
+  },
+  thumbnailPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  thumbnailPlaceholderText: {
+    fontSize: 10,
+    color: '#888',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingHorizontal: 4,
+  },
+  photoLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#555',
+    textAlign: 'center',
+    marginTop: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
 });
