@@ -113,4 +113,17 @@ export type ShopStackParamList = {
    *  mechanic pick before/after/general + optional pair partner.
    *  Mobile Commit 2 adds the route. */
   ClassifyPhotos: {shopId: number; woId: number};
+  /** Phase 195 — voice memo capture screen. Mic-only permission gate;
+   *  button-tap-to-start-and-stop affordance (Section K — VAD
+   *  deferred to 195B); on-device STT preview parallel with raw audio
+   *  capture; multipart upload to backend via `useWorkOrderTranscripts`.
+   *  `issueId` optional (mechanic can attach to a specific issue or
+   *  just to the WO). */
+  VoiceCapture: {shopId: number; woId: number; issueId?: number};
+  /** Phase 195 — transcript review surface. Reached from a transcript
+   *  card or extracted-symptom chip on WorkOrderTranscriptsSection.
+   *  Mechanic confirms / edits extracted symptoms + picks
+   *  linked_symptom_id from KB catalog. Mobile Commit 2 adds the
+   *  route. */
+  TranscriptReview: {shopId: number; woId: number; transcriptId: number};
 };

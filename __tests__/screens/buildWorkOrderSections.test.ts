@@ -318,3 +318,107 @@ describe('buildWorkOrderSections — photos variant (Phase 194)', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------
+// Phase 195 — transcripts variant integration (Section E test #2)
+// ---------------------------------------------------------------
+
+import type {WorkOrderTranscript} from '../../src/types/workOrder';
+
+function makeTranscript(
+  overrides: Partial<WorkOrderTranscript> = {},
+): WorkOrderTranscript {
+  return {
+    id: 1,
+    work_order_id: 1,
+    issue_id: null,
+    audio_format: 'm4a',
+    duration_ms: 5000,
+    sample_rate_hz: 16000,
+    language: 'en-US',
+    captured_at: '2026-05-07T10:00:00Z',
+    uploaded_by_user_id: 1,
+    preview_text: 'rough idle when warm',
+    preview_engine: 'ios-speech',
+    extraction_state: 'extracted',
+    extracted_at: '2026-05-07T10:00:01Z',
+    audio_deleted_at: null,
+    source: null,
+    created_at: '2026-05-07T10:00:01Z',
+    extracted_symptoms: [],
+    ...overrides,
+  };
+}
+
+describe('buildWorkOrderSections — transcripts variant (Phase 195, Section E test #2)', () => {
+  it('omits transcripts section when array is empty', () => {
+    const sections = buildWorkOrderSections(baseWO, [], {}, [], []);
+    expect(sections.map(s => s.kind)).not.toContain('transcripts');
+  });
+
+  it('inserts transcripts section when at least one transcript present', () => {
+    const sections = buildWorkOrderSections(
+      baseWO, [], {}, [], [makeTranscript({id: 1})],
+    );
+    expect(sections.map(s => s.kind)).toContain('transcripts');
+  });
+
+  it('places transcripts AFTER photos and BEFORE lifecycle', () => {
+    // Provide 1 photo + 1 transcript; verify order is photos →
+    // transcripts → lifecycle.
+    const photo: import('../../src/types/workOrder').WorkOrderPhoto = {
+      id: 99, work_order_id: 1, issue_id: null, role: 'general',
+      pair_id: null, width: 100, height: 100,
+      captured_at: '2026-05-07', uploaded_by_user_id: 1,
+      analysis_state: null, analysis_findings: null, source: null,
+      created_at: '2026-05-07',
+    };
+    const sections = buildWorkOrderSections(
+      baseWO, [], {},
+      [photo],
+      [makeTranscript({id: 1})],
+    );
+    const kinds = sections.map(s => s.kind);
+    const photosIdx = kinds.indexOf('photos');
+    const transcriptsIdx = kinds.indexOf('transcripts');
+    const lifecycleIdx = kinds.indexOf('lifecycle');
+    expect(photosIdx).toBeGreaterThanOrEqual(0);
+    expect(transcriptsIdx).toBe(photosIdx + 1);
+    expect(transcriptsIdx).toBeLessThan(lifecycleIdx);
+  });
+
+  it('preserves transcripts array verbatim (no F9 deformation)', () => {
+    const transcripts = [
+      makeTranscript({id: 1, preview_text: 'first memo'}),
+      makeTranscript({id: 2, preview_text: 'second memo'}),
+    ];
+    const sections = buildWorkOrderSections(
+      baseWO, [], {}, [], transcripts,
+    );
+    const tSection = sections.find(s => s.kind === 'transcripts');
+    expect(tSection).toBeDefined();
+    if (tSection && tSection.kind === 'transcripts') {
+      expect(tSection.transcripts).toEqual(transcripts);
+    }
+  });
+
+  it('places transcripts after photos when both present', () => {
+    const photo: import('../../src/types/workOrder').WorkOrderPhoto = {
+      id: 50, work_order_id: 1, issue_id: null, role: 'general',
+      pair_id: null, width: 100, height: 100,
+      captured_at: '2026-05-07', uploaded_by_user_id: 1,
+      analysis_state: null, analysis_findings: null, source: null,
+      created_at: '2026-05-07',
+    };
+    const sections = buildWorkOrderSections(
+      baseWO, [], {},
+      [photo],
+      [makeTranscript()],
+    );
+    const photosBefore = sections.findIndex(s => s.kind === 'photos');
+    const transcriptsAfter = sections.findIndex(
+      s => s.kind === 'transcripts',
+    );
+    expect(transcriptsAfter).toBe(photosBefore + 1);
+  });
+});

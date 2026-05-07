@@ -1060,12 +1060,111 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/transcripts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List voice transcripts attached to a work order */
+        get: operations["list_voice_transcripts_endpoint_v1_shop__shop_id__work_orders__wo_id__transcripts_get"];
+        put?: never;
+        /**
+         * Upload a voice memo + run keyword extraction
+         * @description Multipart upload: ``file`` (audio bytes) + ``metadata`` (JSON).
+         *
+         *     Pipeline:
+         *     1. Validate WO + shop scope (403/404).
+         *     2. Parse + validate metadata JSON (422 on shape error).
+         *     3. Read multipart payload + inspect_audio for format detection
+         *        (415 on unsupported, 422 on corrupt).
+         *     4. Enforce quotas (402 on cap).
+         *     5. Insert DB row with placeholder audio_path; resolve canonical
+         *        disk path; write bytes; update DB row.
+         *     6. Run keyword extraction over preview_text; create
+         *        extracted_symptoms rows; flip extraction_state to 'extracted'.
+         *     7. Return 201 with full transcript + extracted_symptoms.
+         */
+        post: operations["upload_voice_transcript_v1_shop__shop_id__work_orders__wo_id__transcripts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/transcripts/{transcript_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one voice transcript by id */
+        get: operations["get_voice_transcript_endpoint_v1_shop__shop_id__work_orders__wo_id__transcripts__transcript_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Soft-delete a voice transcript
+         * @description Soft-delete via ``deleted_at``. Idempotent — second call also 204.
+         *
+         *     The audio file on disk is left in place; the 60-day sweep will
+         *     prune it eventually. (Aggressive immediate-unlink could race
+         *     against playback streams; sweep handles cleanup deterministically.)
+         */
+        delete: operations["delete_voice_transcript_v1_shop__shop_id__work_orders__wo_id__transcripts__transcript_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/transcripts/{transcript_id}/extracted-symptoms/{extracted_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Mechanic-confirm / edit an extracted symptom */
+        patch: operations["confirm_extracted_symptom_endpoint_v1_shop__shop_id__work_orders__wo_id__transcripts__transcript_id__extracted_symptoms__extracted_id__patch"];
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/transcripts/{transcript_id}/audio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stream the binary audio file (returns 410 Gone if swept) */
+        get: operations["stream_voice_transcript_audio_v1_shop__shop_id__work_orders__wo_id__transcripts__transcript_id__audio_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /** Body_upload_video_v1_sessions__session_id__videos_post */
         Body_upload_video_v1_sessions__session_id__videos_post: {
+            /** File */
+            file: string;
+            /** Metadata */
+            metadata: string;
+        };
+        /** Body_upload_voice_transcript_v1_shop__shop_id__work_orders__wo_id__transcripts_post */
+        Body_upload_voice_transcript_v1_shop__shop_id__work_orders__wo_id__transcripts_post: {
             /** File */
             file: string;
             /** Metadata */
@@ -1133,6 +1232,48 @@ export interface components {
             common_causes?: string[];
             /** Fix Summary */
             fix_summary?: string | null;
+        };
+        /**
+         * ExtractedSymptomConfirmRequest
+         * @description PATCH body for mechanic confirm/edit of an extracted symptom.
+         */
+        ExtractedSymptomConfirmRequest: {
+            /** Text */
+            text?: string | null;
+            /** Linked Symptom Id */
+            linked_symptom_id?: number | null;
+            /** Category */
+            category?: string | null;
+        };
+        /** ExtractedSymptomResponse */
+        ExtractedSymptomResponse: {
+            /** Id */
+            id: number;
+            /** Transcript Id */
+            transcript_id: number;
+            /** Text */
+            text: string;
+            /** Category */
+            category: string | null;
+            /** Linked Symptom Id */
+            linked_symptom_id: number | null;
+            /** Confidence */
+            confidence: number;
+            /**
+             * Extraction Method
+             * @enum {string}
+             */
+            extraction_method: "keyword" | "claude" | "manual_edit";
+            /** Segment Start Ms */
+            segment_start_ms: number | null;
+            /** Segment End Ms */
+            segment_end_ms: number | null;
+            /** Confirmed By User Id */
+            confirmed_by_user_id: number | null;
+            /** Confirmed At */
+            confirmed_at: string | null;
+            /** Created At */
+            created_at: string;
         };
         /** FaultCodeRequest */
         FaultCodeRequest: {
@@ -1785,6 +1926,51 @@ export interface components {
          * @enum {string}
          */
         VideoUploadState: "uploaded";
+        /** VoiceTranscriptResponse */
+        VoiceTranscriptResponse: {
+            /** Id */
+            id: number;
+            /** Work Order Id */
+            work_order_id: number;
+            /** Issue Id */
+            issue_id: number | null;
+            /**
+             * Audio Format
+             * @enum {string}
+             */
+            audio_format: "wav" | "m4a" | "ogg";
+            /** Audio Size Bytes */
+            audio_size_bytes: number;
+            /** Duration Ms */
+            duration_ms: number;
+            /** Sample Rate Hz */
+            sample_rate_hz: number;
+            /** Language */
+            language: string;
+            /** Captured At */
+            captured_at: string;
+            /** Uploaded By User Id */
+            uploaded_by_user_id: number;
+            /** Preview Text */
+            preview_text: string | null;
+            /** Preview Engine */
+            preview_engine: ("ios-speech" | "android-speech-recognizer" | "none") | null;
+            /**
+             * Extraction State
+             * @enum {string}
+             */
+            extraction_state: "pending" | "extracting" | "extracted" | "extraction_failed";
+            /** Extracted At */
+            extracted_at: string | null;
+            /** Audio Deleted At */
+            audio_deleted_at: string | null;
+            /** Source */
+            source: string | null;
+            /** Created At */
+            created_at: string;
+            /** Extracted Symptoms */
+            extracted_symptoms?: components["schemas"]["ExtractedSymptomResponse"][];
+        };
         /**
          * WorkOrderAssignRequest
          * @description Phase 193 Commit 0.5 — assign / unassign a mechanic on a WO.
@@ -4877,6 +5063,261 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    list_voice_transcripts_endpoint_v1_shop__shop_id__work_orders__wo_id__transcripts_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceTranscriptResponse"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    upload_voice_transcript_v1_shop__shop_id__work_orders__wo_id__transcripts_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_voice_transcript_v1_shop__shop_id__work_orders__wo_id__transcripts_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceTranscriptResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_voice_transcript_endpoint_v1_shop__shop_id__work_orders__wo_id__transcripts__transcript_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+                transcript_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceTranscriptResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    delete_voice_transcript_v1_shop__shop_id__work_orders__wo_id__transcripts__transcript_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+                transcript_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    confirm_extracted_symptom_endpoint_v1_shop__shop_id__work_orders__wo_id__transcripts__transcript_id__extracted_symptoms__extracted_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+                transcript_id: number;
+                extracted_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtractedSymptomConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractedSymptomResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    stream_voice_transcript_audio_v1_shop__shop_id__work_orders__wo_id__transcripts__transcript_id__audio_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+                transcript_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "audio/mp4": unknown;
+                    "audio/wav": unknown;
+                    "audio/ogg": unknown;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Audio bytes pruned by 60-day retention sweep */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Validation Error */
             422: {
                 headers: {

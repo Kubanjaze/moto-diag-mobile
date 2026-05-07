@@ -7642,6 +7642,705 @@
           }
         ]
       }
+    },
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/transcripts": {
+      "post": {
+        "tags": [
+          "voice-transcripts"
+        ],
+        "summary": "Upload a voice memo + run keyword extraction",
+        "description": "Multipart upload: ``file`` (audio bytes) + ``metadata`` (JSON).\n\nPipeline:\n1. Validate WO + shop scope (403/404).\n2. Parse + validate metadata JSON (422 on shape error).\n3. Read multipart payload + inspect_audio for format detection\n   (415 on unsupported, 422 on corrupt).\n4. Enforce quotas (402 on cap).\n5. Insert DB row with placeholder audio_path; resolve canonical\n   disk path; write bytes; update DB row.\n6. Run keyword extraction over preview_text; create\n   extracted_symptoms rows; flip extraction_state to 'extracted'.\n7. Return 201 with full transcript + extracted_symptoms.",
+        "operationId": "upload_voice_transcript_v1_shop__shop_id__work_orders__wo_id__transcripts_post",
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "wo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Wo Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_voice_transcript_v1_shop__shop_id__work_orders__wo_id__transcripts_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceTranscriptResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "voice-transcripts"
+        ],
+        "summary": "List voice transcripts attached to a work order",
+        "operationId": "list_voice_transcripts_endpoint_v1_shop__shop_id__work_orders__wo_id__transcripts_get",
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "wo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Wo Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VoiceTranscriptResponse"
+                  },
+                  "title": "Response List Voice Transcripts Endpoint V1 Shop  Shop Id  Work Orders  Wo Id  Transcripts Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/transcripts/{transcript_id}": {
+      "get": {
+        "tags": [
+          "voice-transcripts"
+        ],
+        "summary": "Get one voice transcript by id",
+        "operationId": "get_voice_transcript_endpoint_v1_shop__shop_id__work_orders__wo_id__transcripts__transcript_id__get",
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "wo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Wo Id"
+            }
+          },
+          {
+            "name": "transcript_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Transcript Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceTranscriptResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "voice-transcripts"
+        ],
+        "summary": "Soft-delete a voice transcript",
+        "description": "Soft-delete via ``deleted_at``. Idempotent — second call also 204.\n\nThe audio file on disk is left in place; the 60-day sweep will\nprune it eventually. (Aggressive immediate-unlink could race\nagainst playback streams; sweep handles cleanup deterministically.)",
+        "operationId": "delete_voice_transcript_v1_shop__shop_id__work_orders__wo_id__transcripts__transcript_id__delete",
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "wo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Wo Id"
+            }
+          },
+          {
+            "name": "transcript_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Transcript Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/transcripts/{transcript_id}/extracted-symptoms/{extracted_id}": {
+      "patch": {
+        "tags": [
+          "voice-transcripts"
+        ],
+        "summary": "Mechanic-confirm / edit an extracted symptom",
+        "operationId": "confirm_extracted_symptom_endpoint_v1_shop__shop_id__work_orders__wo_id__transcripts__transcript_id__extracted_symptoms__extracted_id__patch",
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "wo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Wo Id"
+            }
+          },
+          {
+            "name": "transcript_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Transcript Id"
+            }
+          },
+          {
+            "name": "extracted_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Extracted Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractedSymptomConfirmRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractedSymptomResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/transcripts/{transcript_id}/audio": {
+      "get": {
+        "tags": [
+          "voice-transcripts"
+        ],
+        "summary": "Stream the binary audio file (returns 410 Gone if swept)",
+        "operationId": "stream_voice_transcript_audio_v1_shop__shop_id__work_orders__wo_id__transcripts__transcript_id__audio_get",
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "wo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Wo Id"
+            }
+          },
+          {
+            "name": "transcript_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Transcript Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "audio/mp4": {},
+              "audio/wav": {},
+              "audio/ogg": {}
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "410": {
+            "description": "Audio bytes pruned by 60-day retention sweep"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -7664,6 +8363,25 @@
           "metadata"
         ],
         "title": "Body_upload_video_v1_sessions__session_id__videos_post"
+      },
+      "Body_upload_voice_transcript_v1_shop__shop_id__work_orders__wo_id__transcripts_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "metadata": {
+            "type": "string",
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "metadata"
+        ],
+        "title": "Body_upload_voice_transcript_v1_shop__shop_id__work_orders__wo_id__transcripts_post"
       },
       "Body_upload_wo_photo_v1_shop__shop_id__work_orders__wo_id__photos_post": {
         "properties": {
@@ -7893,6 +8611,162 @@
           "code"
         ],
         "title": "DTCResponse"
+      },
+      "ExtractedSymptomConfirmRequest": {
+        "properties": {
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "linked_symptom_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linked Symptom Id"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          }
+        },
+        "type": "object",
+        "title": "ExtractedSymptomConfirmRequest",
+        "description": "PATCH body for mechanic confirm/edit of an extracted symptom."
+      },
+      "ExtractedSymptomResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "transcript_id": {
+            "type": "integer",
+            "title": "Transcript Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "linked_symptom_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linked Symptom Id"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "extraction_method": {
+            "type": "string",
+            "enum": [
+              "keyword",
+              "claude",
+              "manual_edit"
+            ],
+            "title": "Extraction Method"
+          },
+          "segment_start_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Segment Start Ms"
+          },
+          "segment_end_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Segment End Ms"
+          },
+          "confirmed_by_user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed By User Id"
+          },
+          "confirmed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed At"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "transcript_id",
+          "text",
+          "category",
+          "linked_symptom_id",
+          "confidence",
+          "extraction_method",
+          "segment_start_ms",
+          "segment_end_ms",
+          "confirmed_by_user_id",
+          "confirmed_at",
+          "created_at"
+        ],
+        "title": "ExtractedSymptomResponse"
       },
       "FaultCodeRequest": {
         "properties": {
@@ -9993,6 +10867,164 @@
         ],
         "title": "VideoUploadState",
         "description": "Upload-side state for a session video.\n\nPhase 191B reserves only `uploaded` — Phase 192+ may add `pending`\n(multi-part upload in progress) and `failed` (network drop mid-upload)."
+      },
+      "VoiceTranscriptResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "work_order_id": {
+            "type": "integer",
+            "title": "Work Order Id"
+          },
+          "issue_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issue Id"
+          },
+          "audio_format": {
+            "type": "string",
+            "enum": [
+              "wav",
+              "m4a",
+              "ogg"
+            ],
+            "title": "Audio Format"
+          },
+          "audio_size_bytes": {
+            "type": "integer",
+            "title": "Audio Size Bytes"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "title": "Duration Ms"
+          },
+          "sample_rate_hz": {
+            "type": "integer",
+            "title": "Sample Rate Hz"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "captured_at": {
+            "type": "string",
+            "title": "Captured At"
+          },
+          "uploaded_by_user_id": {
+            "type": "integer",
+            "title": "Uploaded By User Id"
+          },
+          "preview_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preview Text"
+          },
+          "preview_engine": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ios-speech",
+                  "android-speech-recognizer",
+                  "none"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preview Engine"
+          },
+          "extraction_state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "extracting",
+              "extracted",
+              "extraction_failed"
+            ],
+            "title": "Extraction State"
+          },
+          "extracted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extracted At"
+          },
+          "audio_deleted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Deleted At"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "extracted_symptoms": {
+            "items": {
+              "$ref": "#/components/schemas/ExtractedSymptomResponse"
+            },
+            "type": "array",
+            "title": "Extracted Symptoms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "work_order_id",
+          "issue_id",
+          "audio_format",
+          "audio_size_bytes",
+          "duration_ms",
+          "sample_rate_hz",
+          "language",
+          "captured_at",
+          "uploaded_by_user_id",
+          "preview_text",
+          "preview_engine",
+          "extraction_state",
+          "extracted_at",
+          "audio_deleted_at",
+          "source",
+          "created_at"
+        ],
+        "title": "VoiceTranscriptResponse"
       },
       "WorkOrderAssignRequest": {
         "properties": {

@@ -25,6 +25,7 @@ import type {
   WorkOrderIssue,
   WorkOrderPhoto,
   WorkOrderSection,
+  WorkOrderTranscript,
 } from '../types/workOrder';
 
 /** Display constant for missing values. Matches Phase 182's em-
@@ -60,6 +61,20 @@ export function buildWorkOrderSections(
    *  function signature widens (NOT the photo data deforms into
    *  label/value rows). */
   photos: WorkOrderPhoto[] = [],
+  /** Phase 195 — voice transcripts. Caller fetches via
+   *  `useWorkOrderTranscripts` and passes the flat newest-first
+   *  array. Builder slots in a WorkOrderTranscriptsSection variant.
+   *  Omit-when-empty.
+   *
+   *  **Section E load-bearing test #2 (forward-look commitment)**:
+   *  the 5th positional parameter widens the signature in the same
+   *  shape as Phase 194's 4th — function generality grows; transcript
+   *  data is NOT deformed to fit existing variant shapes (F9-
+   *  discipline preserved). If a 6th variant arrives (Phase 196 OBD
+   *  snapshots), positional params will start to feel proliferative —
+   *  surface-as-architectural-finding territory for that phase, not
+   *  preemptive refactor in 195. */
+  transcripts: WorkOrderTranscript[] = [],
 ): WorkOrderSection[] {
   const sections: WorkOrderSection[] = [];
 
@@ -103,6 +118,16 @@ export function buildWorkOrderSections(
       kind: 'photos',
       photos,
       undecided_count: undecidedCount,
+    });
+  }
+
+  // Transcripts — omit-when-empty per the convention. Phase 195
+  // places between Photos and Lifecycle so all "documentation media"
+  // (photos + voice memos) cluster, with bookkeeping timestamps last.
+  if (transcripts.length > 0) {
+    sections.push({
+      kind: 'transcripts',
+      transcripts,
     });
   }
 

@@ -21,7 +21,8 @@ export type WorkOrderSection =
   | WorkOrderIssuesSection
   | WorkOrderNotesSection
   | WorkOrderLifecycleSection
-  | WorkOrderPhotosSection;
+  | WorkOrderPhotosSection
+  | WorkOrderTranscriptsSection;
 
 /** Variant 1 — Vehicle. Make / model / year / VIN if known.
  *  Source-agnostic: 196 OBD-captured vehicle metadata slots in
@@ -133,6 +134,103 @@ export interface WorkOrderPhoto {
   created_at: string;
 }
 
+/** Variant 7 — Voice transcripts (Phase 195). SECOND variant addition
+ *  to the Phase 193 substrate; second test of the forward-look
+ *  commitment. Voice transcripts are time-series-with-extracted-output,
+ *  structurally different from text-shaped variants 1–5 AND from
+ *  Phase 194's media-references-with-relationships shape. The
+ *  renderer adds a 3rd layout idiom (timeline view + extracted-symptom
+ *  chips); the union shape stays open without requiring deformation
+ *  into existing variant shapes (F9-discipline; trust-but-verify
+ *  Section E).
+ *
+ *  Backend list ordering: newest captured_at first per
+ *  list_wo_voice_transcripts. Each transcript carries its own
+ *  extracted_symptoms array (relational on backend; flattened to a
+ *  per-transcript subarray here). Mobile renderer presents each
+ *  transcript as a card with the preview_text body + extracted-
+ *  symptom chips below.
+ *
+ *  Discriminated values match the OpenAPI Literal aliases the backend
+ *  emits (Phase 195 Backend Commit 0.5):
+ *    - extraction_state: ExtractionState Literal
+ *    - extraction_method: ExtractionMethod Literal
+ *    - audio_format: AudioFormat Literal
+ *    - preview_engine: PreviewEngine Literal | null
+ *  Mobile codegen produces Literal unions automatically; this file
+ *  re-exports the union types so screens + helpers can use them
+ *  without round-tripping through `paths` types. */
+export interface WorkOrderTranscriptsSection {
+  kind: 'transcripts';
+  transcripts: WorkOrderTranscript[];
+}
+
+/** Subset of backend `VoiceTranscriptResponse`. Storage details
+ *  (audio_path, sha256, audio_size_bytes) deliberately omitted —
+ *  mobile resolves audio via the streaming endpoint or local cache.
+ *  Whisper-related fields (whisper_transcript, whisper_segments,
+ *  whisper_cost_usd_cents, whisper_model) are substrate-anticipates-
+ *  feature for Phase 195B; Phase 195 leaves them null on the wire
+ *  and the mobile UI doesn't read them.
+ *
+ *  Literal-typed fields (extraction_state, audio_format,
+ *  preview_engine) leverage the Phase 195 Backend Commit 0.5
+ *  Literal upgrade — exhaustive switches over these get TS
+ *  exhaustiveness checking via `never` assertions. */
+export interface WorkOrderTranscript {
+  id: number;
+  work_order_id: number;
+  issue_id: number | null;
+  audio_format: TranscriptAudioFormat;
+  duration_ms: number;
+  sample_rate_hz: number;
+  language: string;
+  captured_at: string;
+  uploaded_by_user_id: number;
+  preview_text: string | null;
+  preview_engine: TranscriptPreviewEngine | null;
+  extraction_state: TranscriptExtractionState;
+  extracted_at: string | null;
+  audio_deleted_at: string | null;
+  source: string | null;
+  created_at: string;
+  extracted_symptoms: ExtractedSymptom[];
+}
+
+/** Mirror of backend `ExtractedSymptomResponse`. ``extraction_method``
+ *  discriminates keyword (Phase 195) vs claude (Phase 195B) vs
+ *  manual_edit (mechanic confirmed/edited via PATCH endpoint). */
+export interface ExtractedSymptom {
+  id: number;
+  transcript_id: number;
+  text: string;
+  category: string | null;
+  linked_symptom_id: number | null;
+  confidence: number;
+  extraction_method: ExtractedSymptomMethod;
+  segment_start_ms: number | null;
+  segment_end_ms: number | null;
+  confirmed_by_user_id: number | null;
+  confirmed_at: string | null;
+  created_at: string;
+}
+
+/** Re-exports of backend Literal aliases (Phase 195 Backend Commit
+ *  0.5). Screens + helpers consume these directly for exhaustive
+ *  switches; OpenAPI codegen produces matching `paths` types but
+ *  these are simpler to import. */
+export type TranscriptAudioFormat = 'wav' | 'm4a' | 'ogg';
+export type TranscriptPreviewEngine =
+  | 'ios-speech'
+  | 'android-speech-recognizer'
+  | 'none';
+export type TranscriptExtractionState =
+  | 'pending'
+  | 'extracting'
+  | 'extracted'
+  | 'extraction_failed';
+export type ExtractedSymptomMethod = 'keyword' | 'claude' | 'manual_edit';
+
 // ---------------------------------------------------------------
 // Type guards (used by WorkOrderSectionCard for safe variant
 // narrowing; same posture as Phase 192's ReportSection guards in
@@ -173,4 +271,10 @@ export function isPhotosSection(
   s: WorkOrderSection,
 ): s is WorkOrderPhotosSection {
   return s.kind === 'photos';
+}
+
+export function isTranscriptsSection(
+  s: WorkOrderSection,
+): s is WorkOrderTranscriptsSection {
+  return s.kind === 'transcripts';
 }
