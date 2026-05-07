@@ -18,6 +18,8 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {ClassifyPhotosScreen} from '../screens/ClassifyPhotosScreen';
 import {PhotoCaptureScreen} from '../screens/PhotoCaptureScreen';
 import {ShopPickerScreen} from '../screens/ShopPickerScreen';
+import {TranscriptReviewScreen} from '../screens/TranscriptReviewScreen';
+import {VoiceCaptureScreen} from '../screens/VoiceCaptureScreen';
 import {WorkOrderDetailScreen} from '../screens/WorkOrderDetailScreen';
 import {WorkOrderListScreen} from '../screens/WorkOrderListScreen';
 import type {ShopStackParamList} from './types';
@@ -46,6 +48,16 @@ export function ShopStack() {
         name="ClassifyPhotos"
         component={ClassifyPhotosScreen}
         options={{title: 'Classify photos', headerShown: true}}
+      />
+      <Stack.Screen
+        name="VoiceCapture"
+        component={VoiceCaptureScreen}
+        options={{title: 'Voice memo', headerShown: true}}
+      />
+      <Stack.Screen
+        name="TranscriptReview"
+        component={TranscriptReviewScreen}
+        options={{title: 'Review transcript', headerShown: true}}
       />
       <Stack.Screen
         name="ShopPicker"
