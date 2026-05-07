@@ -180,13 +180,50 @@ When picking one up, file it as a tiny phase OR fold it into the next phase that
 - **Decision:** **Recommended target Phase 193+ follow-up phase OR fold into a future shop-management UI phase.** NOT urgent — picker works without it; mechanics can ask each other or check a separate workload-summary surface (deferred). Promotion trigger: shop-owner user feedback OR mechanics reporting "I don't know who to assign to" friction.
 - **Mobile-side already-prepared**: `useShopMembers` hook + `ShopMember` interface accept `active_wo_count` field as optional. When backend exposes it, mobile picks it up automatically via OpenAPI regen + the typed pass-through.
 
-### F37 (NEW) — Extend F33 audit step to include enum-value verification
+### F37 (NEW) — Extend F33 audit step to include enum-value verification — INSTANCE #3 SURFACED, ESCALATION QUEUED POST-PHASE-195-FINALIZE
 
 - **Surfaced:** Phase 193 Commit 0.5 build (2026-05-06). Plan v1.0 Section E + Commit 1's `useShopMembers.ts` declared `ShopMember.role` as `'owner' | 'manager' | 'mechanic' | 'apprentice' | 'viewer'`. Backend's actual enum is `('owner', 'tech', 'service_writer', 'apprentice')` per `src/motodiag/shop/rbac.py:111` `_validate_role`. Surfaced when test fixture `add_shop_member(role="mechanic")` raised `InvalidRoleError`.
 - **Severity:** process / discipline. F33 (existing-code overlap audit) catches structural overlaps via grep on functionality keywords. It does NOT catch enum-value mismatches when the plan references specific values that don't exist in the backend enum. Phase 193's `mechanic` / `manager` / `viewer` were intuitive role names but mismatched backend's actual choices.
 - **Pattern:** Plan v1.0 mental-model assumptions about specific enum values (role names, status strings, action verbs) can mismatch backend reality. F33 doesn't run a value-level audit; it runs a name-level audit.
 - **Scope estimate:** small. Extend F33's "Step 0 — existing-code overlap audit" in `CLAUDE.md` with a sub-step: "(6) When the plan references specific enum values (role names, status strings, action verbs), verify against the backend's actual enum definition. Search `src/motodiag/shop/*.py` for the enum declaration; confirm spelling + completeness."
-- **Decision:** **Recommended trigger: third instance of plan-vs-reality enum mismatch surfaces.** Phase 191B's `analysis_state` naming was a near-miss (caught at Phase 191B Commit 6 when state-machine tests revealed the enum). Phase 193's role enum is data point 1 explicitly catching a mismatch. Defer F37 filing until 3rd instance to avoid premature process refinement. **NOT load-bearing for current phases** — Phase 193's mismatch was caught at build-time + corrected at v1.0.2 amendment.
+- **Promotion criterion (original):** Recommended trigger: third instance of plan-vs-reality enum mismatch surfaces. Phase 191B's `analysis_state` naming was a near-miss (instance #1). Phase 193's role enum is instance #2.
+
+#### Instance #3 — surfaced 2026-05-07 (Phase 195 Backend Commit 0.5 architect-side review)
+
+- **Where:** `src/motodiag/api/routes/transcripts.py` Pydantic response models. Backend Commit 0 used `str` for `extraction_state`, `extraction_method`, `audio_format`, `preview_engine` instead of `Literal[...]` matching DB CHECK constraints from migration 042. OpenAPI emitted plain string for these fields; mobile codegen would have produced freeform `string` instead of typed `Literal` unions. NO actual value mismatch (today the runtime values are valid), but the contract surface didn't enforce match either direction.
+- **Why this is the F37/F33 pattern:** backend has stricter enum constraints (CHECK in migration); mobile types arrive as freeform string; future backend bump (e.g., adding `extraction_state='reviewing'`) wouldn't surface as a mobile type error. Same family as instances #1 + #2 — value-set drift unenforced at the contract surface, but at the schema-types boundary instead of the test-fixture boundary.
+- **Subtype distinction:** instance #1 + #2 surfaced as plan-vs-backend mismatches (mental-model failures). Instance #3 surfaces as backend-vs-mobile-codegen mismatches (contract-surface drift). Both subtypes are F37 because both stem from value-sets going un-validated across boundaries.
+- **Telling regression signal:** Phase 194's `photos.py` had this right (`PhotoRole = Literal[...]`); Phase 195's `transcripts.py` regressed to `str`. Pattern wasn't load-bearing enough to systematically carry forward across phases — argues FOR a lint rule that catches this automatically rather than relying on per-phase developer discipline.
+
+#### Track 1 — Correctness now (Backend Commit 0.5)
+
+Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `AudioFormat`, `PreviewEngine` Literal aliases matching DB CHECK constraints from migration 042. Pydantic response models surface enums in OpenAPI; mobile codegen will produce typed `Literal` unions. 45/45 Phase 195 tests still pass after the upgrade. Mobile Commit 1 inherits the tightened types via OpenAPI regen.
+
+#### Track 2 — Correctness systematically (DEFERRED to post-Phase-195-finalize)
+
+**Decision:** Promote F37 to its own dedicated phase AFTER Phase 195 finalizes, NOT now. Same precedent as 191B → 191C → 191D — feature ships first, meta-tooling responds to discovered drift after. Likely numbered **Phase 195C** (or equivalent post-195/195B) with same shape as 191D:
+
+1. **Lint rule** enforcing "Pydantic response models for fields with corresponding DB CHECK constraints must use `Literal[...]` matching the constraint value-set." Add to `scripts/check_f9_patterns.py` as a new sub-check (`--check-pydantic-literal-vs-check-constraint`) OR as a separate `scripts/check_f37_patterns.py`.
+2. **Retroactive validation** against 191B (videos) / 192 (reports) / 193 (shop_mgmt) / 194 (photos) / 195 (transcripts) backend code. Surface any silent regressions that mirror Phase 195's; fold the fixes into the same commit.
+3. **F9 pattern-guide subspecies addition**: contract-surface-drift as a new subspecies of mock-vs-runtime drift (the value-set the SCHEMA enforces vs the value-set the CONTRACT advertises drifts when one updates without the other).
+
+**Reasoning for deferring:** F37 phase's value is preventing future drift, NOT fixing current state (Backend Commit 0.5 handles current). Pausing Phase 195 mid-substrate to dispatch the lint rule + retroactive validation adds context-switch cost; finishing Phase 195 keeps phase boundaries clean. The retroactive validation step is more meaningful with Phase 195's complete code in scope.
+
+### F38 (NEW) — Unify symptom storage across diagnostic_sessions, voice_transcripts, future OBD captures
+
+- **Surfaced:** Phase 195 plan-write 2026-05-06 (Section 6 forward-investment scoping decision).
+- **Severity:** architecture. Today symptoms live in three different shapes: `diagnostic_sessions.symptoms` JSON-list (Phase 178), `voice_transcripts.extracted_symptoms` relational table (Phase 195), and future Phase 196 OBD-captured symptoms (shape TBD). Cross-source queries ("all symptoms reported via voice in last 30 days", "all symptoms across all sources for this WO") require touching three different surfaces.
+- **Scope estimate:** medium. Migration to consolidate symptoms into a single relational table with `source` discriminator + backfill of existing JSON-list rows. Touches Phase 178's session-symptom append route, Phase 195's extracted_symptoms shape, Phase 196's substrate. Cross-feature impact analysis required at promotion time.
+- **Promotion trigger:** Phase 196 (OBD) surfaces source-tracking demand on `diagnostic_sessions` symptoms surface OR query patterns require cross-source symptom queries. NOT load-bearing in Phase 195 — extracted_symptoms rows are scoped to voice transcripts and Phase 195's UI doesn't need to query across sources.
+- **Decision:** Defer to dedicated phase post-Phase-196 (or post-Phase-195B if voice-symptom usage validates the cross-source query pattern earlier).
+
+### F39 (NEW) — Phase 96 acoustic-analysis cross-pollination requires PCM transcode
+
+- **Surfaced:** Phase 195 Backend Commit 0.5 architect-side review 2026-05-07. Section 5 architecture choice (path c: verbatim audio storage + format tracking) means audio bytes are stored in their mobile-uploaded format (M4A / WAV / Ogg). Whisper accepts those natively; mechanic-replay UI works on those natively. The one consumer that genuinely needs 16 kHz mono PCM input is **Phase 96 acoustic-analysis cross-pollination** — sound-signature analysis on engine audio captured during a voice memo's background noise.
+- **Severity:** speculative. Phase 96 cross-pollination is not on the immediate roadmap. The integration would consume `voice_transcripts.audio_path` + dispatch on `voice_transcripts.audio_format` to either (a) read PCM directly from WAV inputs OR (b) transcode M4A/Ogg to PCM via ffmpeg subprocess. Today neither pathway exists.
+- **Scope estimate:** small once triggered. Install `ffmpeg` (already a Phase 191B dependency for video frames) + add `pydub>=0.25` to `[vision]` extras + write `audio_pipeline.transcode_to_pcm(audio_path) -> bytes` helper + plumb into the Phase 96 sound-signature consumer.
+- **Promotion trigger:** Phase 96 acoustic-analysis integration phase opens OR any consumer requires PCM input from voice-transcript audio. NOT load-bearing for Phase 195 or 195B.
+- **Decision:** Filed but deferred. F-ticket lives until either trigger fires.
 
 ### F33 — Plan-writing template should include explicit "existing-code overlap audit" step — CLOSED Phase 193 kickoff
 
