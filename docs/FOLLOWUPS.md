@@ -240,6 +240,49 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
 - **Cross-cutting recommendation: add iOS-parity check to phase gate cycle.** Any feature touching mic / camera / speech / location / photos / contacts on Android needs a same-PR `Info.plist` update on iOS. No gate currently catches this. Consider adding to CLAUDE.md alongside the F33 / integration-gap regression-guard guidance — same family of "function-exists-on-one-platform-but-other-platform-not-wired" gap. Lint rule candidate for Phase 195C scope (alongside the F37 Track 2 lint work) OR its own micro-phase if 195C is already scoped.
 - **Decision:** File NOW; ship the Info.plist fix on `phase-195-voice-input` immediately so cousin's Mac iOS deploy isn't blocked when SDK download completes; cross-cutting iOS-parity gate is a separate F-ticket worth filing if it doesn't fold into 195C.
 
+### F42 (NEW) — AddBike form stuck on "Saving…" when backend unreachable
+
+- **Surfaced:** 2026-05-10 cousin's Mac iOS first-deploy session (Phase A.5 partial smoke pass on physical iPhone, iOS 26.4.2). Repro: open Add Bike form with no backend reachability (network block, AP isolation, hotspot transition, etc.), fill required fields, tap Save. Button enters "Saving…" state and never returns. No error toast, no timeout banner, no way to cancel except via the unrelated Cancel button below.
+- **Severity:** real UX dead-end on patchy connectivity, which IS the shop deployment target (Wi-Fi dropouts, mechanic moving between bays, intermittent backend reachability). Cross-platform — not iOS-specific; surfaced on iOS first because it was the first network-restricted environment the form was tested in. Phase 188 HVE territory.
+- **Root cause area:** `useVehicles.addVehicle` (or equivalent `useNewVehicle` mutation hook) likely awaits the POST without timeout + the screen's local `isSaving` state never resets when the request hangs. No `AbortController` + no explicit timeout on the fetch.
+- **Suggested fix paths:**
+  - **(a) Pre-submit reachability check** that disables Save when network unreachable. Lightweight HEAD probe against `/healthz` before allowing submit. Pros: simple, fast-fail, no hung state. Cons: false-negatives on slow-but-reachable networks; reachability check + actual POST = 2 round-trips.
+  - **(b) Timeout-with-retry pattern** surfacing typed error after N seconds (suggest 10s default; configurable via Settings if 195B's cost-monitoring framework introduces config patterns). Pros: matches `AbortController` discipline already in `useTranscriptAudio.probeRemoteAudio`; surfaces typed error consumable via existing `ShopAccessError` 5-kind union (likely the 'network' kind). Cons: 10-second hang feels long on UX.
+- **Recommended path:** **(b) timeout-with-retry**, threshold 10s, error surfaces via `ShopAccessError.network` kind with toast/banner copy + "Try again" affordance. Reuses Phase 193 `ShopAccessError` typed-error-at-hook-boundary discipline; no new error machinery needed.
+- **Scope estimate:** small. ~30 LoC change in the mutation hook + 1 line in the screen to render error state. Plus ≥1 test asserting the timeout fires + error classifies + state resets.
+- **Priority:** medium-high. Not blocking 195B substrate work, but the same hang pattern likely exists in OTHER mutation hooks (`useTransitionWorkOrder`, `useReassignWorkOrder`, `useWorkOrderPhotos.addPhoto`, `useWorkOrderTranscripts.addTranscript`, etc.) — audit the family + apply consistently OR file as systemic fix later. **Recommend systemic audit** rather than one-off AddBike fix; same shape as F37 Track 2's "discovered-pattern, fix-systematically" reasoning.
+- **Decision:** Filed. Defer fix to either (a) a dedicated mutation-hook hardening micro-phase OR (b) folded into Phase 195B if 195B's `addTranscript` upload flow surfaces the same hang on patchy connectivity (high probability — voice memo upload is bigger payload than work-order POST).
+
+### F43 (NEW) — NSLocationWhenInUseUsageDescription has empty string value in Info.plist (App Store review blocker eventually)
+
+- **Surfaced:** 2026-05-10 cousin's Mac iOS first-deploy session, code review of `ios/MotoDiag/Info.plist`. Pre-existing (not introduced by `3840300` which fixed F40 by adding mic/speech/camera/photo-library keys); the location key was already in the file with an empty string value (`<string></string>`). Likely vestigial from React Native template scaffolding.
+- **Severity:** **App Store review blocker at TestFlight/store-submission time.** App Store rejects builds that declare a usage-description key with an empty string (or, equivalently, declare a permission the binary uses without copy explaining why). NOT blocking dev work — the empty string value passes runtime sensor-access checks (iOS only crashes on missing key, not empty value). Surfaces only at submission.
+- **Verification of vestigial-ness:** unclear whether any Phase code path uses location. If location is genuinely unused, removing the key entirely is cleaner than backfilling copy; if it IS used (e.g., a Phase 180 / 193 shop-management surface tagging WO captures with location), backfill with copy describing the actual use case.
+- **Scope estimate:** trivial (one-line edit either way). Same shape as F40 fix.
+- **Decision:** **Backfill with placeholder copy in this prep commit** following F40 precedent (placeholder copy that should pass App Store review when we get there, team can adjust for tone). If a code audit during Phase 195B or later confirms location is genuinely unused, follow-up commit removes the key entirely. Better to have placeholder copy than empty string in the meantime — empty string is the only state that App Store explicitly rejects.
+
+### F44 (NEW) — Backend default port 8080 vs mobile expectation 8000 — Swagger URL mismatch is the symptom
+
+- **Surfaced:** 2026-05-10 cousin's Mac session reported "Swagger UI documents incorrect server URL (http://localhost:8080) in openapi.json, but uvicorn runs on :8000." Investigation traced a deeper inconsistency:
+  - Backend: `motodiag.core.config.Settings.api_port: int = 8080` (line 64) AND `api_servers: str = "http://localhost:8080|Local dev"` (line 73). Both internally consistent at 8080.
+  - Mobile: `.env.example` line 2-3 documents `Android emulator → host: http://10.0.2.2:8000` AND `iOS simulator → host: http://localhost:8000`. `API_BASE_URL=http://10.0.2.2:8000` default. All on 8000.
+  - Cousin's session: ran `motodiag serve` with explicit `--port 8000` (or `MOTODIAG_API_PORT=8000`) to match mobile's expectation, hence the report.
+- **Severity:** UX trap for fresh devs. Anyone running `motodiag serve` with NO flags + opening the mobile app gets connection-refused. The friction surfaces on first dev-machine setup; existing setups have already worked around it (probably via env var in a `.env` or shell rc). Cosmetic at the Swagger UI level; functional at the dev-onboarding level.
+- **Two fix paths:**
+  - **(a) Move backend default to 8000** — `Settings.api_port: int = 8000` + `api_servers: str = "http://localhost:8000|Local dev"`. Matches uvicorn community norm + matches mobile expectation + matches cousin's actual session config + matches every documented fresh-dev workflow on the planet. Cons: existing devs with env vars pinning 8080 keep working (env vars override defaults), but tests / CI / scripts hardcoding 8080 break.
+  - **(b) Move mobile default to 8080** — match backend's existing default. Cons: bucks uvicorn norm; requires .env.example update; doesn't fix the cosmetic Swagger UI display in any obvious way.
+- **Recommended path:** **(a) move backend to 8000.** Audit for hardcoded 8080 references first (`grep -r "8080" tests/ scripts/ src/motodiag/`); fix any that pin to the literal port; then bump the default. Tests using TestClient don't bind a real port so they're unaffected.
+- **Scope estimate:** small to medium depending on hardcoded-8080 audit results. Likely ≤5 files touched.
+- **Priority:** medium. Cosmetic for existing devs, friction for fresh setups. Folds cleanly into Phase 195B (which will be touching backend config for cost-monitoring env vars anyway) OR a tiny dedicated fix-cycle commit.
+- **Decision:** Filed. Architect call on (a) vs (b). NOT shipped in the current prep commit because the fix isn't strictly additive — touching defaults requires audit + careful change. Same care-level as Backend Commit 0.5's Literal upgrade.
+
+### F45 (NEW) — `.env.example` missing physical-iOS-device API_BASE_URL convention
+
+- **Surfaced:** 2026-05-10 cousin's Mac iOS first-deploy session. `react-native-config`'s `.env.example` (lines 2-3) documents Android emulator (`http://10.0.2.2:8000`) and iOS simulator (`http://localhost:8000`) host conventions but does NOT document the physical iOS device case (LAN IP of dev backend host, e.g. `http://10.0.0.44:8000`). Cousin's session had to derive this from troubleshooting Network reachability.
+- **Severity:** documentation gap. Not blocking — once derived, works fine. But every fresh dev with a real iOS device hits the same friction the cousin's session did.
+- **Scope estimate:** trivial. One-line addition: `# Physical iOS device → host: http://<mac/laptop LAN IP>:8000` between existing lines 3 and 4 of `.env.example`.
+- **Decision:** **Ship in this prep commit.** Strictly additive doc change, no behavior implications, unblocks any future fresh dev with a real iOS device.
+
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
 - **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:
