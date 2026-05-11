@@ -225,6 +225,31 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
 - **Promotion trigger:** Phase 96 acoustic-analysis integration phase opens OR any consumer requires PCM input from voice-transcript audio. NOT load-bearing for Phase 195 or 195B.
 - **Decision:** Filed but deferred. F-ticket lives until either trigger fires.
 
+### F40 (NEW) — iOS Info.plist missing required usage description keys for Phases 191 + 195/195B
+
+- **Surfaced:** 2026-05-10 first-iOS-deploy session on cousin's Mac (Phase A.4–A.5 setup). Pre-deploy code review caught that `ios/MotoDiag/Info.plist` contains only `NSLocationWhenInUseUsageDescription`. iOS terminates apps that access protected resources (mic, speech, camera, photo library) without declared usage strings — first sensor access would hard-crash the app on real device.
+- **Severity:** **BLOCKER for iOS deployment.** No iOS user can capture a voice memo (Phase 195/195B), record a video (Phase 191), or attach a photo (Phase 191) without these keys present. App Store review also rejects builds missing these keys for features the binary uses.
+- **Required additions** (4 keys, with placeholder copy that should pass App Store review when we get there):
+  - `NSMicrophoneUsageDescription`: "MotoDiag uses the microphone to capture voice descriptions of vehicle symptoms during diagnostic work orders."
+  - `NSSpeechRecognitionUsageDescription`: "MotoDiag converts your spoken symptom descriptions into text for the diagnostic record."
+  - `NSCameraUsageDescription`: "MotoDiag uses the camera to capture video of vehicle symptoms (engine startup, idle behavior, visible defects) for diagnostic records."
+  - `NSPhotoLibraryUsageDescription`: "MotoDiag accesses your photo library to attach existing photos or videos to diagnostic work orders."
+- **Root cause:** Android-first development. `AndroidManifest.xml` has the parallel permissions; iOS Info.plist never received the cross-platform update when Phases 191 + 195 landed. Same regression-family as Phase 195 Mobile Commit 1's missed App.tsx sweep wiring (function existed, integration absent), but on the iOS-platform-parity axis instead of the cold-mount-wiring axis.
+- **Verification after edit:** `grep -B 1 "UsageDescription" ios/MotoDiag/Info.plist` should return five distinct key blocks (location + 4 new).
+- **Scope estimate:** trivial — single file, ~16 lines added. Folds cleanly into Phase 195B's plan v1.0 (matches the iOS-deploy timing) OR a dedicated tiny commit on `phase-195-voice-input` before 195B branch creation. **Recommendation: tiny commit on `phase-195-voice-input` now**, since 195B is paused on Step 10 capture which itself depends on the iOS app launching cleanly. Folding into 195B risks blocking 195B kickoff on a fix that's not part of 195B's actual scope.
+- **Cross-cutting recommendation: add iOS-parity check to phase gate cycle.** Any feature touching mic / camera / speech / location / photos / contacts on Android needs a same-PR `Info.plist` update on iOS. No gate currently catches this. Consider adding to CLAUDE.md alongside the F33 / integration-gap regression-guard guidance — same family of "function-exists-on-one-platform-but-other-platform-not-wired" gap. Lint rule candidate for Phase 195C scope (alongside the F37 Track 2 lint work) OR its own micro-phase if 195C is already scoped.
+- **Decision:** File NOW; ship the Info.plist fix on `phase-195-voice-input` immediately so cousin's Mac iOS deploy isn't blocked when SDK download completes; cross-cutting iOS-parity gate is a separate F-ticket worth filing if it doesn't fold into 195C.
+
+### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
+
+- **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:
+  1. `@react-native-voice/voice@3.2.4` deprecated; upstream recommends `expo-speech-recognition`.
+  2. `react-native-audio-recorder-player@4.5.0` deprecated; upstream recommends `react-native-nitro-sound`. The Nitro rewrite is what caused the missing `react-native-nitro-modules` peer dep break (see commit on `phase-195-voice-input` adding it explicitly to package.json).
+- **Severity:** non-urgent. Both packages still functional; deprecations are upstream-future, not breakage-now. Phase 195B inherits the same deps + uses them as substrate for the on-device STT baseline (per F37 Track 1 Literal-discipline carryforward).
+- **Scope estimate:** medium per package. `expo-speech-recognition` requires Expo SDK or expo-modules-core integration; non-trivial for a non-Expo React Native app. `react-native-nitro-sound` is a closer drop-in (same Nitro infrastructure as audio-recorder-player) but API surface differs from `react-native-audio-recorder-player`'s `addRecordBackListener` / `addPlayBackListener` shape — `audioCaptureMachine` + `useTranscriptAudio` integration would need re-validation.
+- **Promotion trigger:** EITHER (a) upstream announces hard deprecation timeline that affects RN 0.85+ compat, OR (b) Phase 195B Step 10 acoustic capture surfaces an issue traceable to either package's behavior, OR (c) routine post-195B-close maintenance pass.
+- **Decision:** Filed; **do NOT migrate during 195B**. Keep current packages through 195B for the on-device STT baseline data + Step 10 calibration corpus consistency. Re-evaluate in 195B retro / pre-196 dependency-audit sweep.
+
 ### F33 — Plan-writing template should include explicit "existing-code overlap audit" step — CLOSED Phase 193 kickoff
 
 **Closed:** 2026-05-06 at Phase 193 kickoff. Promoted from F-ticket to CLAUDE.md canonical process via the workspace-root `CLAUDE.md` edit (Step 0 of "Phase build workflow").
