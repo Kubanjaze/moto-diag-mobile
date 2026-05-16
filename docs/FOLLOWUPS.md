@@ -237,10 +237,16 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
 - **Root cause:** Android-first development. `AndroidManifest.xml` has the parallel permissions; iOS Info.plist never received the cross-platform update when Phases 191 + 195 landed. Same regression-family as Phase 195 Mobile Commit 1's missed App.tsx sweep wiring (function existed, integration absent), but on the iOS-platform-parity axis instead of the cold-mount-wiring axis.
 - **Verification after edit:** `grep -B 1 "UsageDescription" ios/MotoDiag/Info.plist` should return five distinct key blocks (location + 4 new).
 - **Scope estimate:** trivial — single file, ~16 lines added. Folds cleanly into Phase 195B's plan v1.0 (matches the iOS-deploy timing) OR a dedicated tiny commit on `phase-195-voice-input` before 195B branch creation. **Recommendation: tiny commit on `phase-195-voice-input` now**, since 195B is paused on Step 10 capture which itself depends on the iOS app launching cleanly. Folding into 195B risks blocking 195B kickoff on a fix that's not part of 195B's actual scope.
-- **Cross-cutting recommendation: add iOS-parity check to phase gate cycle.** Any feature touching mic / camera / speech / location / photos / contacts on Android needs a same-PR `Info.plist` update on iOS. No gate currently catches this. Consider adding to CLAUDE.md alongside the F33 / integration-gap regression-guard guidance — same family of "function-exists-on-one-platform-but-other-platform-not-wired" gap. Lint rule candidate for Phase 195C scope (alongside the F37 Track 2 lint work) OR its own micro-phase if 195C is already scoped.
-- **Decision:** File NOW; ship the Info.plist fix on `phase-195-voice-input` immediately so cousin's Mac iOS deploy isn't blocked when SDK download completes; cross-cutting iOS-parity gate is a separate F-ticket worth filing if it doesn't fold into 195C.
+- **Cross-cutting recommendation (REFINED 2026-05-16 per iOS first-run session "F-D"): iOS-parity is a PR-review checklist item, NOT a lint rule, NOT Phase 195C scope.** Any feature touching mic / camera / speech / location / photos / contacts on Android needs a same-PR `Info.plist` (+ `.env`/config) parity update on iOS. The original recommendation floated this as a "lint rule candidate for Phase 195C" — **withdrawn.** Cross-platform-permission-parity is not a parseable code property (a lint rule can't know that adding `RECORD_AUDIO` to AndroidManifest *implies* `NSMicrophoneUsageDescription` belongs in Info.plist — that's a semantic cross-file inference, not a syntactic check). It is a **review-discipline item.** Correct home: a one-line PR-review checklist entry in CLAUDE.md alongside the F33 / integration-gap regression-guard guidance. Keeps Phase 195C's lint-rule scope clean for the F37 Track 2 work (which IS a parseable property — Pydantic-Literal-vs-CHECK-constraint). **Action:** added to CLAUDE.md 2026-05-16 (workspace-root file; loads every session).
+- **Decision:** Info.plist 4-key fix shipped in `3840300`; NSLocation backfill (F43) in `122713f`. Cross-cutting iOS-parity gate landed as a CLAUDE.md PR-review checklist item, NOT a separate F-ticket and NOT 195C lint scope. F40 closeable once the CLAUDE.md note is confirmed in place.
 
-### F42 (NEW) — AddBike form stuck on "Saving…" when backend unreachable
+### F42 — AddBike form stuck on "Saving…" when backend unreachable — WITHDRAWN AS BUG 2026-05-16
+
+**Withdrawn 2026-05-16** (iOS first-run session, Step 10 capture day). With the backend live + reachable (via Personal Hotspot fallback), AddBike completes normally — the stuck-"Saving…" state was **purely the backend being unreachable, NOT a code bug.** The original F42 framing as a code defect is withdrawn.
+
+**Residual (optional, not filed as an active ticket):** a defensive timeout + error-state on unreachable-backend submit is still reasonable UX hardening — the app gives no feedback when a mutation hangs on a dead network, which IS the shop deployment reality. If anyone wants this, the systemic angle below is the right scope (not a one-off AddBike fix). Specifically: if Phase 195B's `useWorkOrderTranscripts.addTranscript` upload surfaces the same no-feedback hang on patchy connectivity (high probability — voice memo is a bigger payload than a work-order POST), fold the timeout-with-retry hardening into 195B for the whole mutation-hook family at once (`addVehicle` / `useTransitionWorkOrder` / `useReassignWorkOrder` / `useWorkOrderPhotos.addPhoto` / `addTranscript`). Recommended pattern if pursued: `AbortController` + 10s timeout + `ShopAccessError.network` typed error + "Try again" affordance — same discipline as `useTranscriptAudio.probeRemoteAudio` already uses. **No active ticket; this paragraph is the record.**
+
+<details><summary>Original F42 entry (withdrawn — preserved for provenance)</summary>
 
 - **Surfaced:** 2026-05-10 cousin's Mac iOS first-deploy session (Phase A.5 partial smoke pass on physical iPhone, iOS 26.4.2). Repro: open Add Bike form with no backend reachability (network block, AP isolation, hotspot transition, etc.), fill required fields, tap Save. Button enters "Saving…" state and never returns. No error toast, no timeout banner, no way to cancel except via the unrelated Cancel button below.
 - **Severity:** real UX dead-end on patchy connectivity, which IS the shop deployment target (Wi-Fi dropouts, mechanic moving between bays, intermittent backend reachability). Cross-platform — not iOS-specific; surfaced on iOS first because it was the first network-restricted environment the form was tested in. Phase 188 HVE territory.
@@ -253,7 +259,15 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
 - **Priority:** medium-high. Not blocking 195B substrate work, but the same hang pattern likely exists in OTHER mutation hooks (`useTransitionWorkOrder`, `useReassignWorkOrder`, `useWorkOrderPhotos.addPhoto`, `useWorkOrderTranscripts.addTranscript`, etc.) — audit the family + apply consistently OR file as systemic fix later. **Recommend systemic audit** rather than one-off AddBike fix; same shape as F37 Track 2's "discovered-pattern, fix-systematically" reasoning.
 - **Decision:** Filed. Defer fix to either (a) a dedicated mutation-hook hardening micro-phase OR (b) folded into Phase 195B if 195B's `addTranscript` upload flow surfaces the same hang on patchy connectivity (high probability — voice memo upload is bigger payload than work-order POST).
 
-### F43 (NEW) — NSLocationWhenInUseUsageDescription has empty string value in Info.plist (App Store review blocker eventually)
+</details>
+
+### F43 — NSLocationWhenInUseUsageDescription has empty string value in Info.plist — RESOLVED 2026-05-16 (commit 122713f)
+
+**Resolved 2026-05-16.** Backfilled with placeholder copy in commit `122713f` ("MotoDiag may use your location to tag diagnostic work orders with the bay or facility location where work is performed."). The 2026-05-16 iOS first-run session report re-flagged this as "F-B" because the cousin's Mac checkout was at `3840300` — which predates the `122713f` fix. On the canonical Windows clone the empty string is already filled; the next `git pull` on the Mac resolves it. **No further action** unless a Phase 195B+ code audit confirms location is genuinely unused, in which case a follow-up commit removes the key entirely (cleaner than placeholder copy for an unused permission). Verification still passes: `grep -B 1 "UsageDescription" ios/MotoDiag/Info.plist` returns 5 distinct key blocks, all non-empty.
+
+<details><summary>Original F43 entry (resolved — preserved for provenance)</summary>
+
+#### F43 (NEW) — NSLocationWhenInUseUsageDescription has empty string value in Info.plist (App Store review blocker eventually)
 
 - **Surfaced:** 2026-05-10 cousin's Mac iOS first-deploy session, code review of `ios/MotoDiag/Info.plist`. Pre-existing (not introduced by `3840300` which fixed F40 by adding mic/speech/camera/photo-library keys); the location key was already in the file with an empty string value (`<string></string>`). Likely vestigial from React Native template scaffolding.
 - **Severity:** **App Store review blocker at TestFlight/store-submission time.** App Store rejects builds that declare a usage-description key with an empty string (or, equivalently, declare a permission the binary uses without copy explaining why). NOT blocking dev work — the empty string value passes runtime sensor-access checks (iOS only crashes on missing key, not empty value). Surfaces only at submission.
@@ -261,7 +275,11 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
 - **Scope estimate:** trivial (one-line edit either way). Same shape as F40 fix.
 - **Decision:** **Backfill with placeholder copy in this prep commit** following F40 precedent (placeholder copy that should pass App Store review when we get there, team can adjust for tone). If a code audit during Phase 195B or later confirms location is genuinely unused, follow-up commit removes the key entirely. Better to have placeholder copy than empty string in the meantime — empty string is the only state that App Store explicitly rejects.
 
+</details>
+
 ### F44 (NEW) — Backend default port 8080 vs mobile expectation 8000 — Swagger URL mismatch is the symptom
+
+> **2026-05-16 update:** iOS first-run session re-confirmed this as "F-C", classified **cosmetic** (mobile app uses its own `API_BASE_URL` config, unaffected by openapi.json `servers` declaration). Still file-only — architect call on (a) vs (b) port-default still pending. No change to disposition; the re-confirmation just adds a second data point that the symptom is real + low-severity.
 
 - **Surfaced:** 2026-05-10 cousin's Mac session reported "Swagger UI documents incorrect server URL (http://localhost:8080) in openapi.json, but uvicorn runs on :8000." Investigation traced a deeper inconsistency:
   - Backend: `motodiag.core.config.Settings.api_port: int = 8080` (line 64) AND `api_servers: str = "http://localhost:8080|Local dev"` (line 73). Both internally consistent at 8080.
@@ -276,12 +294,31 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
 - **Priority:** medium. Cosmetic for existing devs, friction for fresh setups. Folds cleanly into Phase 195B (which will be touching backend config for cost-monitoring env vars anyway) OR a tiny dedicated fix-cycle commit.
 - **Decision:** Filed. Architect call on (a) vs (b). NOT shipped in the current prep commit because the fix isn't strictly additive — touching defaults requires audit + careful change. Same care-level as Backend Commit 0.5's Literal upgrade.
 
-### F45 (NEW) — `.env.example` missing physical-iOS-device API_BASE_URL convention
+### F45 — `.env.example` missing physical-iOS-device API_BASE_URL convention — RESOLVED 2026-05-16 (commit 122713f)
+
+**Resolved 2026-05-16.** Physical-iOS-device host convention added to `.env.example` in commit `122713f` (third commented line + LAN-IP discovery hint + AP-isolation warning). The 2026-05-16 iOS first-run session re-flagged the .env-doc gap as the first half of "F-D" because the cousin's Mac checkout (`3840300`) predated the `122713f` fix; the next `git pull` resolves it. The *second* half of F-D — the cross-cutting iOS-parity gate — is addressed under F40's updated cross-cutting recommendation below (moved to a CLAUDE.md PR-review checklist item, explicitly NOT a lint rule / NOT Phase 195C scope).
+
+<details><summary>Original F45 entry (resolved — preserved for provenance)</summary>
 
 - **Surfaced:** 2026-05-10 cousin's Mac iOS first-deploy session. `react-native-config`'s `.env.example` (lines 2-3) documents Android emulator (`http://10.0.2.2:8000`) and iOS simulator (`http://localhost:8000`) host conventions but does NOT document the physical iOS device case (LAN IP of dev backend host, e.g. `http://10.0.0.44:8000`). Cousin's session had to derive this from troubleshooting Network reachability.
 - **Severity:** documentation gap. Not blocking — once derived, works fine. But every fresh dev with a real iOS device hits the same friction the cousin's session did.
 - **Scope estimate:** trivial. One-line addition: `# Physical iOS device → host: http://<mac/laptop LAN IP>:8000` between existing lines 3 and 4 of `.env.example`.
 - **Decision:** **Ship in this prep commit.** Strictly additive doc change, no behavior implications, unblocks any future fresh dev with a real iOS device.
+
+</details>
+
+### F46 (NEW) — Phase 191 video capture broken on iOS physical device (VisionCamera init failure)
+
+- **Surfaced:** 2026-05-16 iOS first-run session, Phase A.5 cross-phase smoke. iPhone 16 Pro, iOS 26.4.2. Repro: tap "Record video" on a diagnostic session → **no `NSCameraUsageDescription` permission prompt fires** → persistent black screen → nav-back returns to the session screen. The camera surface never initializes.
+- **Severity:** **iOS-only blocker for Phase 191 video diagnostic capture.** Does NOT block Phase 195 / 195B (voice capture uses the microphone + `@react-native-voice/voice` + `react-native-audio-recorder-player`, a different native path entirely — voice capture confirmed functional in the same session). Android (Pixel 7 emulator) unaffected per Phase 191 dev history.
+- **Diagnostic context:**
+  - `NSCameraUsageDescription` IS present + non-empty in `ios/MotoDiag/Info.plist` (added in commit `3840300`, verified). So this is NOT the F40-family missing-key problem.
+  - The missing permission prompt indicates `react-native-vision-camera` fails to initialize **before** reaching the permission-request code path — i.e., the failure is upstream of the permission ask, not the permission ask itself.
+  - `pod install` flagged `[VisionCamera] react-native-worklets-core not found — Frame Processors disabled`. Plain video recording does NOT require Frame Processors, so this is likely a *separate* VisionCamera iOS-init issue, not the root cause — but worth noting as an environment data point.
+- **Candidate root causes (untriaged):** (a) missing iOS-side camera configuration in the VisionCamera setup; (b) New-Architecture-disabled interaction (the app runs old-arch; VisionCamera 4.x has New-Arch-specific init paths); (c) `react-native-vision-camera` 4.7.3 vs iOS 26 incompatibility (iOS 26 is very new; VisionCamera may not have a verified-compat release yet).
+- **Scope estimate:** unknown until triaged — could be a one-line config addition (candidate a) or a dependency-version bump with cascading rebuild (candidate c). Triage needs an iOS device session + Xcode console logs from the black-screen repro.
+- **Promotion trigger / priority:** **deferred to post-Phase-195B.** Phase 191 video is not on the 195/195B/195C/196 critical path. Triage when an iOS device session is available + Phase 191 iOS parity becomes load-bearing (likely the broader Phase A iOS-bring-up track, not a numbered ROADMAP phase). Capture Xcode console output at triage time per audit-trail discipline.
+- **Decision:** Filed, deferred post-195B. Not blocking. Android Phase 191 path remains functional.
 
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
