@@ -4109,6 +4109,7 @@
           "shop-management"
         ],
         "summary": "List work orders for the shop",
+        "description": "List shop work orders with optional sort dispatch.\n\nPhase 193 Commit 0: ``sort`` query param added for the mobile\nShop Dashboard's `Newest / Priority / Triage` toggle. Default\nbehavior preserved (omitting `sort` matches existing\n`list_work_orders` ordering \u2014 backward compatible).\n\nTriage sort calls :func:`build_triage_queue` server-side and\nunwraps each :class:`TriageItem` to its plain ``work_order``\ndict \u2014 clients get a uniform response shape regardless of sort.\nTriage rank / score / parts-ready context stay server-side this\nphase; explainability surface is filed as F35 (mobile FOLLOWUPS).",
         "operationId": "list_work_orders_endpoint_v1_shop__shop_id__work_orders_get",
         "parameters": [
           {
@@ -4147,6 +4148,29 @@
               "default": 50,
               "title": "Limit"
             }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "newest",
+                    "priority",
+                    "triage"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Order: 'newest' (created_at DESC), 'priority' (priority ASC then created_at DESC \u2014 same as omitting), or 'triage' (build_triage_queue scoring; rich score / rank / parts-ready context computed server-side, response shape stays uniform \u2014 see Phase 193 plan v1.0 + F35 candidate).",
+              "title": "Sort"
+            },
+            "description": "Order: 'newest' (created_at DESC), 'priority' (priority ASC then created_at DESC \u2014 same as omitting), or 'triage' (build_triage_queue scoring; rich score / rank / parts-ready context computed server-side, response shape stays uniform \u2014 see Phase 193 plan v1.0 + F35 candidate)."
           },
           {
             "name": "X-API-Key",
@@ -4523,6 +4547,125 @@
                   "type": "object",
                   "additionalProperties": true,
                   "title": "Response Transition Work Order V1 Shop  Shop Id  Work Orders  Wo Id  Transition Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/assign": {
+      "post": {
+        "tags": [
+          "shop-management"
+        ],
+        "summary": "Assign or unassign a mechanic on a work order",
+        "description": "Phase 193 Commit 0.5 \u2014 assign / unassign a mechanic on a WO.\n\nMirrors the transition endpoint's auth posture (basic shop\nmembership check via ``require_shop_access``). Backend's\n``assign_mechanic`` validates the target user exists; cross-shop\nWOs return 404 (matches transition endpoint's posture).\n\nBody shape: ``{mechanic_user_id: int | null}`` \u2014 ``null`` is\nexplicit unassign (required field; can't omit). Returns the\nupdated WO dict on success.",
+        "operationId": "assign_work_order_mechanic_v1_shop__shop_id__work_orders__wo_id__assign_post",
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "wo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Wo Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkOrderAssignRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Assign Work Order Mechanic V1 Shop  Shop Id  Work Orders  Wo Id  Assign Post"
                 }
               }
             }
@@ -9100,6 +9243,28 @@
         ],
         "title": "VideoUploadState",
         "description": "Upload-side state for a session video.\n\nPhase 191B reserves only `uploaded` \u2014 Phase 192+ may add `pending`\n(multi-part upload in progress) and `failed` (network drop mid-upload)."
+      },
+      "WorkOrderAssignRequest": {
+        "properties": {
+          "mechanic_user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mechanic User Id",
+            "description": "User id of the mechanic to assign. ``null`` (explicit) unassigns the WO. Required field \u2014 pass ``null`` rather than omitting to unassign."
+          }
+        },
+        "type": "object",
+        "required": [
+          "mechanic_user_id"
+        ],
+        "title": "WorkOrderAssignRequest",
+        "description": "Phase 193 Commit 0.5 \u2014 assign / unassign a mechanic on a WO.\n\n``mechanic_user_id`` is required (None means explicit unassign).\nSame auth posture as the transition endpoint: caller must be a\nmember of the shop. RBAC tightening (e.g., manager/owner-only\nreassignment of OTHER mechanics' WOs) is its own follow-up;\nPhase 193 keeps parity with transition's basic membership check."
       },
       "WorkOrderCreateRequest": {
         "properties": {

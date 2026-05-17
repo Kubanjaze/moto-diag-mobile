@@ -574,7 +574,21 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List work orders for the shop */
+        /**
+         * List work orders for the shop
+         * @description List shop work orders with optional sort dispatch.
+         *
+         *     Phase 193 Commit 0: ``sort`` query param added for the mobile
+         *     Shop Dashboard's `Newest / Priority / Triage` toggle. Default
+         *     behavior preserved (omitting `sort` matches existing
+         *     `list_work_orders` ordering — backward compatible).
+         *
+         *     Triage sort calls :func:`build_triage_queue` server-side and
+         *     unwraps each :class:`TriageItem` to its plain ``work_order``
+         *     dict — clients get a uniform response shape regardless of sort.
+         *     Triage rank / score / parts-ready context stay server-side this
+         *     phase; explainability surface is filed as F35 (mobile FOLLOWUPS).
+         */
         get: operations["list_work_orders_endpoint_v1_shop__shop_id__work_orders_get"];
         put?: never;
         /** Create a work order */
@@ -613,6 +627,35 @@ export interface paths {
         put?: never;
         /** Transition a work order through its lifecycle */
         post: operations["transition_work_order_v1_shop__shop_id__work_orders__wo_id__transition_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Assign or unassign a mechanic on a work order
+         * @description Phase 193 Commit 0.5 — assign / unassign a mechanic on a WO.
+         *
+         *     Mirrors the transition endpoint's auth posture (basic shop
+         *     membership check via ``require_shop_access``). Backend's
+         *     ``assign_mechanic`` validates the target user exists; cross-shop
+         *     WOs return 404 (matches transition endpoint's posture).
+         *
+         *     Body shape: ``{mechanic_user_id: int | null}`` — ``null`` is
+         *     explicit unassign (required field; can't omit). Returns the
+         *     updated WO dict on success.
+         */
+        post: operations["assign_work_order_mechanic_v1_shop__shop_id__work_orders__wo_id__assign_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1639,6 +1682,23 @@ export interface components {
          * @enum {string}
          */
         VideoUploadState: "uploaded";
+        /**
+         * WorkOrderAssignRequest
+         * @description Phase 193 Commit 0.5 — assign / unassign a mechanic on a WO.
+         *
+         *     ``mechanic_user_id`` is required (None means explicit unassign).
+         *     Same auth posture as the transition endpoint: caller must be a
+         *     member of the shop. RBAC tightening (e.g., manager/owner-only
+         *     reassignment of OTHER mechanics' WOs) is its own follow-up;
+         *     Phase 193 keeps parity with transition's basic membership check.
+         */
+        WorkOrderAssignRequest: {
+            /**
+             * Mechanic User Id
+             * @description User id of the mechanic to assign. ``null`` (explicit) unassigns the WO. Required field — pass ``null`` rather than omitting to unassign.
+             */
+            mechanic_user_id: number | null;
+        };
         /** WorkOrderCreateRequest */
         WorkOrderCreateRequest: {
             /** Vehicle Id */
@@ -3353,6 +3413,8 @@ export interface operations {
             query?: {
                 status?: string | null;
                 limit?: number;
+                /** @description Order: 'newest' (created_at DESC), 'priority' (priority ASC then created_at DESC — same as omitting), or 'triage' (build_triage_queue scoring; rich score / rank / parts-ready context computed server-side, response shape stays uniform — see Phase 193 plan v1.0 + F35 candidate). */
+                sort?: ("newest" | "priority" | "triage") | null;
             };
             header?: {
                 "X-API-Key"?: string | null;
@@ -3495,6 +3557,52 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["WorkOrderTransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            402: components["responses"]["SubscriptionRequired"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    assign_work_order_mechanic_v1_shop__shop_id__work_orders__wo_id__assign_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkOrderAssignRequest"];
             };
         };
         responses: {
