@@ -6,6 +6,7 @@ import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {ApiKeyProvider} from './src/contexts/ApiKeyProvider';
 import {RootNavigator} from './src/navigation/RootNavigator';
 import {clearActiveShopId} from './src/services/activeShopStorage';
+import {audioStorageCache} from './src/services/audioStorageCache';
 import {photoStorageCache} from './src/services/photoStorageCache';
 import {cleanupOldShares} from './src/services/shareTempCleanup';
 
@@ -38,6 +39,17 @@ function App() {
   // capture is a more deliberate action (a mechanic may legitimately
   // have a captured-but-deferred-upload photo for a few days; a
   // week is the bound).
+  //
+  // Phase 195 Mobile Commit 1.5 — audio cache 7-day cold-start sweep
+  // (mobile-side; distinct from backend's 60-day server-side
+  // retention). Pre-upload orphans accumulate when the user records
+  // but the upload never lands (network failure, app killed mid-flow,
+  // mechanic discards post-record). Same 7-day threshold as Phase
+  // 194's photo sweep + same belt-and-suspenders posture as Phase
+  // 192B's share-temp sweep. Wired here at Mobile Commit 1.5 (was
+  // missed in Mobile Commit 1 — function existed but App.tsx
+  // wiring never landed; trust-but-verify caught at architect-side
+  // pre-Commit-2 review).
   useEffect(() => {
     void cleanupOldShares(Date.now()).catch(() => {
       // Best-effort sweep; cold-start shouldn't depend on cleanup
@@ -45,6 +57,9 @@ function App() {
     });
     void photoStorageCache.cleanupOldPhotos(Date.now()).catch(() => {
       // Best-effort photo orphan sweep. Same posture.
+    });
+    void audioStorageCache.cleanupOldAudio(Date.now()).catch(() => {
+      // Best-effort audio orphan sweep. Same posture.
     });
     void clearActiveShopId().catch(() => {
       // Best-effort clear; if it fails the user just keeps their

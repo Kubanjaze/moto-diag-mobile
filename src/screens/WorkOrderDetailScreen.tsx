@@ -44,6 +44,7 @@ import {
 } from '../hooks/useTransitionWorkOrder';
 import {useWorkOrder} from '../hooks/useWorkOrder';
 import {useWorkOrderPhotos} from '../hooks/useWorkOrderPhotos';
+import {useWorkOrderTranscripts} from '../hooks/useWorkOrderTranscripts';
 import type {ShopStackParamList} from '../navigation/types';
 import {buildWorkOrderSections} from './buildWorkOrderSections';
 import {shopAccessErrorCopy} from './shopAccessErrorCopy';
@@ -58,6 +59,11 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
   // section builder as the 4th param. Refresh on focus + post-capture
   // is automatic via the hook's useEffect on shopId/woId.
   const {photos, refresh: refreshPhotos} = useWorkOrderPhotos(shopId, woId);
+  // Phase 195 — voice transcripts. Fetched in parallel; passed to
+  // section builder as 5th param. Refresh on focus + post-capture
+  // automatic via the hook's useEffect on shopId/woId.
+  const {transcripts, refresh: refreshTranscripts} =
+    useWorkOrderTranscripts(shopId, woId);
   const {transition, isTransitioning} = useTransitionWorkOrder(shopId);
   const {reassign, isReassigning} = useReassignWorkOrder(shopId);
   const membersResult = useShopMembers(shopId);
@@ -74,7 +80,8 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
     useCallback(() => {
       void refetch();
       void refreshPhotos();
-    }, [refetch, refreshPhotos]),
+      void refreshTranscripts();
+    }, [refetch, refreshPhotos, refreshTranscripts]),
   );
 
   const handleTransition = useCallback(
@@ -221,6 +228,7 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
         | undefined ?? null,
     },
     photos,
+    transcripts,
   );
 
   const status = workOrder.status;
@@ -253,6 +261,22 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
                     navigation.navigate('ClassifyPhotos', {shopId, woId})
                 : undefined
             }
+            onTranscriptPress={
+              section.kind === 'transcripts'
+                ? (transcript) =>
+                    navigation.navigate('TranscriptReview', {
+                      shopId, woId, transcriptId: transcript.id,
+                    })
+                : undefined
+            }
+            onExtractedSymptomPress={
+              section.kind === 'transcripts'
+                ? (transcript, _symptom) =>
+                    navigation.navigate('TranscriptReview', {
+                      shopId, woId, transcriptId: transcript.id,
+                    })
+                : undefined
+            }
           />
         ))}
 
@@ -274,6 +298,29 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
               navigation.navigate('PhotoCapture', {shopId, woId});
             }}
             testID="wo-detail-take-photo-button"
+          />
+        </View>
+
+        {/* Phase 195 — Voice memo entry-point card. Parallel to the
+            photo card; same in-screen position pattern. Tapping
+            navigates to the voice capture screen which records audio
+            + on-device STT preview in parallel and uploads on stop.
+            Symptoms extracted server-side via keyword pass appear in
+            the WorkOrderTranscriptsSection card on return. */}
+        <View style={styles.photosCard}>
+          <Text style={styles.photosCardTitle}>Voice memos</Text>
+          <Text style={styles.photosCardSubtitle}>
+            Describe symptoms hands-free; we'll extract them
+            automatically. Tap to confirm or edit each extracted
+            symptom on the transcript review screen.
+          </Text>
+          <Button
+            title="Record voice memo"
+            variant="primary"
+            onPress={() => {
+              navigation.navigate('VoiceCapture', {shopId, woId});
+            }}
+            testID="wo-detail-record-voice-button"
           />
         </View>
 

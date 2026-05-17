@@ -35,7 +35,15 @@
 		<true/>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
+	<string>MotoDiag may use your location to tag diagnostic work orders with the bay or facility location where work is performed.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>MotoDiag uses the microphone to capture voice descriptions of vehicle symptoms during diagnostic work orders.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>MotoDiag converts your spoken symptom descriptions into text for the diagnostic record.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>MotoDiag uses the camera to capture video of vehicle symptoms (engine startup, idle behavior, visible defects) for diagnostic records.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>MotoDiag accesses your photo library to attach existing photos or videos to diagnostic work orders.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>

@@ -10,6 +10,7 @@ import {
   isLifecycleSection,
   isNotesSection,
   isPhotosSection,
+  isTranscriptsSection,
   isVehicleSection,
   type WorkOrderCustomerSection,
   type WorkOrderIssuesSection,
@@ -18,6 +19,8 @@ import {
   type WorkOrderPhoto,
   type WorkOrderPhotosSection,
   type WorkOrderSection,
+  type WorkOrderTranscript,
+  type WorkOrderTranscriptsSection,
   type WorkOrderVehicleSection,
 } from '../../src/types/workOrder';
 
@@ -81,6 +84,31 @@ const photosSection: WorkOrderPhotosSection = {
   kind: 'photos',
   photos: [samplePhoto],
   undecided_count: 0,
+};
+
+const sampleTranscript: WorkOrderTranscript = {
+  id: 1,
+  work_order_id: 1,
+  issue_id: null,
+  audio_format: 'm4a',
+  duration_ms: 5000,
+  sample_rate_hz: 16000,
+  language: 'en-US',
+  captured_at: '2026-05-07T10:00:00Z',
+  uploaded_by_user_id: 1,
+  preview_text: 'rough idle when warm',
+  preview_engine: 'ios-speech',
+  extraction_state: 'extracted',
+  extracted_at: '2026-05-07T10:00:01Z',
+  audio_deleted_at: null,
+  source: null,
+  created_at: '2026-05-07T10:00:01Z',
+  extracted_symptoms: [],
+};
+
+const transcriptsSection: WorkOrderTranscriptsSection = {
+  kind: 'transcripts',
+  transcripts: [sampleTranscript],
 };
 
 describe('WorkOrderSection type guards', () => {
@@ -149,13 +177,38 @@ describe('WorkOrderSection type guards', () => {
       expect(isPhotosSection(issuesSection)).toBe(false);
       expect(isPhotosSection(notesSection)).toBe(false);
       expect(isPhotosSection(lifecycleSection)).toBe(false);
+      expect(isPhotosSection(transcriptsSection)).toBe(false);
     });
     it('narrows the union to expose photos + undecided_count fields', () => {
       const s: WorkOrderSection = photosSection;
       if (isPhotosSection(s)) {
-        // Type-narrowing exercise — both fields must be reachable.
         expect(s.photos).toHaveLength(1);
         expect(s.undecided_count).toBe(0);
+      }
+    });
+  });
+
+  describe('isTranscriptsSection (Phase 195)', () => {
+    it('returns true for transcripts section', () => {
+      expect(isTranscriptsSection(transcriptsSection)).toBe(true);
+    });
+    it('returns false for other variants', () => {
+      expect(isTranscriptsSection(vehicleSection)).toBe(false);
+      expect(isTranscriptsSection(customerSection)).toBe(false);
+      expect(isTranscriptsSection(issuesSection)).toBe(false);
+      expect(isTranscriptsSection(notesSection)).toBe(false);
+      expect(isTranscriptsSection(lifecycleSection)).toBe(false);
+      expect(isTranscriptsSection(photosSection)).toBe(false);
+    });
+    it('narrows the union to expose transcripts field with Literal-typed enums', () => {
+      const s: WorkOrderSection = transcriptsSection;
+      if (isTranscriptsSection(s)) {
+        expect(s.transcripts).toHaveLength(1);
+        // Type-narrowing exercise — Literal unions reach through.
+        const t = s.transcripts[0];
+        expect(t.audio_format).toBe('m4a');
+        expect(t.preview_engine).toBe('ios-speech');
+        expect(t.extraction_state).toBe('extracted');
       }
     });
   });
@@ -169,6 +222,7 @@ describe('WorkOrderSection type guards', () => {
         notesSection,
         lifecycleSection,
         photosSection,
+        transcriptsSection,
       ];
       const tags: string[] = [];
       for (const s of sections) {
@@ -184,6 +238,8 @@ describe('WorkOrderSection type guards', () => {
           tags.push(`lifecycle[${s.rows.length}]`);
         } else if (isPhotosSection(s)) {
           tags.push(`photos[${s.photos.length},u${s.undecided_count}]`);
+        } else if (isTranscriptsSection(s)) {
+          tags.push(`transcripts[${s.transcripts.length}]`);
         }
       }
       expect(tags).toEqual([
@@ -193,6 +249,7 @@ describe('WorkOrderSection type guards', () => {
         'notes[20chars]',
         'lifecycle[1]',
         'photos[1,u0]',
+        'transcripts[1]',
       ]);
     });
   });

@@ -18,10 +18,13 @@ import {
   isLifecycleSection,
   isNotesSection,
   isPhotosSection,
+  isTranscriptsSection,
   isVehicleSection,
+  type ExtractedSymptom,
   type WorkOrderIssue,
   type WorkOrderPhoto,
   type WorkOrderSection,
+  type WorkOrderTranscript,
 } from '../types/workOrder';
 
 interface Props {
@@ -38,16 +41,32 @@ interface Props {
    *  surface. Optional; when undefined the banner is rendered but
    *  inert (used by tests + early-prototype rendering). */
   onUndecidedBannerPress?: () => void;
+  /** Phase 195 — tap on a transcript card. Mobile Commit 2 wires
+   *  this to navigate to TranscriptReviewScreen for mechanic
+   *  confirm/edit of extracted symptoms. */
+  onTranscriptPress?: (transcript: WorkOrderTranscript) => void;
+  /** Phase 195 — tap on an extracted-symptom chip. Same target as
+   *  onTranscriptPress (review screen) but lets the screen scroll
+   *  to the tapped symptom. Mobile Commit 2 wires. */
+  onExtractedSymptomPress?: (
+    transcript: WorkOrderTranscript,
+    symptom: ExtractedSymptom,
+  ) => void;
 }
 
 export function WorkOrderSectionCard({
   section, testID, onPhotoPress, onUndecidedBannerPress,
+  onTranscriptPress, onExtractedSymptomPress,
 }: Props) {
   const heading = _heading(section);
   return (
     <View style={styles.card} testID={testID}>
       <Text style={styles.cardTitle}>{heading}</Text>
-      {_renderBody(section, testID, onPhotoPress, onUndecidedBannerPress)}
+      {_renderBody(
+        section, testID,
+        onPhotoPress, onUndecidedBannerPress,
+        onTranscriptPress, onExtractedSymptomPress,
+      )}
     </View>
   );
 }
@@ -60,6 +79,7 @@ function _heading(section: WorkOrderSection): string {
     case 'notes': return 'Notes';
     case 'lifecycle': return 'Lifecycle';
     case 'photos': return 'Photos';
+    case 'transcripts': return 'Voice memos';
   }
 }
 
@@ -68,6 +88,11 @@ function _renderBody(
   testID?: string,
   onPhotoPress?: (photo: WorkOrderPhoto) => void,
   onUndecidedBannerPress?: () => void,
+  onTranscriptPress?: (transcript: WorkOrderTranscript) => void,
+  onExtractedSymptomPress?: (
+    transcript: WorkOrderTranscript,
+    symptom: ExtractedSymptom,
+  ) => void,
 ): React.ReactNode {
   if (isVehicleSection(section)) return _renderRows(section.rows, testID);
   if (isCustomerSection(section)) return _renderRows(section.rows, testID);
@@ -81,6 +106,14 @@ function _renderBody(
       testID,
       onPhotoPress,
       onUndecidedBannerPress,
+    );
+  }
+  if (isTranscriptsSection(section)) {
+    return _renderTranscripts(
+      section.transcripts,
+      testID,
+      onTranscriptPress,
+      onExtractedSymptomPress,
     );
   }
 
@@ -366,6 +399,191 @@ function _renderPhotoSlot(
   );
 }
 
+function _renderTranscripts(
+  transcripts: ReadonlyArray<WorkOrderTranscript>,
+  testID?: string,
+  onTranscriptPress?: (transcript: WorkOrderTranscript) => void,
+  onExtractedSymptomPress?: (
+    transcript: WorkOrderTranscript,
+    symptom: ExtractedSymptom,
+  ) => void,
+): React.ReactNode {
+  // Phase 195 plan v1.0 + Section E load-bearing test #2: time-series
+  // layout with extracted-symptom chips. Structurally different from
+  // photos (media-references) and from text-shaped variants (label/
+  // value rows) — third layout idiom on the renderer. Each transcript
+  // is a card showing duration + relative-time header, preview_text
+  // body (italic + "refining…" badge if extraction_state is pending/
+  // extracting), and the extracted_symptoms array as tappable chips.
+  if (transcripts.length === 0) {
+    return (
+      <Text
+        style={styles.emptyText}
+        testID={
+          testID !== undefined ? `${testID}-transcripts-empty` : undefined
+        }
+      >
+        No voice memos yet.
+      </Text>
+    );
+  }
+  return (
+    <View testID={testID !== undefined ? `${testID}-transcripts` : undefined}>
+      {transcripts.map((t) => (
+        <Pressable
+          key={t.id}
+          accessibilityRole={onTranscriptPress ? 'button' : undefined}
+          onPress={onTranscriptPress ? () => onTranscriptPress(t) : undefined}
+          style={styles.transcriptCard}
+          testID={
+            testID !== undefined
+              ? `${testID}-transcript-${t.id}`
+              : undefined
+          }
+        >
+          <View style={styles.transcriptHeader}>
+            <Text style={styles.transcriptDuration}>
+              {_formatDuration(t.duration_ms)}
+            </Text>
+            <Text style={styles.transcriptCapturedAt} numberOfLines={1}>
+              {t.captured_at}
+            </Text>
+            {_renderExtractionBadge(t.extraction_state)}
+          </View>
+          {t.preview_text ? (
+            <Text style={styles.transcriptBody} numberOfLines={4}>
+              {t.preview_text}
+            </Text>
+          ) : (
+            <Text style={[styles.transcriptBody, styles.transcriptBodyEmpty]}>
+              (no preview text — open to listen)
+            </Text>
+          )}
+          {t.extracted_symptoms.length > 0 ? (
+            <View
+              style={styles.symptomChipRow}
+              testID={
+                testID !== undefined
+                  ? `${testID}-transcript-${t.id}-symptoms`
+                  : undefined
+              }
+            >
+              {t.extracted_symptoms.map((s) => (
+                <Pressable
+                  key={s.id}
+                  accessibilityRole={
+                    onExtractedSymptomPress ? 'button' : undefined
+                  }
+                  onPress={
+                    onExtractedSymptomPress
+                      ? () => onExtractedSymptomPress(t, s)
+                      : undefined
+                  }
+                  style={[
+                    styles.symptomChip,
+                    _symptomChipStyle(s),
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.symptomChipText,
+                      _symptomChipTextStyle(s),
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {s.text}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : t.extraction_state === 'extracted' ? (
+            <Text style={styles.transcriptNoSymptoms}>
+              (no symptoms extracted)
+            </Text>
+          ) : null}
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+/** Format a duration in ms as "0:42" / "1:23" / "12:05". */
+function _formatDuration(durationMs: number): string {
+  const totalSec = Math.max(0, Math.round(durationMs / 1000));
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+/** Render the extraction-state badge with exhaustive switch over the
+ *  Literal union (Phase 195 Backend Commit 0.5 OpenAPI Literal types).
+ *  Default branch uses `never` cast for TS exhaustiveness — same
+ *  discipline as Phase 192B shareErrorCopy + Phase 193 shopAccessErrorCopy. */
+function _renderExtractionBadge(
+  state: WorkOrderTranscript['extraction_state'],
+): React.ReactNode {
+  switch (state) {
+    case 'pending':
+    case 'extracting':
+      return (
+        <View style={[styles.extractionBadge, styles.extractionBadgeRefining]}>
+          <Text style={styles.extractionBadgeText}>refining…</Text>
+        </View>
+      );
+    case 'extracted':
+      return null;  // No badge needed; symptoms (or empty-state) speak for themselves.
+    case 'extraction_failed':
+      return (
+        <View style={[styles.extractionBadge, styles.extractionBadgeFailed]}>
+          <Text style={styles.extractionBadgeText}>extraction failed</Text>
+        </View>
+      );
+    default: {
+      const _exhaustive: never = state;
+      void _exhaustive;
+      return null;
+    }
+  }
+}
+
+/** Style chip background based on extraction_method. Phase 195 has
+ *  keyword + manual_edit; Phase 195B will add claude. Exhaustive
+ *  switch via never. */
+function _symptomChipStyle(symptom: ExtractedSymptom) {
+  switch (symptom.extraction_method) {
+    case 'keyword':
+      return symptom.confirmed_by_user_id !== null
+        ? styles.symptomChipConfirmedKeyword
+        : styles.symptomChipKeyword;
+    case 'manual_edit':
+      return styles.symptomChipManualEdit;
+    case 'claude':
+      return symptom.confirmed_by_user_id !== null
+        ? styles.symptomChipConfirmedClaude
+        : styles.symptomChipClaude;
+    default: {
+      const _exhaustive: never = symptom.extraction_method;
+      void _exhaustive;
+      return styles.symptomChipKeyword;
+    }
+  }
+}
+
+function _symptomChipTextStyle(symptom: ExtractedSymptom) {
+  switch (symptom.extraction_method) {
+    case 'keyword':
+    case 'manual_edit':
+      return styles.symptomChipTextDark;
+    case 'claude':
+      return styles.symptomChipTextDark;
+    default: {
+      const _exhaustive: never = symptom.extraction_method;
+      void _exhaustive;
+      return styles.symptomChipTextDark;
+    }
+  }
+}
+
 function _severityChipStyle(
   severity: WorkOrderIssue['severity'],
 ) {
@@ -510,4 +728,88 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  // Phase 195 transcripts variant
+  transcriptCard: {
+    backgroundColor: '#f9f9fb',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#dde',
+    gap: 8,
+  },
+  transcriptHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  transcriptDuration: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#444',
+    fontVariant: ['tabular-nums'],
+  },
+  transcriptCapturedAt: {
+    fontSize: 12,
+    color: '#888',
+    flex: 1,
+  },
+  transcriptBody: {
+    fontSize: 14,
+    color: '#222',
+    lineHeight: 20,
+    fontStyle: 'italic',
+  },
+  transcriptBodyEmpty: {
+    color: '#888',
+    fontStyle: 'italic',
+  },
+  transcriptNoSymptoms: {
+    fontSize: 12,
+    color: '#888',
+    fontStyle: 'italic',
+  },
+  extractionBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  extractionBadgeRefining: {backgroundColor: '#fff8d0'},
+  extractionBadgeFailed: {backgroundColor: '#fee'},
+  extractionBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#7a4400',
+  },
+  symptomChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  symptomChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    minHeight: 24,
+  },
+  symptomChipKeyword: {backgroundColor: '#e3f0fa'},
+  symptomChipConfirmedKeyword: {
+    backgroundColor: '#cae3f8',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#5a8fc8',
+  },
+  symptomChipManualEdit: {
+    backgroundColor: '#e3f5e3',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#5a8f5a',
+  },
+  symptomChipClaude: {backgroundColor: '#f0e3fa'},
+  symptomChipConfirmedClaude: {
+    backgroundColor: '#dcc4f5',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#7a5ac8',
+  },
+  symptomChipText: {fontSize: 12, fontWeight: '600'},
+  symptomChipTextDark: {color: '#222'},
 });
