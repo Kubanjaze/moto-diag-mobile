@@ -35,7 +35,7 @@
 // (same shape as Phase 192B shareErrorCopy + Phase 193
 // shopAccessErrorCopy).
 
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 
 import {api} from '../api';
 import {audioStorageCache, type AudioCacheExt} from '../services/audioStorageCache';
@@ -54,6 +54,25 @@ import {
  *  is authoritative. Exported per Phase 191D SSOT discipline so test
  *  files import the constant rather than literal-pinning. */
 export const PER_WO_TRANSCRIPT_COUNT_CAP = 30;
+
+/** Phase 195B Mobile Commit 2 — poll interval while any transcript
+ *  is mid-extraction. Phase 195B made transcript extraction async
+ *  (BackgroundTasks: Whisper → keyword → threshold → Claude → atomic
+ *  finalize). A WO-detail screen left open while the pipeline runs
+ *  would otherwise show the 'refining…' badge forever until the user
+ *  navigates away + back (the useFocusEffect refetch). Polling closes
+ *  that gap. Mirrors `useSessionVideos.POLL_INTERVAL_MS` (Phase 191B
+ *  Vision-analysis precedent — same shape, same 5s cadence). Polling
+ *  stops once every transcript reaches a terminal extraction_state. */
+export const TRANSCRIPT_POLL_INTERVAL_MS = 5000;
+
+/** Extraction states that are still in-flight — the hook polls while
+ *  any transcript sits in one of these. `extracted` +
+ *  `extraction_failed` are terminal. */
+const NON_TERMINAL_EXTRACTION_STATES: ReadonlySet<string> = new Set([
+  'pending',
+  'extracting',
+]);
 
 
 // ---------------------------------------------------------------
@@ -208,6 +227,7 @@ export function useWorkOrderTranscripts(
   const [transcripts, setTranscripts] = useState<WorkOrderTranscript[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<ShopAccessError | null>(null);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const refresh = useCallback(async (): Promise<void> => {
     setIsLoading(true);
@@ -253,6 +273,32 @@ export function useWorkOrderTranscripts(
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // Phase 195B Mobile Commit 2 — poll while any transcript is mid-
+  // extraction so a WO-detail screen left open picks up the async
+  // 'extracting' → 'extracted' transition without a manual refresh.
+  // The interval is (re)evaluated whenever `transcripts` changes:
+  // started when a non-terminal transcript appears, cleared once all
+  // transcripts reach a terminal state. Mirrors useSessionVideos.
+  useEffect(() => {
+    const anyInFlight = transcripts.some((t) =>
+      NON_TERMINAL_EXTRACTION_STATES.has(t.extraction_state),
+    );
+    if (anyInFlight && pollTimerRef.current === null) {
+      pollTimerRef.current = setInterval(() => {
+        void refresh();
+      }, TRANSCRIPT_POLL_INTERVAL_MS);
+    } else if (!anyInFlight && pollTimerRef.current !== null) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+    return () => {
+      if (pollTimerRef.current !== null) {
+        clearInterval(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
+    };
+  }, [transcripts, refresh]);
 
   const addTranscript = useCallback(
     async (upload: NewTranscriptUpload): Promise<WorkOrderTranscript> => {
