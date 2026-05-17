@@ -10,6 +10,7 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
 import {DTCDetailScreen} from '../screens/DTCDetailScreen';
 import {NewSessionScreen} from '../screens/NewSessionScreen';
+import {ReportViewerScreen} from '../screens/ReportViewerScreen';
 import {SessionDetailScreen} from '../screens/SessionDetailScreen';
 import {SessionsListScreen} from '../screens/SessionsListScreen';
 import {VideoCaptureScreen} from '../screens/VideoCaptureScreen';
@@ -58,6 +59,15 @@ export function SessionsStack() {
         name="VideoPlayback"
         component={VideoPlaybackScreen}
         options={{title: 'Video'}}
+      />
+      {/* Phase 192 commit 4 — ReportViewer registered for
+          tap-from-SessionDetail "View report" button. Lives in
+          SessionsStack only (no cross-stack same-route pattern;
+          a report is always rooted at a specific session). */}
+      <Stack.Screen
+        name="ReportViewer"
+        component={ReportViewerScreen}
+        options={{title: 'Diagnostic report'}}
       />
     </Stack.Navigator>
   );

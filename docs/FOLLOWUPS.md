@@ -102,6 +102,52 @@ When picking one up, file it as a tiny phase OR fold it into the next phase that
   - **(b) Mobile adopts inline-comment exclusion**: drop the `role` field from JSON; entries that should be excluded from scan-time get listed in a top-level `_meta.documented_only` array or commented out via JSONC parser change. Cost: JSON schema migration + parser change (or `_meta` array convention) + 1 test for the documentation-only mechanism.
 - **Decision:** **Recommended path (a)** — schema-level encoding is more durable across maintainers + survives schema-version bumps better than comment conventions. **Promotion trigger:** harmonize at the next phase that adds a registry entry to either side, OR at any phase where a registry entry would naturally fit `role = "default"`. **NOT load-bearing for Phase 192**; Phase 192's diagnostic report viewer + Phase 192B's PDF/share might surface defaults (debounce timing for share-sheet UI; retry caps for failed PDF render; page-size defaults) — F27 is the natural opportunity to harmonize when the first of those entries lands.
 
+### F28 (NEW) — Section-visibility persistence + per-card toggle UI (ReportViewer)
+
+- **Surfaced:** Phase 192 plan v1.0.1 Section C2 (filed at plan time) + Section C1 (data shape designed for per-card toggle UI but no UI surface this commit). Two related polish items combined into one ticket since both are Section C follow-ups + would naturally ship together.
+- **Severity:** UX polish. Current behavior: every ReportViewer mount defaults to the 'full' preset — re-opening the same session re-defaults. Mechanic friction: "every share + close + re-open re-prompts the preset." Per-card toggle UI: data shape (override map keyed by section heading) exists from day one; no UI surface to mutate it from inside the viewer.
+- **Scope estimate:** medium.
+  - **(a) Persistence (small):** persist preset choice + override map per session. Two valid scopes: (i) per-session in `AsyncStorage` keyed by `report:preset:{sessionId}`, restored on mount; (ii) global "last-used preset" applied to all sessions. (i) matches the "shop A's customer is different from shop A's insurance work" mental model. Add an "Always show full" reset link + a "Reset all sessions" debug surface (admin-only?).
+  - **(b) Per-card toggle UI (medium):** long-press or right-side toggle on each section card to flip its visibility under the current preset. Tap-state persists into the override map (per-section true/false). Visual cue: dimmed/hidden card with an "Show" reveal control when override-hidden under the preset's default-show; brightened card with a "Hide" control when override-shown under the preset's default-hide. UX validation needed before shipping — could be tap-target overload on dense screens.
+- **Decision:** **Recommended target Phase 192B+** alongside the PDF export feature work. Persistence (a) lands first as a 1-day cleanup; the per-card toggle UI (b) waits for a real customer surface that demands it. The data-shape forward-compatibility (override map already wired through `isSectionHidden`) means (b) is purely additive UI work — no architectural migration when it lands.
+
+### F30 (NEW) — Backend observability on composer malformed-payload + share-flow telemetry
+
+- **Surfaced:** Phase 192 plan v1.0 Section I9 (defensive-empty-payload edge case) + Phase 192B pre-plan Q&A (2026-05-05). Two adjacent telemetry surfaces consolidated into one ticket since they share the same instrumentation substrate.
+- **Severity:** observability gap, not a bug. Currently:
+  - Backend composer (`build_session_report_doc()`) defensive paths produce empty/malformed `ReportDocument` shapes silently when source data is missing or schema-drifts. Lint catches the shape contract; runtime occurrences don't surface in any logging unless they crash a renderer.
+  - Mobile share-flow has no instrumentation: which preset users pick most often, which share targets get used, completion-vs-dismiss ratio, retry-after-fail rate.
+- **Scope estimate:** medium. Two pieces:
+  - **(a) Backend composer log-on-defensive-trigger:** add a `WARNING`-level log inside each defensive branch in `build_session_report_doc` / `build_work_order_report_doc` / `build_invoice_report_doc` with the resource id + the branch name + the input shape that triggered it. Catch composer regressions in Loki/Grafana before users surface them.
+  - **(b) Mobile share-flow telemetry:** instrument preset selection (Customer/Insurance/Full distribution), share-target selection (Mail/Messages/AirDrop/Drive/etc.), and share completion (success/dismiss/error). Sink TBD — depends on the dedicated observability phase choosing a backend (PostHog / Mixpanel / self-hosted Plausible-shaped / etc.).
+- **Decision:** **TWO promotion triggers**:
+  1. Dedicated observability phase (Track J candidate). Folds (a) + (b) together so the sink + the instrumentation arrive together.
+  2. **OR** any production occurrence of the composer malformed-payload defensive case forces immediate (a)-only escalation. Same shape as F22's escalation criterion (3-strike-then-promote).
+- **Explicitly NOT in Phase 192B**: telemetry instrumentation fragments the data model + adds friction to feature shipping. 192B ships the share surface; F30 ships the visibility into how it gets used.
+
+### F33 (NEW) — Plan-writing template should include explicit "existing-code overlap audit" step
+
+- **Surfaced:** Phase 192 retrospective (2026-05-05). Second instance in the chain of a phase being reshaped mid-flight by a substrate-state mismatch with documented assumptions:
+  - **Phase 191B fix-cycle-3** (2026-05-04): `motodiag serve` never called `init_db()` at startup → backend ran on stale schema; latent since Phase 175. Plan v1.0 assumed serve applied migrations because that's what the documented contract said. Surfaced when Phase 191B's migration v39 hit the runtime path that was actually skipping init.
+  - **Phase 192 v1.0 → v1.0.1 reshape** (2026-05-05): plan v1.0 specified building `/v1/reports/session/{session_id}` from scratch. Phase 182 had already shipped it. Surfaced during pre-Commit-1 deep audit.
+- **Pattern:** assumption "this is greenfield" or "the documented contract holds" is itself a kind of mock-vs-reality drift — same family as F9 patterns. The fix is a process refinement, not a phase-sized intervention.
+- **Severity:** process / discipline. Each instance cost ~1 amendment cycle (Phase 191B added serve-migration apply + 8 regression tests at fix-cycle-3; Phase 192 produced a v1.0.1 reshape amendment + reframed the architect-side artifacts to extension-not-greenfield posture). Cheap to absorb individually; expensive if the pattern keeps recurring undetected.
+- **Scope estimate:** small. Add an explicit "Existing-code overlap audit" step to CLAUDE.md's plan-writing checklist (between "Step 1 — Implementation plan" + the implementation.md v1.0 write). The step:
+  1. Identify the primary nouns in the planned scope (route shapes, model names, file paths the plan thinks it'll create).
+  2. For each: `grep -r "<noun>" src/` (backend) + `grep -r "<noun>" src/` (mobile, if applicable).
+  3. For any matches: read the matching files. Determine if the plan is greenfield, extension, or reshape territory.
+  4. If reshape: write the plan as extension/reshape from the start, not as greenfield with a v1.0.1 amendment to follow.
+  5. Document audit findings in the plan's pre-plan-Q&A or in a new "Existing-code audit" subsection of the plan.
+- **Decision:** **Recommended target: fold into CLAUDE.md as a permanent process refinement.** Not a Phase 192B blocker but should land before the next greenfield-shaped phase (Phase 192B itself is extension-shaped from Phase 192 substrate, so it's somewhat self-immune; the next purely-new-feature phase is the right adoption boundary).
+- **Promotion trigger:** if a third reshape/discovery instance occurs in the next 3-5 phases despite the audit step being added, escalate to its own dedicated tooling phase (e.g., a `scripts/check_phase_overlap.py` that takes a list of nouns + scans both repos for matches, runnable as a pre-plan-write smoke).
+
+### F29 (NEW) — Live-tick refresh for stuck-state in ReportViewer
+
+- **Surfaced:** Phase 192 commit 3 build (2026-05-05). Current ReportViewerScreen re-evaluates stuck-detection only on mount + screen focus + preset change. A video that crosses the 5-min stuck threshold WHILE the viewer is open + idle won't surface as stuck until the next focus event. Workaround: SessionDetail's polling + "View report" tap pattern keeps the data fresh enough in practice.
+- **Severity:** UX polish; not load-bearing. The 5-min threshold is long enough that "viewer left open during analysis" isn't the common case — mechanics tap "View report" when they're ready to look at it. Live-tick is a nice-to-have for the rare "I left it open watching" flow.
+- **Scope estimate:** small. Add a `useEffect` with `setInterval` that bumps a `now` state every 30s (faster than 5min so the stuck-classification re-fires inside a single interval window). Cleanup on unmount + when no analyzing-state cards exist (mirror `useSessionVideos`'s polling-only-when-needed pattern). 1 test for the interval lifecycle + the "no-tick when no analyzing rows" case.
+- **Decision:** **Recommended target Phase 192B** alongside the PDF export work, OR fold into a future "live polling everywhere" cleanup phase. Not blocking 192 ship.
+
 ### F19 (NEW) — Mobile SSOT module for model IDs (when AI-call code lands in `src/`)
 
 - **Surfaced:** Phase 191C plan v1.0.1 + 5a clean-baseline scrub (2026-05-04). Mobile currently has zero hardcoded model-ID call sites in `src/` — the `motodiag/no-hardcoded-model-ids-in-tests` rule only catches `__tests__/`-shaped paths today. The rule fires on test files, not production code; that's intentional given mobile is currently consumer-only of backend Vision results.

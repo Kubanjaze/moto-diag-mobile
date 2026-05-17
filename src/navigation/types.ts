@@ -59,4 +59,10 @@ export type SessionsStackParamList = {
   DTCDetail: DTCDetailParams;
   VideoCapture: VideoCaptureParams;
   VideoPlayback: VideoPlaybackParams;
+  /** Phase 192 commit 3 — Diagnostic report viewer route. Param-list
+   *  entry is added here in commit 3 so ReportViewerScreen + its
+   *  tests can type their NativeStackScreenProps. The actual
+   *  navigator-side screen registration + the SessionDetailScreen
+   *  cross-link land in commit 4. */
+  ReportViewer: {sessionId: number};
 };
