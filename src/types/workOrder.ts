@@ -20,7 +20,8 @@ export type WorkOrderSection =
   | WorkOrderCustomerSection
   | WorkOrderIssuesSection
   | WorkOrderNotesSection
-  | WorkOrderLifecycleSection;
+  | WorkOrderLifecycleSection
+  | WorkOrderPhotosSection;
 
 /** Variant 1 — Vehicle. Make / model / year / VIN if known.
  *  Source-agnostic: 196 OBD-captured vehicle metadata slots in
@@ -81,6 +82,57 @@ export interface WorkOrderLifecycleSection {
   rows: Array<[label: string, value: string]>;
 }
 
+/** Variant 6 — Photos (Phase 194). FIRST variant addition to the
+ *  Phase 193 substrate; load-bearing test of the forward-look
+ *  commitment. Photos are media-references-with-relationship-data,
+ *  structurally different from text-shaped variants 1–5 — they're
+ *  rendered as image previews + pair groupings rather than label/value
+ *  rows. The renderer (`WorkOrderSectionCard`) gets a dedicated
+ *  `_renderPhotos` branch; the union shape stays open without
+ *  requiring text-row deformation (F9-discipline).
+ *
+ *  `photos` is flat newest-first per backend `list_wo_photos` ordering.
+ *  The renderer regroups into pairs (role='before'+'after' linked via
+ *  pair_id) + standalones (role='general') + undecided bucket
+ *  (role='undecided'). `undecided_count` is the explicit derived count
+ *  used by the "X photos waiting to be classified" sticky banner —
+ *  passing it through the section data avoids re-walking the array
+ *  inside the renderer for what is a load-bearing affordance.
+ */
+export interface WorkOrderPhotosSection {
+  kind: 'photos';
+  photos: WorkOrderPhoto[];
+  undecided_count: number;
+}
+
+/** Subset of backend `WorkOrderPhotoResponse` the mobile UI cares about.
+ *  Internal storage details (`sha256`, `file_path`, `file_size_bytes`)
+ *  are deliberately omitted — mobile resolves the file via the
+ *  streaming endpoint, never via direct path. `file_path` is kept
+ *  here as the relative-to-backend identifier the streaming endpoint
+ *  resolves; mobile constructs the full URL by appending it to the
+ *  authed API base URL.
+ *
+ *  `analysis_state` and `analysis_findings` are substrate-anticipates-
+ *  feature for Phase 194B (AI photo analysis). Phase 194 never reads
+ *  them on this section variant; they're surfaced through the type so
+ *  Phase 194B doesn't need to amend the union later. */
+export interface WorkOrderPhoto {
+  id: number;
+  work_order_id: number;
+  issue_id: number | null;
+  role: 'before' | 'after' | 'general' | 'undecided';
+  pair_id: number | null;
+  width: number;
+  height: number;
+  captured_at: string;
+  uploaded_by_user_id: number;
+  analysis_state: string | null;
+  analysis_findings: Record<string, unknown> | null;
+  source: string | null;
+  created_at: string;
+}
+
 // ---------------------------------------------------------------
 // Type guards (used by WorkOrderSectionCard for safe variant
 // narrowing; same posture as Phase 192's ReportSection guards in
@@ -115,4 +167,10 @@ export function isLifecycleSection(
   s: WorkOrderSection,
 ): s is WorkOrderLifecycleSection {
   return s.kind === 'lifecycle';
+}
+
+export function isPhotosSection(
+  s: WorkOrderSection,
+): s is WorkOrderPhotosSection {
+  return s.kind === 'photos';
 }

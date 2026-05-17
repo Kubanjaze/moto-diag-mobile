@@ -221,3 +221,100 @@ describe('buildWorkOrderSections — issues passthrough', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------
+// Phase 194 — photos variant integration
+//
+// FIRST variant addition to Phase 193's WorkOrderSection substrate.
+// Pins: omit-when-empty for the photos array; photos slot in BEFORE
+// lifecycle; undecided_count is computed correctly; the variant data
+// preserves the input array verbatim (no F9 deformation into text-row
+// shape).
+// ---------------------------------------------------------------
+
+import type {WorkOrderPhoto} from '../../src/types/workOrder';
+
+function makePhoto(overrides: Partial<WorkOrderPhoto> = {}): WorkOrderPhoto {
+  return {
+    id: 1,
+    work_order_id: 1,
+    issue_id: null,
+    role: 'general',
+    pair_id: null,
+    width: 2048,
+    height: 1536,
+    captured_at: '2026-05-06T10:00:00Z',
+    uploaded_by_user_id: 1,
+    analysis_state: null,
+    analysis_findings: null,
+    source: null,
+    created_at: '2026-05-06T10:00:01Z',
+    ...overrides,
+  };
+}
+
+describe('buildWorkOrderSections — photos variant (Phase 194)', () => {
+  it('omits photos section when array is empty', () => {
+    const sections = buildWorkOrderSections(baseWO, [], {}, []);
+    expect(sections.map(s => s.kind)).not.toContain('photos');
+  });
+
+  it('inserts photos section when at least one photo is present', () => {
+    const sections = buildWorkOrderSections(
+      baseWO, [], {}, [makePhoto({id: 1})],
+    );
+    expect(sections.map(s => s.kind)).toContain('photos');
+  });
+
+  it('places photos BEFORE lifecycle in section order', () => {
+    const sections = buildWorkOrderSections(
+      baseWO, [], {}, [makePhoto({id: 1})],
+    );
+    const kinds = sections.map(s => s.kind);
+    const photosIdx = kinds.indexOf('photos');
+    const lifecycleIdx = kinds.indexOf('lifecycle');
+    expect(photosIdx).toBeGreaterThanOrEqual(0);
+    expect(lifecycleIdx).toBeGreaterThanOrEqual(0);
+    expect(photosIdx).toBeLessThan(lifecycleIdx);
+  });
+
+  it('preserves photos array verbatim (no deformation)', () => {
+    const photos = [
+      makePhoto({id: 1, role: 'before'}),
+      makePhoto({id: 2, role: 'after'}),
+      makePhoto({id: 3, role: 'general'}),
+    ];
+    const sections = buildWorkOrderSections(baseWO, [], {}, photos);
+    const photosSection = sections.find(s => s.kind === 'photos');
+    expect(photosSection).toBeDefined();
+    if (photosSection && photosSection.kind === 'photos') {
+      expect(photosSection.photos).toEqual(photos);
+    }
+  });
+
+  it('computes undecided_count from photos with role=undecided', () => {
+    const photos = [
+      makePhoto({id: 1, role: 'general'}),
+      makePhoto({id: 2, role: 'undecided'}),
+      makePhoto({id: 3, role: 'undecided'}),
+      makePhoto({id: 4, role: 'before'}),
+    ];
+    const sections = buildWorkOrderSections(baseWO, [], {}, photos);
+    const photosSection = sections.find(s => s.kind === 'photos');
+    expect(photosSection).toBeDefined();
+    if (photosSection && photosSection.kind === 'photos') {
+      expect(photosSection.undecided_count).toBe(2);
+    }
+  });
+
+  it('reports undecided_count=0 when no photos are undecided', () => {
+    const sections = buildWorkOrderSections(
+      baseWO, [], {},
+      [makePhoto({id: 1, role: 'general'})],
+    );
+    const photosSection = sections.find(s => s.kind === 'photos');
+    if (photosSection && photosSection.kind === 'photos') {
+      expect(photosSection.undecided_count).toBe(0);
+    }
+  });
+});

@@ -9,11 +9,14 @@ import {
   isIssuesSection,
   isLifecycleSection,
   isNotesSection,
+  isPhotosSection,
   isVehicleSection,
   type WorkOrderCustomerSection,
   type WorkOrderIssuesSection,
   type WorkOrderLifecycleSection,
   type WorkOrderNotesSection,
+  type WorkOrderPhoto,
+  type WorkOrderPhotosSection,
   type WorkOrderSection,
   type WorkOrderVehicleSection,
 } from '../../src/types/workOrder';
@@ -56,6 +59,28 @@ const notesSection: WorkOrderNotesSection = {
 const lifecycleSection: WorkOrderLifecycleSection = {
   kind: 'lifecycle',
   rows: [['Status', 'in_progress']],
+};
+
+const samplePhoto: WorkOrderPhoto = {
+  id: 1,
+  work_order_id: 1,
+  issue_id: null,
+  role: 'general',
+  pair_id: null,
+  width: 2048,
+  height: 1536,
+  captured_at: '2026-05-06T10:00:00Z',
+  uploaded_by_user_id: 1,
+  analysis_state: null,
+  analysis_findings: null,
+  source: null,
+  created_at: '2026-05-06T10:00:01Z',
+};
+
+const photosSection: WorkOrderPhotosSection = {
+  kind: 'photos',
+  photos: [samplePhoto],
+  undecided_count: 0,
 };
 
 describe('WorkOrderSection type guards', () => {
@@ -114,6 +139,27 @@ describe('WorkOrderSection type guards', () => {
     });
   });
 
+  describe('isPhotosSection (Phase 194)', () => {
+    it('returns true for photos section', () => {
+      expect(isPhotosSection(photosSection)).toBe(true);
+    });
+    it('returns false for other variants', () => {
+      expect(isPhotosSection(vehicleSection)).toBe(false);
+      expect(isPhotosSection(customerSection)).toBe(false);
+      expect(isPhotosSection(issuesSection)).toBe(false);
+      expect(isPhotosSection(notesSection)).toBe(false);
+      expect(isPhotosSection(lifecycleSection)).toBe(false);
+    });
+    it('narrows the union to expose photos + undecided_count fields', () => {
+      const s: WorkOrderSection = photosSection;
+      if (isPhotosSection(s)) {
+        // Type-narrowing exercise — both fields must be reachable.
+        expect(s.photos).toHaveLength(1);
+        expect(s.undecided_count).toBe(0);
+      }
+    });
+  });
+
   describe('Discriminated-union narrowing exercise', () => {
     it('narrows correctly when used in an if-chain', () => {
       const sections: WorkOrderSection[] = [
@@ -122,6 +168,7 @@ describe('WorkOrderSection type guards', () => {
         issuesSection,
         notesSection,
         lifecycleSection,
+        photosSection,
       ];
       const tags: string[] = [];
       for (const s of sections) {
@@ -135,6 +182,8 @@ describe('WorkOrderSection type guards', () => {
           tags.push(`notes[${s.body.length}chars]`);
         } else if (isLifecycleSection(s)) {
           tags.push(`lifecycle[${s.rows.length}]`);
+        } else if (isPhotosSection(s)) {
+          tags.push(`photos[${s.photos.length},u${s.undecided_count}]`);
         }
       }
       expect(tags).toEqual([
@@ -143,6 +192,7 @@ describe('WorkOrderSection type guards', () => {
         'issues[1]',
         'notes[20chars]',
         'lifecycle[1]',
+        'photos[1,u0]',
       ]);
     });
   });

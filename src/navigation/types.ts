@@ -101,4 +101,16 @@ export type ShopStackParamList = {
    *  not route param (sticky session picker per Section D). */
   WorkOrderList: undefined;
   WorkOrderDetail: {shopId: number; woId: number};
+  /** Phase 194 — camera capture for WO photos. `issueId` is optional
+   *  (mechanic can attach to a specific issue or just to the WO).
+   *  `pairId` is optional (when capturing an after-photo from a
+   *  specific before-photo). The screen routes back to
+   *  WorkOrderDetail on success or cancel. */
+  PhotoCapture: {shopId: number; woId: number; issueId?: number; pairId?: number};
+  /** Phase 194 — classify-later surface. Reached from the
+   *  WorkOrderPhotosSection's "X photos waiting to be classified"
+   *  banner. Walks undecided photos one-at-a-time and lets the
+   *  mechanic pick before/after/general + optional pair partner.
+   *  Mobile Commit 2 adds the route. */
+  ClassifyPhotos: {shopId: number; woId: number};
 };
