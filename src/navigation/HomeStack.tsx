@@ -9,9 +9,11 @@
 import React from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
+import {OBD_SUPPORT} from '../config/features';
 import {DTCDetailScreen} from '../screens/DTCDetailScreen';
 import {DTCSearchScreen} from '../screens/DTCSearchScreen';
 import {HomeScreen} from '../screens/HomeScreen';
+import {ObdConnectScreen} from '../screens/ObdConnectScreen';
 import type {HomeStackParamList} from './types';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -41,6 +43,18 @@ export function HomeStack() {
           registers them. DTCDetail stays cross-stack-registered
           because it has a legitimate HomeStack production path
           (DTCSearch result-row tap). */}
+      {/* Phase 196 — OBD-II adapter connection screen. Gated behind
+          the OBD_SUPPORT feature flag: the route is registered only
+          when the flag is on (ON in dev, OFF in release until the
+          device smoke gate passes). Lives in HomeStack because Home
+          owns the connection / BLE-status flows. */}
+      {OBD_SUPPORT ? (
+        <Stack.Screen
+          name="ObdConnect"
+          component={ObdConnectScreen}
+          options={{title: 'OBD-II adapter'}}
+        />
+      ) : null}
     </Stack.Navigator>
   );
 }

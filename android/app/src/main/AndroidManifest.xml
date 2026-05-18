@@ -2,14 +2,26 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Phase 186: BLE permissions for react-native-ble-plx (OBD-II adapter connection).
-         Runtime request of BLUETOOTH_SCAN + BLUETOOTH_CONNECT on Android 12+ is handled
-         by src/screens/HomeScreen.tsx; location is still required for older Androids. -->
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <!-- Phase 186 / Phase 196: BLE permissions for react-native-ble-plx
+         (OBD-II adapter connection). Runtime request of BLUETOOTH_SCAN +
+         BLUETOOTH_CONNECT on Android 12+ is handled by
+         src/screens/HomeScreen.tsx.
+
+         Phase 196: BLUETOOTH_SCAN carries usesPermissionFlags="neverForLocation"
+         — MotoDiag's BLE scan exists solely to find an OBD-II adapter, never to
+         derive the user's location, so the app declares it does not use scan
+         results for location. This is the F40 cross-platform-parity partner of
+         the iOS NSBluetoothAlwaysUsageDescription key (ios/MotoDiag/Info.plist).
+         ACCESS_FINE_LOCATION is retained for Android 11 and older, where a BLE
+         scan still legally requires it (the neverForLocation flag is honored on
+         API 31+ only). -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
+        android:maxSdkVersion="30" />
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
 
     <!-- Phase 191: Camera + microphone for video diagnostic capture
