@@ -25,3 +25,14 @@ Track I status as of this entry: 185–195 closed; 195 substrate-half +
 195B feature-half ✅ (195B on branch phase-195B-cloud-whisper, PR-stacked,
 not yet merged to main); 195C reserved (F37 Track 2 meta-tooling);
 196 next, iOS-blocked.
+
+---
+
+### 2026-06-22 18:55 — Bug fix #1: iOS New-Arch flag missing from Podfile (ADR-002 iOS half)
+
+- **Issue:** iOS `pod install` configures the app with New Architecture enabled; `react-native-ble-plx` (upstream #1277) crashes under New Arch → Phase 196 Bluetooth OBD unusable on iOS only.
+- **Root cause:** ADR-002 mandates New Architecture disabled on BOTH platforms. Android enforced it (`android/gradle.properties` → `newArchEnabled=false`); the iOS half (`ENV['RCT_NEW_ARCH_ENABLED'] = '0'` in `ios/Podfile`) was never added, so `pod install` on a Mac configured iOS with New Arch ON. `implementation.md` claimed "New Architecture DISABLED" but only Android enforced it. F9 cross-platform-parity family (config counterpart present on one platform, missing on the other).
+- **Fix:** Added `ENV['RCT_NEW_ARCH_ENABLED'] = '0'` as the first line of `ios/Podfile`; re-ran a clean `pod install`.
+- **Files:** ios/Podfile, ios/Podfile.lock (generated)
+- **Verified:** `grep RCT_NEW_ARCH_ENABLED ios/Podfile` present; `pod install` completed with New Arch off (no Fabric/New-Arch enablement in output).
+- **Deviation:** Fix edits prepared in a Cowork session; `npm`/`pod install` + commit/push executed on the host Mac (Cowork sandbox has no CocoaPods/Xcode and no push credentials).
