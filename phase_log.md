@@ -36,3 +36,53 @@ not yet merged to main); 195C reserved (F37 Track 2 meta-tooling);
 - **Files:** ios/Podfile, ios/Podfile.lock (generated)
 - **Verified:** `grep RCT_NEW_ARCH_ENABLED ios/Podfile` present; `pod install` completed with New Arch off (no Fabric/New-Arch enablement in output).
 - **Deviation:** Fix edits prepared in a Cowork session; `npm`/`pod install` + commit/push executed on the host Mac (Cowork sandbox has no CocoaPods/Xcode and no push credentials).
+
+---
+
+### 2026-07-20 09:00 — Bug fix #2: iOS device build blocked (signing team + Xcode 26 script sandboxing)
+
+- **Issue:** `npx react-native run-ios --device` failed with xcodebuild exit 70
+  (2026-07-17, twice). After the first fix, Xcode GUI build failed with
+  `Sandbox: bash deny(1) file-write-create …/DerivedData/…` in the
+  "Bundle React Native code and images" run-script phase.
+- **Root cause (two stacked):** (1) no `DEVELOPMENT_TEAM` had ever been
+  committed — device signing impossible from a clean checkout; (2) Xcode 26
+  defaults `ENABLE_USER_SCRIPT_SANDBOXING = YES`, which denies RN's bundle
+  script write access (app project had `YES` at both configs; Pods project was
+  already `NO`).
+- **Fix:** Team `B6QK49DPRZ` set via Xcode Signing & Capabilities (writes
+  `DEVELOPMENT_TEAM` ×2); `ENABLE_USER_SCRIPT_SANDBOXING` → `NO` ×2 (session
+  edit). Committed together with the Xcode 26 project-modernization state the
+  GUI wrote (LastUpgradeCheck 2660, PrivacyInfo.xcprivacy resource,
+  `RCTNewArchEnabled=true` + usage-key reorder in Info.plist).
+- **Files:** `ios/MotoDiag.xcodeproj/project.pbxproj`, `ios/MotoDiag/Info.plist`
+- **Verified:** Xcode GUI build "Finished running MotoDiag on iPhone (2)"
+  (2026-07-17 12:10); after reinstall on fresh boot, app launched and rendered
+  UI with Metro serving JS (2026-07-20 session). Residual: RN CLI `run-ios
+  --device` still exits 70 while the GUI path works — CLI-invocation quirk
+  (GUI manages provisioning interactively; CLI lacks
+  `-allowProvisioningUpdates`), not chased per CLAUDE.md env-quirks rule.
+- **Note:** the CoreDevice "tunnel connection failed" attach-loop
+  (2026-07-17 21:14) was environmental — cured by reboot; documented for
+  pattern-recognition, no repo change.
+
+---
+
+### 2026-07-20 09:05 — Finding: RN 0.85 mandates New Architecture; ADR-002 superseded; Bug fix #1 correction
+
+- **Finding:** RN 0.85 force-enables New Arch (`react_native_pods.rb:118`
+  sets `RCT_NEW_ARCH_ENABLED=1` unconditionally; "not supported anymore since
+  React Native 0.82" banner). Phase 196's smoke therefore CANNOT run
+  New-Arch-disabled; it runs (and launched cleanly, Debug) under the mandatory
+  New Architecture.
+- **Bug fix #1 correction:** the `8a1f8ee` Podfile flag is a no-op on this RN
+  pin. Its "Verified: pod install completed with New Arch off" claim was
+  wrong — the Pods that install generated (2026-06-22 19:14) carry
+  `-DRCT_NEW_ARCH_ENABLED=1`; the NEW-ARCH-ONLY warning banner was present in
+  that install's output and missed. F9 assumption-vs-reality family
+  (doc-claim vs substrate); logged here rather than rewriting fix #1's entry.
+- **ADR-002** rewritten: Superseded + replacement posture ("make BLE work
+  under New Arch") + running condition-#2 evidence record (launch-level pass,
+  Debug; scan/connect pending — dongle unavailable this session).
+- **Docs:** `docs/adr/002-new-arch-disabled-pending-ble-plx.md`; resume
+  checklist in backend ledger `docs/phases/in_progress/196_phase_log.md`.

@@ -10,6 +10,7 @@
 - **Backend reachable-ready:** `motodiag serve --host 0.0.0.0` (default binds 127.0.0.1 — the flag is required; see `src/motodiag/cli/serve.py:34`).
 - **Metro reachable-ready:** `npx react-native start` (Metro v0.84.3, binds all interfaces by default).
 - Session-end note: Tailscale on the Mac was later found quit (menu icon gone). Relaunch the app to rejoin — config persists.
+- **2026-07-02 update — Mac Tailscale extension can WEDGE**: after an on/off toggle cycle it reached a state where Reconnect silently does nothing (no error, no transition), and app quit + relaunch does not fix it. Escalation path: System Settings → VPN → toggle Tailscale off/on, else reboot the Mac. Not diagnosed further. Same-LAN fallback that needs no VPN at all: use `kerwyns-macbook-air.local` as the host for Metro (`:8081`) and the backend (`:8000`) — works for Safari probes and RN Configure Bundler. iPhone Mirroring verdict: its "Connection Interrupted" flakiness is unrelated to Tailscale (fails identically with TS off) and unrelated to Cowork control (failed with zero automation running); phone reboot is the standard cure.
 
 ## What was NEVER completed (the remaining 2 minutes)
 1. Phone Safari probe: `http://100.80.109.103:8081/status` → expect `packager-status:running`; then `http://100.80.109.103:8000/healthz` → expect JSON.
