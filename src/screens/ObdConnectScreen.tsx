@@ -15,7 +15,7 @@
 // `transport` badge) and reacts to the state machine. It has zero BLE
 // imports — a 196B classic-BT provider would surface here unchanged.
 
-import React, {useEffect, useMemo} from 'react';
+import React, {useMemo, useState} from 'react';
 import {
   FlatList,
   ScrollView,
@@ -29,7 +29,12 @@ import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
 import {Button} from '../components/Button';
 import {useObdConnection} from '../hooks/useObdConnection';
-import type {ObdDevice} from '../obd/ObdConnection';
+import {
+  providerForTransport,
+  SELECTABLE_TRANSPORTS,
+  TRANSPORT_LABELS,
+} from '../obd/providerFactory';
+import type {ObdDevice, ObdTransport} from '../obd/ObdConnection';
 import type {ScannedDevice} from '../obd/obdConnectionMachine';
 import {describeObdError} from '../obd/obdErrors';
 import type {HomeStackParamList} from '../navigation/types';
@@ -52,18 +57,15 @@ function sortScanned(devices: ScannedDevice[]): ScannedDevice[] {
 }
 
 export function ObdConnectScreen({navigation}: Props) {
-  const {state, scan, stopScan, connect, disconnect, reset} =
-    useObdConnection();
+  // Phase 196B — transport selection. The chosen transport maps to a
+  // concrete provider through the providerFactory SSOT; the picker is
+  // only rendered in the idle state (switching mid-connection is not
+  // offered). Guarded by ObdConnect.smoke.test.tsx (wiring guard).
+  const [transport, setTransport] = useState<ObdTransport>('ble');
+  const provider = useMemo(() => providerForTransport(transport), [transport]);
 
-  // ═══ SPIKE (Phase 196B Spike Gate) — DELETE WITH classicBtSpike.SPIKE.ts ═══
-  useEffect(() => {
-    if (__DEV__) {
-      void import('../obd/classicBtSpike.SPIKE').then((m) =>
-        m.runClassicBtSpike(),
-      );
-    }
-  }, []);
-  // ═══ END SPIKE ═══
+  const {state, scan, stopScan, connect, disconnect, reset} =
+    useObdConnection(provider);
 
   // The scanning state carries the live device list; keep a sorted
   // copy for the picker render.
@@ -80,10 +82,25 @@ export function ObdConnectScreen({navigation}: Props) {
         <ScrollView contentContainerStyle={styles.pane}>
           <Text style={styles.title}>Connect OBD-II adapter</Text>
           <Text style={styles.body}>
-            Plug a Bluetooth OBD-II adapter into the bike's diagnostic
-            port and turn the ignition on. Then scan to find it.
+            {transport === 'ble'
+              ? "Plug a Bluetooth OBD-II adapter into the bike's diagnostic port and turn the ignition on. Then scan to find it."
+              : 'Classic Bluetooth adapters (like the OBDLink MX+) must be paired in Settings › Bluetooth and powered. Scan lists the adapters already connected to this phone.'}
           </Text>
           <View style={styles.spacer} />
+          {SELECTABLE_TRANSPORTS.map((option) => (
+            <View key={option}>
+              <Button
+                title={
+                  (transport === option ? '● ' : '○ ') +
+                  TRANSPORT_LABELS[option]
+                }
+                variant={transport === option ? 'primary' : 'secondary'}
+                onPress={() => setTransport(option)}
+                testID={`obd-transport-${option}`}
+              />
+              <View style={styles.spacer} />
+            </View>
+          ))}
           <Button
             title="Scan for adapters"
             onPress={scan}

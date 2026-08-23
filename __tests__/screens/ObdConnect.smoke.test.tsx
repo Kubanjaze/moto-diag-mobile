@@ -25,6 +25,13 @@ jest.mock('react-native-ble-plx', () => ({
   },
 }));
 
+// Phase 196B: the screen's transport picker reaches ClassicBtObdProvider
+// through providerFactory, whose import graph loads the classic-BT lib.
+jest.mock('react-native-bluetooth-classic', () => ({
+  __esModule: true,
+  default: {},
+}));
+
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 
@@ -32,6 +39,8 @@ import {ObdConnectScreen} from '../../src/screens/ObdConnectScreen';
 import {useObdConnection} from '../../src/hooks/useObdConnection';
 import type {UseObdConnectionResult} from '../../src/hooks/useObdConnection';
 import type {ObdConnectionState} from '../../src/obd/obdConnectionMachine';
+import {BleObdProvider} from '../../src/obd/ObdConnection';
+import {ClassicBtObdProvider} from '../../src/obd/ClassicBtObdProvider';
 import {FakeObdProvider} from '../obd/FakeObdProvider';
 
 // ---------------------------------------------------------------
@@ -319,6 +328,76 @@ describe('ObdConnectScreen — scan → list → connect happy path (BLE mocked)
     collectText(renderer.toJSON(), text);
     expect(text.join(' ')).toContain('Connected');
 
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+});
+
+// ---------------------------------------------------------------
+// Phase 196B — transport-picker WIRING GUARD (integration-gap
+// discipline): proves the idle-screen chooser actually constructs and
+// injects ClassicBtObdProvider into the hook. Function-exists-but-
+// wiring-absent is the F9 subtype this pins.
+// ---------------------------------------------------------------
+
+describe('ObdConnectScreen — 196B transport-picker wiring guard', () => {
+  afterEach(() => {
+    mockedUseObdConnection.mockReset();
+  });
+
+  it('idle offers both shipped transports and defaults to BLE', () => {
+    const {renderer} = renderScreenAt({kind: 'idle'});
+    expect(
+      findByTestId(renderer.toJSON(), 'obd-transport-ble'),
+    ).not.toBeNull();
+    expect(
+      findByTestId(renderer.toJSON(), 'obd-transport-classic-bt'),
+    ).not.toBeNull();
+    const lastCall =
+      mockedUseObdConnection.mock.calls[
+        mockedUseObdConnection.mock.calls.length - 1
+      ];
+    expect(lastCall[0]).toBeInstanceOf(BleObdProvider);
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it('choosing Classic injects a ClassicBtObdProvider into the hook (THE guard)', () => {
+    const {renderer} = renderScreenAt({kind: 'idle'});
+    ReactTestRenderer.act(() => {
+      pressByTestId(renderer, 'obd-transport-classic-bt');
+    });
+    const lastCall =
+      mockedUseObdConnection.mock.calls[
+        mockedUseObdConnection.mock.calls.length - 1
+      ];
+    expect(lastCall[0]).toBeInstanceOf(ClassicBtObdProvider);
+    expect((lastCall[0] as ClassicBtObdProvider).transport).toBe('classic-bt');
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it('classic selection swaps in the Settings-pairing guidance copy', () => {
+    const {renderer} = renderScreenAt({kind: 'idle'});
+    ReactTestRenderer.act(() => {
+      pressByTestId(renderer, 'obd-transport-classic-bt');
+    });
+    const text: string[] = [];
+    collectText(renderer.toJSON(), text);
+    expect(text.join(' ')).toContain('Settings › Bluetooth');
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it('switching back to BLE restores a BleObdProvider', () => {
+    const {renderer} = renderScreenAt({kind: 'idle'});
+    ReactTestRenderer.act(() => {
+      pressByTestId(renderer, 'obd-transport-classic-bt');
+    });
+    ReactTestRenderer.act(() => {
+      pressByTestId(renderer, 'obd-transport-ble');
+    });
+    const lastCall =
+      mockedUseObdConnection.mock.calls[
+        mockedUseObdConnection.mock.calls.length - 1
+      ];
+    expect(lastCall[0]).toBeInstanceOf(BleObdProvider);
     ReactTestRenderer.act(() => renderer.unmount());
   });
 });
