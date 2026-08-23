@@ -33,6 +33,15 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>UISupportedExternalAccessoryProtocols</key>
+	<array>
+		<!-- Phase 196B: OBDLink MFi protocol string, PINNED 2026-08-23 from the
+		     vendor's own app (OBDLink 7.4.0 Info.plist, bundle com.obdsol.obdlink,
+		     UISupportedExternalAccessoryProtocols = ["com.obdlink"]). Extraction
+		     documented in 196B_phase_log.md. RNBluetoothClassic force-unwraps
+		     this key at init (crash if absent) — never remove it. -->
+		<string>com.obdlink</string>
+	</array>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>MotoDiag connects to your Bluetooth OBD-II adapter to read live diagnostic data from the motorcycle's ECU.</string>
 	<key>NSCameraUsageDescription</key>

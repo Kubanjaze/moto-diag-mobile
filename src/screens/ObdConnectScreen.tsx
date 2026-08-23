@@ -15,7 +15,7 @@
 // `transport` badge) and reacts to the state machine. It has zero BLE
 // imports — a 196B classic-BT provider would surface here unchanged.
 
-import React, {useMemo} from 'react';
+import React, {useEffect, useMemo} from 'react';
 import {
   FlatList,
   ScrollView,
@@ -54,6 +54,16 @@ function sortScanned(devices: ScannedDevice[]): ScannedDevice[] {
 export function ObdConnectScreen({navigation}: Props) {
   const {state, scan, stopScan, connect, disconnect, reset} =
     useObdConnection();
+
+  // ═══ SPIKE (Phase 196B Spike Gate) — DELETE WITH classicBtSpike.SPIKE.ts ═══
+  useEffect(() => {
+    if (__DEV__) {
+      void import('../obd/classicBtSpike.SPIKE').then((m) =>
+        m.runClassicBtSpike(),
+      );
+    }
+  }, []);
+  // ═══ END SPIKE ═══
 
   // The scanning state carries the live device list; keep a sorted
   // copy for the picker render.
