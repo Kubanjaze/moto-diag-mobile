@@ -96,3 +96,17 @@ the mandatory New Architecture"**:
   yet exercised (Scan untapped; dongle unavailable). Scan → connect →
   ELM327-handshake datapoint **PENDING** — resume checklist in
   `moto-diag/docs/phases/in_progress/196_phase_log.md`.
+- **2026-08-23 (Debug, New Arch mandatory) — BleManager init + scan: PASS.**
+  `new BleManager()` (the #1277 risk moment) and live BLE discovery ran
+  without crash on-device; scan populated a large device list (strong range).
+  ble-plx 3.5.1 iOS **Debug** does not exhibit the #1277 init crash under
+  mandatory New Arch — consistent with the crash's known Release-mode
+  profile, which remains untested (Track J gate).
+- **2026-08-23 — hardware finding: connect/handshake half BLOCKED by adapter
+  class, not by code.** The owned adapter is an **OBDLink MX+ (model MX201)**
+  — classic Bluetooth 3.0 + Apple MFi, verified working end-to-end against
+  the vehicle via the vendor's OBDLink app (ExternalAccessory path). A
+  classic/MFi adapter is undiscoverable by BLE by design, so condition #2's
+  scan→connect→handshake completion requires a BLE adapter (e.g. OBDLink CX,
+  Vgate iCar Pro BT4.0) — deferred until one is available. Consequence:
+  **Phase 196B (classic-BT/MFi provider) promoted**, MX+ as reference device.
