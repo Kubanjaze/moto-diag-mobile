@@ -51,6 +51,15 @@ export type HomeStackParamList = {
   Home: undefined;
   DTCSearch: undefined;
   DTCDetail: DTCDetailParams;
+  /** Phase 196 — OBD-II adapter connection screen. Scan for nearby
+   *  Bluetooth OBD dongles, connect, and complete the ELM327
+   *  handshake. Registered in HomeStack (Home is where connection /
+   *  BLE-status flows live per the HomeStack header). Gated behind
+   *  the `OBD_SUPPORT` feature flag — the nav entry + the HomeScreen
+   *  launcher button only render when the flag is on (ON in dev, OFF
+   *  in release until the device smoke gate passes). No route params:
+   *  scan/connect state is owned by the screen via useObdConnection. */
+  ObdConnect: undefined;
 };
 
 export type GarageStackParamList = {

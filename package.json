@@ -1,6 +1,6 @@
 {
   "name": "com.bandithero.motodiag",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
@@ -25,6 +25,7 @@
     "react-native": "0.85.2",
     "react-native-audio-recorder-player": "^4.5.0",
     "react-native-ble-plx": "^3.5.1",
+    "react-native-bluetooth-classic": "^1.73.0-rc.17",
     "react-native-config": "^1.6.1",
     "react-native-fs": "^2.20.0",
     "react-native-keychain": "10.0.0",

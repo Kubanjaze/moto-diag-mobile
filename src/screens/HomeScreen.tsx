@@ -38,6 +38,7 @@ import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 import {api, describeError} from '../api';
 import {bleService} from '../ble/BleService';
+import {OBD_SUPPORT} from '../config/features';
 import {useApiKey} from '../hooks/useApiKey';
 import {version as appVersion} from '../../package.json';
 import type {HomeStackParamList} from '../navigation/types';
@@ -262,6 +263,25 @@ export function HomeScreen() {
           <Text style={styles.statusLine}>Status: {scanStatus}</Text>
           <Text style={styles.statusLine}>Devices seen: {deviceCount}</Text>
         </Section>
+
+        {/* Phase 196 — OBD-II adapter connection launcher. Gated on
+            the OBD_SUPPORT feature flag: this whole section renders
+            only when the flag is on (ON in dev, OFF in release until
+            the device smoke gate passes). */}
+        {OBD_SUPPORT ? (
+          <Section title="OBD-II adapter (Phase 196)">
+            <Text style={styles.sectionHelp}>
+              Connect a Bluetooth OBD-II adapter to read live diagnostic
+              data from the bike's ECU.
+            </Text>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => navigation.navigate('ObdConnect')}
+              testID="home-obd-connect-button">
+              <Text style={styles.buttonText}>Connect OBD-II adapter</Text>
+            </TouchableOpacity>
+          </Section>
+        ) : null}
 
         {/* Phase 191 commit 1's "Camera (Phase 191 commit 1)"
             Section was a dev-smoke entry — verified vision-camera

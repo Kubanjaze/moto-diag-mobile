@@ -88,8 +88,8 @@ export interface ReportVideoCard {
 }
 
 /** Analysis-state enum on the wire. Matches backend
- *  motodiag.media.vision_analysis terminal-set + Phase 191B's
- *  per-row state machine. */
+ *  motodiag.media.analysis_worker's per-row state machine
+ *  (Phase 191B). */
 export type ReportVideoAnalysisState =
   | 'pending'
   | 'analyzing'
@@ -98,9 +98,10 @@ export type ReportVideoAnalysisState =
   | 'unsupported';
 
 /** The findings sub-shape mirrors Phase 191B's VisualAnalysisResult
- *  Pydantic model verbatim (see motodiag.media.vision_analysis at
- *  vision_analysis.py:61). The inner key is `findings` (NOT
- *  `findings_list`) — matches the Pydantic source. */
+ *  Pydantic model verbatim (see motodiag.media.vision_types at
+ *  vision_types.py:67, relocated there from vision_analysis.py in F48).
+ *  The inner key is `findings` (NOT `findings_list`) — matches the
+ *  Pydantic source. */
 export interface ReportVideoFindings {
   overall_assessment: string;
   /** The list of individual finding observations. Inner key matches

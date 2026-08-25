@@ -28,22 +28,34 @@
 	<true/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
-	  <!-- Do not change NSAllowsArbitraryLoads to true, or you will risk app rejection! -->
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>UISupportedExternalAccessoryProtocols</key>
+	<array>
+		<!-- Phase 196B: OBDLink MFi protocol string, PINNED 2026-08-23 from the
+		     vendor's own app (OBDLink 7.4.0 Info.plist, bundle com.obdsol.obdlink,
+		     UISupportedExternalAccessoryProtocols = ["com.obdlink"]). Extraction
+		     documented in 196B_phase_log.md. RNBluetoothClassic force-unwraps
+		     this key at init (crash if absent) — never remove it. -->
+		<string>com.obdlink</string>
+	</array>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>MotoDiag connects to your Bluetooth OBD-II adapter to read live diagnostic data from the motorcycle's ECU.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>MotoDiag uses the camera to capture video of vehicle symptoms (engine startup, idle behavior, visible defects) for diagnostic records.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>MotoDiag may use your location to tag diagnostic work orders with the bay or facility location where work is performed.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>MotoDiag uses the microphone to capture voice descriptions of vehicle symptoms during diagnostic work orders.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>MotoDiag converts your spoken symptom descriptions into text for the diagnostic record.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>MotoDiag uses the camera to capture video of vehicle symptoms (engine startup, idle behavior, visible defects) for diagnostic records.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>MotoDiag accesses your photo library to attach existing photos or videos to diagnostic work orders.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>MotoDiag converts your spoken symptom descriptions into text for the diagnostic record.</string>
+	<key>RCTNewArchEnabled</key>
+	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
