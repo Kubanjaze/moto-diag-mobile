@@ -86,3 +86,26 @@ not yet merged to main); 195C reserved (F37 Track 2 meta-tooling);
   Debug; scan/connect pending — dongle unavailable this session).
 - **Docs:** `docs/adr/002-new-arch-disabled-pending-ble-plx.md`; resume
   checklist in backend ledger `docs/phases/in_progress/196_phase_log.md`.
+
+---
+
+### 2026-08-25 11:35 — Phase 196B COMPLETE: classic-BT/MFi transport shipped + device-smoked
+
+- **Project-level additions:** `src/obd/ClassicBtObdProvider.ts` (second
+  `ObdProvider` implementation — ExternalAccessory/MFi + Android SPP via
+  `react-native-bluetooth-classic@1.73.0-rc.17`), `src/obd/providerFactory.ts`
+  (transport→provider SSOT), ObdConnectScreen idle-state transport picker.
+  New dep + `UISupportedExternalAccessoryProtocols = [com.obdlink]` in
+  Info.plist (pinned from vendor-app plist + live accessory — never remove;
+  the lib force-unwraps it at init).
+- **Device smoke PASS (2026-08-25):** OBDLink MX+ (MX201) → enumeration →
+  connect → `ATZ→ATE0→ATL0→ATSP0` → banner **"ELM327 v1.4b"** on the
+  connected screen. Recorded as an ADR-002 running-record datapoint.
+- **Suite:** 62 suites / 804 tests green (+26 this phase); tsc clean; seam
+  closure held (zero edits to machine/handshake/errors/BleObdProvider).
+- **Project docs:** `implementation.md` 0.1.7 → 0.1.8 (196B Phase History
+  row; header package-version claim corrected 0.1.7 → 0.5.0 — F9 subtype-9
+  drift spanning 194–196, flagged not silently fixed elsewhere: 194/195/195B/
+  195C Phase History rows still pending backfill). ROADMAP row 196B ✅.
+- **Per-phase docs:** backend ledger `196B_*.md` → v1.1 final, moved
+  `in_progress/` → `completed/`.

@@ -110,3 +110,14 @@ the mandatory New Architecture"**:
   scan→connect→handshake completion requires a BLE adapter (e.g. OBDLink CX,
   Vgate iCar Pro BT4.0) — deferred until one is available. Consequence:
   **Phase 196B (classic-BT/MFi provider) promoted**, MX+ as reference device.
+- **2026-08-25 (Debug, New Arch mandatory) — CLASSIC-transport smoke: PASS
+  end-to-end.** Phase 196B's `ClassicBtObdProvider` (ExternalAccessory/MFi
+  via react-native-bluetooth-classic, protocol `com.obdlink`): MX+ enumerated
+  → connected → full `ATZ→ATE0→ATL0→ATSP0` handshake → banner
+  **"ELM327 v1.4b"** carried into the `connected` state and rendered
+  on-screen. Strongest architecture datapoint yet: a real accessory
+  conversation (native module, EA session streams, event emitters) ran under
+  the mandatory New Architecture with zero arch-attributable failures; the
+  transport-shared handshake/machine layers ran unchanged. The BLE-specific
+  half of condition #2 (ble-plx scan→connect) remains the only outstanding
+  item, still pending BLE hardware.
