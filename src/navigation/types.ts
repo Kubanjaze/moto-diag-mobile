@@ -60,6 +60,11 @@ export type HomeStackParamList = {
    *  in release until the device smoke gate passes). No route params:
    *  scan/connect state is owned by the screen via useObdConnection. */
   ObdConnect: undefined;
+  /** Phase 197 — live sensor dashboard. Reachable only from
+   *  ObdConnect's connected pane; reads the active connection from
+   *  the `activeObdConnection` holder (providers are class instances
+   *  — never route params). No params. */
+  LiveData: undefined;
 };
 
 export type GarageStackParamList = {

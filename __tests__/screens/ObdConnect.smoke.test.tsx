@@ -41,6 +41,7 @@ import type {UseObdConnectionResult} from '../../src/hooks/useObdConnection';
 import type {ObdConnectionState} from '../../src/obd/obdConnectionMachine';
 import {BleObdProvider} from '../../src/obd/ObdConnection';
 import {ClassicBtObdProvider} from '../../src/obd/ClassicBtObdProvider';
+import {getActiveObdConnection} from '../../src/obd/activeObdConnection';
 import {FakeObdProvider} from '../obd/FakeObdProvider';
 
 // ---------------------------------------------------------------
@@ -383,6 +384,34 @@ describe('ObdConnectScreen — 196B transport-picker wiring guard', () => {
     collectText(renderer.toJSON(), text);
     expect(text.join(' ')).toContain('Settings › Bluetooth');
     ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it('197 WIRING GUARD: connected pane offers Live data and navigates to the LiveData route', () => {
+    const result = hookResult({
+      kind: 'connected',
+      device: {id: 'obd-1', name: 'OBDII ELM327', transport: 'ble'},
+      adapterBanner: 'ELM327 v1.5',
+    });
+    mockedUseObdConnection.mockReturnValue(result);
+    const {props} = makeNavProps();
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(<ObdConnectScreen {...props} />);
+    });
+    // Holder is published while connected (LiveData's data source):
+    expect(getActiveObdConnection()).not.toBeNull();
+    expect(getActiveObdConnection()?.adapterBanner).toBe('ELM327 v1.5');
+    // The button exists and navigates:
+    ReactTestRenderer.act(() => {
+      pressByTestId(renderer, 'obd-livedata-button');
+    });
+    const navigate = (
+      props as unknown as {navigation: {navigate: jest.Mock}}
+    ).navigation.navigate;
+    expect(navigate).toHaveBeenCalledWith('LiveData');
+    ReactTestRenderer.act(() => renderer.unmount());
+    // Unmount clears the holder (no stale provider):
+    expect(getActiveObdConnection()).toBeNull();
   });
 
   it('switching back to BLE restores a BleObdProvider', () => {

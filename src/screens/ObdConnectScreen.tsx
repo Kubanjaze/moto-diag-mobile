@@ -15,7 +15,7 @@
 // `transport` badge) and reacts to the state machine. It has zero BLE
 // imports — a 196B classic-BT provider would surface here unchanged.
 
-import React, {useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   FlatList,
   ScrollView,
@@ -34,6 +34,10 @@ import {
   SELECTABLE_TRANSPORTS,
   TRANSPORT_LABELS,
 } from '../obd/providerFactory';
+import {
+  clearActiveObdConnection,
+  setActiveObdConnection,
+} from '../obd/activeObdConnection';
 import type {ObdDevice, ObdTransport} from '../obd/ObdConnection';
 import type {ScannedDevice} from '../obd/obdConnectionMachine';
 import {describeObdError} from '../obd/obdErrors';
@@ -66,6 +70,23 @@ export function ObdConnectScreen({navigation}: Props) {
 
   const {state, scan, stopScan, connect, disconnect, reset} =
     useObdConnection(provider);
+
+  // Phase 197 — publish the live connection to the cross-screen
+  // holder while (and only while) the machine is `connected`, so the
+  // LiveData dashboard can poll the same provider instance. Cleared
+  // on any other state and on unmount.
+  useEffect(() => {
+    if (state.kind === 'connected') {
+      setActiveObdConnection({
+        provider,
+        device: state.device,
+        adapterBanner: state.adapterBanner,
+      });
+    } else {
+      clearActiveObdConnection();
+    }
+    return () => clearActiveObdConnection();
+  }, [state, provider]);
 
   // The scanning state carries the live device list; keep a sorted
   // copy for the picker render.
@@ -202,11 +223,17 @@ export function ObdConnectScreen({navigation}: Props) {
           </Text>
           <Text style={styles.bannerText}>{state.adapterBanner}</Text>
           <Text style={styles.body}>
-            The OBD-II adapter is connected and identified. Live sensor
-            data is a later release.
+            The OBD-II adapter is connected and identified. Open live data
+            to watch the engine's sensors in real time.
           </Text>
         </View>
         <View style={styles.controls}>
+          <Button
+            title="Live data"
+            onPress={() => navigation.navigate('LiveData')}
+            testID="obd-livedata-button"
+          />
+          <View style={styles.spacer} />
           <Button
             title="Disconnect"
             variant="danger"

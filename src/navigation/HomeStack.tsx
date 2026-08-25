@@ -14,6 +14,7 @@ import {DTCDetailScreen} from '../screens/DTCDetailScreen';
 import {DTCSearchScreen} from '../screens/DTCSearchScreen';
 import {HomeScreen} from '../screens/HomeScreen';
 import {ObdConnectScreen} from '../screens/ObdConnectScreen';
+import {LiveDataScreen} from '../screens/LiveDataScreen';
 import type {HomeStackParamList} from './types';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -53,6 +54,15 @@ export function HomeStack() {
           name="ObdConnect"
           component={ObdConnectScreen}
           options={{title: 'OBD-II adapter'}}
+        />
+      ) : null}
+      {/* Phase 197 — live sensor dashboard. Same OBD_SUPPORT gate;
+          reachable from ObdConnect's connected pane. */}
+      {OBD_SUPPORT ? (
+        <Stack.Screen
+          name="LiveData"
+          component={LiveDataScreen}
+          options={{title: 'Live data'}}
         />
       ) : null}
     </Stack.Navigator>
