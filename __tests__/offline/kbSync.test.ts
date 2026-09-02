@@ -52,6 +52,17 @@ describe('syncKb', () => {
     expect((await cache.searchDtcs('P')).length).toBe(1);
   });
 
+  it('self-heals a stamp-without-rows wedge (198 Bug fix #1 regression guard)', async () => {
+    const cache = new FakeDtcCache();
+    cache.wedgeStampWithoutRows('v-1'); // stamp matches, zero rows
+    const outcome = await syncKb(cache, async () => ({
+      ok: true,
+      snapshot: snapshotFixture('v-1'),
+    }));
+    expect(outcome).toEqual({status: 'updated', kbVersion: 'v-1'});
+    expect(await cache.countDtcs()).toBeGreaterThan(0);
+  });
+
   it('offline fetch yields offline status and leaves the cache alone', async () => {
     const cache = new FakeDtcCache();
     cache.snapshot = snapshotFixture('v-1');

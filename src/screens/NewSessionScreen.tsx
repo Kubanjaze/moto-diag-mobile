@@ -142,8 +142,14 @@ export function NewSessionScreen({navigation}: Props) {
           [{text: 'OK', onPress: () => navigation.goBack()}],
         );
         return;
-      } catch {
-        // Queue unavailable — surface the original network error.
+      } catch (queueErr) {
+        // Queue unavailable — surface the original network error, but
+        // log WHY the queue path failed (first smoke fell through
+        // here silently).
+        console.log(
+          '[198 offline] enqueue FAILED:',
+          queueErr instanceof Error ? queueErr.message : String(queueErr),
+        );
       }
       Alert.alert('Start failed', describeError(err));
     } finally {

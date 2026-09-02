@@ -56,7 +56,12 @@ export async function syncKb(
   }
   const localVersion = await cache.getKbVersion();
   if (localVersion === fetched.snapshot.kb_version) {
-    return {status: 'unchanged', kbVersion: localVersion};
+    // Self-heal (198 Bug fix #1): a stamp WITHOUT rows means a prior
+    // ingest half-committed — re-ingest rather than trusting it.
+    const rows = await cache.countDtcs();
+    if (rows > 0 || fetched.snapshot.dtcs.length === 0) {
+      return {status: 'unchanged', kbVersion: localVersion};
+    }
   }
   await cache.ingestSnapshot(fetched.snapshot);
   return {status: 'updated', kbVersion: fetched.snapshot.kb_version};

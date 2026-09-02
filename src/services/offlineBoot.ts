@@ -79,11 +79,19 @@ export async function runOfflinePass(): Promise<void> {
     const db = await getDb();
     const queue = new OpQueueStore(db);
     const cache = new DtcCacheStore(db);
-    await replayPending(queue, replayApi);
-    await syncKb(cache);
-  } catch {
+    const replay = await replayPending(queue, replayApi);
+    const sync = await syncKb(cache);
+    console.log(
+      `[198 offline] replay: ${replay.replayed} replayed, ${replay.remaining} remaining; kbSync: ${sync.status}`,
+    );
+  } catch (thrown) {
     // Best-effort: a failed pass retries on the next connectivity
-    // event or cold start. Never crash boot for offline plumbing.
+    // event or cold start. Never crash boot for offline plumbing —
+    // but SAY so (first smoke failed silently right here).
+    console.log(
+      '[198 offline] pass FAILED:',
+      thrown instanceof Error ? thrown.message : String(thrown),
+    );
   } finally {
     syncing = false;
   }

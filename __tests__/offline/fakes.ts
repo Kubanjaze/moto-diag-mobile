@@ -43,6 +43,15 @@ export class FakeDtcCache implements DtcCacheLike {
       )
       .slice(0, limit);
   }
+
+  public async countDtcs(): Promise<number> {
+    return this.snapshot?.dtcs.length ?? 0;
+  }
+
+  /** Simulate the 198 Bug-fix-#1 wedge: stamp present, rows gone. */
+  public wedgeStampWithoutRows(version: string): void {
+    this.snapshot = {kb_version: version, dtcs: [], categories: []};
+  }
 }
 
 export class FakeOpQueueStore implements OpQueueStoreLike {

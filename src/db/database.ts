@@ -19,10 +19,33 @@ import {open, type DB} from '@op-engineering/op-sqlite';
 export const DB_NAME = 'motodiag_offline.db';
 export const SCHEMA_VERSION = 1;
 
-/** Narrow surface the stores use — direct passthrough of op-sqlite's
- *  execute; kept as a type alias so store constructors document what
- *  they need without re-wrapping the driver. */
-export type AppDb = Pick<DB, 'execute' | 'transaction'>;
+/** Narrow surface the stores use — plain `execute` ONLY. The Spike
+ *  Gate proved execute end-to-end on-device; the driver's
+ *  `transaction()` wrapper is deliberately NOT part of this surface
+ *  (its callback semantics silently rolled back the first smoke's
+ *  snapshot ingest — 198 Bug fix #1). Transactions are explicit
+ *  BEGIN/COMMIT/ROLLBACK statements through execute. */
+export type AppDb = Pick<DB, 'execute'>;
+
+/** Run `work` inside an explicit BEGIN/COMMIT, rolling back on any
+ *  throw. Uses only the spike-proven execute surface. */
+export async function withTransaction(
+  db: AppDb,
+  work: () => Promise<void>,
+): Promise<void> {
+  await db.execute('BEGIN');
+  try {
+    await work();
+    await db.execute('COMMIT');
+  } catch (thrown) {
+    try {
+      await db.execute('ROLLBACK');
+    } catch {
+      // rollback best-effort; surface the original error
+    }
+    throw thrown;
+  }
+}
 
 const SCHEMA_V1: ReadonlyArray<string> = [
   `CREATE TABLE IF NOT EXISTS dtc_codes (

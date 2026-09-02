@@ -8,7 +8,7 @@
 // Consumers depend on `DtcCacheLike`; unit tests inject an in-memory
 // fake (the SQL here is exercised by the device smoke).
 
-import type {AppDb} from './database';
+import {withTransaction, type AppDb} from './database';
 
 /** Mirror of the backend DTCResponse (src/api-types.ts shape). */
 export interface CachedDtc {
@@ -38,6 +38,9 @@ export interface DtcCacheLike {
   ingestSnapshot(snapshot: KbSnapshot, now?: number): Promise<void>;
   getDtc(code: string): Promise<CachedDtc | null>;
   searchDtcs(query: string, limit?: number): Promise<CachedDtc[]>;
+  /** Row count — lets syncKb self-heal a stamp-without-rows state
+   *  (198 Bug fix #1's wedge: half-committed version stamp). */
+  countDtcs(): Promise<number>;
 }
 
 function rowToDtc(row: Record<string, unknown>): CachedDtc {
@@ -71,12 +74,16 @@ export class DtcCacheStore implements DtcCacheLike {
     return row?.kb_version ?? null;
   }
 
-  /** Atomic replace-all (plan: never a half-updated KB). */
+  /** Atomic replace-all (plan: never a half-updated KB). Explicit
+   *  BEGIN/COMMIT via the spike-proven execute surface — the driver's
+   *  transaction() wrapper silently rolled this back on-device
+   *  (198 Bug fix #1). */
   public async ingestSnapshot(
     snapshot: KbSnapshot,
     now: number = Date.now(),
   ): Promise<void> {
-    await this.db.transaction(async (tx) => {
+    const tx = this.db;
+    await withTransaction(this.db, async () => {
       await tx.execute('DELETE FROM dtc_codes');
       await tx.execute('DELETE FROM dtc_category_meta');
       for (const dtc of snapshot.dtcs) {
@@ -119,6 +126,13 @@ export class DtcCacheStore implements DtcCacheLike {
         [snapshot.kb_version, now],
       );
     });
+  }
+
+  public async countDtcs(): Promise<number> {
+    const result = await this.db.execute(
+      'SELECT COUNT(*) AS n FROM dtc_codes',
+    );
+    return Number((result.rows?.[0] as {n?: number} | undefined)?.n ?? 0);
   }
 
   public async getDtc(code: string): Promise<CachedDtc | null> {
