@@ -63,6 +63,10 @@ import {SectionToggle} from '../components/SectionToggle';
 import {usePdfDownload} from '../hooks/usePdfDownload';
 import {useReport} from '../hooks/useReport';
 import {useReportShare} from '../hooks/useReportShare';
+import {
+  useReportShareLink,
+  type ShareLinkError,
+} from '../hooks/useReportShareLink';
 import type {SessionsStackParamList} from '../navigation/types';
 import {formatIssuedAt} from './reportFormatters';
 import {
@@ -96,6 +100,10 @@ export function ReportViewerScreen({navigation, route}: Props) {
   // agnostic; share() takes the file URI returned by download().
   const {download, isDownloading} = usePdfDownload(sessionId, preset);
   const {share, isSharing} = useReportShare();
+  // Phase 200 — the customer-facing sibling. Separate hook, separate
+  // busy flag: minting a link and generating a PDF fail in different
+  // ways, and both affordances stay available side by side.
+  const {shareLink, isSharing: isSharingLink} = useReportShareLink();
 
   const handleShare = useCallback(async () => {
     try {
@@ -131,6 +139,44 @@ export function ReportViewerScreen({navigation, route}: Props) {
       }
     }
   }, [download, share]);
+
+  const handleShareLink = useCallback(async () => {
+    try {
+      await shareLink(sessionId);
+      // Sheet outcome deliberately unused, same posture as the PDF
+      // path: the share sheet is its own feedback and a dismiss is a
+      // normal exit, not an error worth a toast.
+    } catch (mintErr) {
+      const kind = (mintErr as ShareLinkError)?.kind;
+      // F29 posture: 404 does not differentiate "not yours" from
+      // "gone" — the copy must not either.
+      const copy =
+        kind === 'unauthorized'
+          ? {
+              title: 'Check your API key',
+              message:
+                'Your key was rejected. Re-enter it via Home → API key '
+                + 'card, then try sharing again.',
+            }
+          : kind === 'not_found'
+          ? {
+              title: 'Session no longer available',
+              message:
+                'This session can no longer be shared. Pull to refresh '
+                + 'the report and try again.',
+            }
+          : {
+              title: "Can't create share link",
+              message:
+                'The link could not be created. Check your connection '
+                + 'and try again.',
+            };
+      Alert.alert(copy.title, copy.message, [
+        {text: 'Dismiss'},
+        {text: 'Retry', onPress: () => void handleShareLink()},
+      ]);
+    }
+  }, [shareLink, sessionId]);
 
   // Refetch on screen focus — same posture as VehicleDetailScreen.
   // Cheap (single GET) + ensures the user sees fresh data after
@@ -213,9 +259,17 @@ export function ReportViewerScreen({navigation, route}: Props) {
             }
             variant="primary"
             compact
-            disabled={isDownloading || isSharing}
+            disabled={isDownloading || isSharing || isSharingLink}
             onPress={handleShare}
             testID="report-viewer-share-pdf"
+          />
+          <Button
+            title={isSharingLink ? 'Creating link…' : 'Share link'}
+            variant="secondary"
+            compact
+            disabled={isDownloading || isSharing || isSharingLink}
+            onPress={handleShareLink}
+            testID="report-viewer-share-link"
           />
         </View>
       </View>
