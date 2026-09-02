@@ -135,13 +135,26 @@ export class DtcCacheStore implements DtcCacheLike {
     return Number((result.rows?.[0] as {n?: number} | undefined)?.n ?? 0);
   }
 
+  /** Mirror of backend `get_dtc(code, make=None)` semantics (SSOT):
+   *  generic row first (make IS NULL), then any match. Duplicate
+   *  codes are LEGAL — DTC identity is (code, make); make-specific
+   *  overrides exist (real data: P0562 generic + Harley). */
   public async getDtc(code: string): Promise<CachedDtc | null> {
-    const result = await this.db.execute(
-      'SELECT * FROM dtc_codes WHERE code = ? COLLATE NOCASE',
+    const generic = await this.db.execute(
+      'SELECT * FROM dtc_codes WHERE code = ? COLLATE NOCASE AND make IS NULL LIMIT 1',
       [code],
     );
-    const row = result.rows?.[0] as Record<string, unknown> | undefined;
-    return row ? rowToDtc(row) : null;
+    const genericRow = generic.rows?.[0] as
+      | Record<string, unknown>
+      | undefined;
+    if (genericRow) return rowToDtc(genericRow);
+
+    const any = await this.db.execute(
+      'SELECT * FROM dtc_codes WHERE code = ? COLLATE NOCASE LIMIT 1',
+      [code],
+    );
+    const anyRow = any.rows?.[0] as Record<string, unknown> | undefined;
+    return anyRow ? rowToDtc(anyRow) : null;
   }
 
   /** LIKE search over code + description — 55 rows needs no FTS

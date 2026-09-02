@@ -26,11 +26,12 @@ export class FakeDtcCache implements DtcCacheLike {
   }
 
   public async getDtc(code: string): Promise<CachedDtc | null> {
-    return (
-      this.snapshot?.dtcs.find(
-        (d) => d.code.toUpperCase() === code.toUpperCase(),
-      ) ?? null
+    // Mirror backend get_dtc(code, make=None): generic-first, then
+    // any match (same semantics as DtcCacheStore — parity on purpose).
+    const matches = (this.snapshot?.dtcs ?? []).filter(
+      (d) => d.code.toUpperCase() === code.toUpperCase(),
     );
+    return matches.find((d) => d.make === null) ?? matches[0] ?? null;
   }
 
   public async searchDtcs(query: string, limit = 50): Promise<CachedDtc[]> {
@@ -167,6 +168,27 @@ export function snapshotFixture(version = 'v-abc'): KbSnapshot {
         make: null,
         common_causes: [],
         fix_summary: null,
+      },
+      // Duplicate code across makes — LEGAL (DTC identity is
+      // (code, make); real data has P0562 generic + Harley — the pair
+      // that broke 198's first device smoke).
+      {
+        code: 'P0562',
+        description: 'System voltage low',
+        category: 'electrical',
+        severity: 'medium',
+        make: null,
+        common_causes: [],
+        fix_summary: null,
+      },
+      {
+        code: 'P0562',
+        description: 'System voltage low (Harley charging-system variant)',
+        category: 'electrical',
+        severity: 'medium',
+        make: 'Harley-Davidson',
+        common_causes: ['stator failure'],
+        fix_summary: 'Test stator + regulator',
       },
     ],
     categories: [

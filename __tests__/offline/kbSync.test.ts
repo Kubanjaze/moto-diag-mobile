@@ -63,6 +63,21 @@ describe('syncKb', () => {
     expect(await cache.countDtcs()).toBeGreaterThan(0);
   });
 
+  it('duplicate codes across makes ingest cleanly; lookup prefers generic (198 fix #2 guard)', async () => {
+    const cache = new FakeDtcCache();
+    const outcome = await syncKb(cache, async () => ({
+      ok: true,
+      snapshot: snapshotFixture('v-dupes'),
+    }));
+    expect(outcome.status).toBe('updated');
+    // Both P0562 rows survive ingest…
+    const matches = await cache.searchDtcs('P0562');
+    expect(matches).toHaveLength(2);
+    // …and the no-make lookup mirrors backend get_dtc: generic wins.
+    const hit = await cache.getDtc('P0562');
+    expect(hit?.make).toBeNull();
+  });
+
   it('offline fetch yields offline status and leaves the cache alone', async () => {
     const cache = new FakeDtcCache();
     cache.snapshot = snapshotFixture('v-1');
