@@ -172,3 +172,28 @@ Next: launch on physical iPhone via Xcode (Developer Mode + trust +
   held a third time: poller/hook/screen depend on `ObdProvider` only.
 - **Project docs:** `implementation.md` 0.1.8 → 0.1.9 (197 Phase History
   row); ROADMAP row 197 ✅; per-phase ledger docs → `completed/`.
+
+---
+
+### 2026-09-02 15:15 — Phase 198 COMPLETE: offline mode + local database shipped + device-smoked
+
+- **Project-level additions:** first on-device SQLite (`src/db/database.ts`
+  op-sqlite adapter, sequential migrations, schema v2) + `dtcCache`
+  (backend-mirrored, generic-first lookup) + `kbSync` (version-stamped
+  full snapshot, wedge self-heal) + `opQueue` (durable FIFO offline
+  mutations, temp-id remap) + `offlineBoot` (cold-mount + connectivity
+  regain) + `PendingOpsBadge` + hook cache-fallbacks + NewSession offline
+  path. New deps: `@op-engineering/op-sqlite`,
+  `@react-native-community/netinfo`; `jest.setup.js` global native mocks.
+- **Device smoke FULL PASS (2026-09-02)** after a 3-fix cycle (loud
+  failures + self-heal `2194145`; **DTC identity is (code, make)** schema
+  v2 `2fa13e4`; badge on Sessions list `59140e3`) + mandated >2-bugs
+  cluster analysis (spike-gate coverage + Step-0 data-invariant probing —
+  process lessons in the ledger). Server-witnessed replay:
+  `POST /v1/sessions 201` after airplane-mode create.
+- **Suite:** 68 suites / 853 tests green; tsc clean.
+- **Project docs:** `implementation.md` 0.1.9 → **0.2.0** (X=9 rollover
+  per versioning rule; 198 Phase History row); ROADMAP 198 ✅; **F50**
+  filed (pending rows in Sessions list); ledger docs → `completed/`.
+- **Track I same-day hat-trick context:** 198 planned → built → smoked in
+  one day, the third consecutive phase at that cadence (196B, 197, 198).

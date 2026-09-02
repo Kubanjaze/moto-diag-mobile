@@ -351,6 +351,23 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
   device smoke. Independently: first session with any motorcycle on the
   bench runs it opportunistically (~10 min).
 
+### F50 (NEW) — Phase 198 offline sessions as local rows in the Sessions list
+
+- **Surfaced:** Phase 198 device smoke (2026-09-02). Queued offline
+  sessions surface via the pending-sync badge (New Session form +
+  Sessions list per fix #3), but do NOT appear as rows in the
+  server-backed Sessions list until replay. The user's instinct was to
+  look for "a saved pending file" in the list — the badge answers the
+  count, not the content.
+- **Scope when picked up:** render pending `create_session` ops as local
+  rows (distinct "pending" styling, not tappable into a server detail
+  view), reconciled/replaced by the server row on replay. Requires
+  local↔server row identity care (temp-id remap already exists in the
+  queue) and honest empty/error states. Natural pairing: whichever phase
+  next touches the Sessions list or the op-queue.
+- **Watcher:** Step-0 noun audit hitting `SessionsListScreen`, `opQueue`,
+  or `useSessions` must check F50 (F47/F49-style deterministic trigger).
+
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
 - **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:
