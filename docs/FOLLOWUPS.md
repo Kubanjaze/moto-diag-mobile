@@ -368,6 +368,77 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
 - **Watcher:** Step-0 noun audit hitting `SessionsListScreen`, `opQueue`,
   or `useSessions` must check F50 (F47/F49-style deterministic trigger).
 
+### F51 (NEW) — Deep-link from a tapped push into the WO / session
+
+- **Surfaced:** Phase 199 plan v1.0 (2026-09-02), explicitly scoped out
+  of the MVP ("lands the notification itself"); reaffirmed at close.
+- **Scope when picked up:** backend payload gains a `data` block
+  (`{kind: 'wo' | 'session', shop_id, id}`) beside `aps`; mobile handles
+  `PushNotificationIOS.getInitialNotification()` (cold launch from a
+  tap) + the `notification` / `localNotification` events (warm tap) and
+  navigates via the existing RootNavigator routes (ShopTab → WO detail;
+  Sessions → detail). Needs the app's nav ref to be reachable from the
+  service layer (small `navigationRef` singleton — Phase 193's ShopTab
+  reactivity already tolerates deferred navigation).
+- **Pairing:** whichever phase next touches WO detail or the session
+  detail screens; also a natural pair with F52.
+
+### F52 (NEW) — Foreground presentation of pushes (+ backend success log)
+
+- **Surfaced:** Phase 199 close (2026-09-02). Plan v1.0 listed "renders
+  foreground notifications sanely"; the build shipped the token
+  lifecycle only. With the app OPEN, iOS renders NOTHING for a remote
+  notification unless the app adopts
+  `UNUserNotificationCenterDelegate` and its `willPresent` handler
+  returns presentation options — a mechanic tapping around the app
+  during a transition sees no banner until they background it.
+- **Scope when picked up:** AppDelegate adopts
+  `UNUserNotificationCenterDelegate` (set `UNUserNotificationCenter
+  .current().delegate` in `didFinishLaunching`), `willPresent` →
+  `[.banner, .sound]` (iOS 14+), forward `didReceive` to
+  `RNCPushNotificationIOS.didReceiveNotificationResponse`; JS side
+  attaches a `notification` listener in `pushRegistration` (the spike
+  proved it attaches under New Arch) for an in-app refresh of the WO
+  list/detail. Backend: add an INFO log line per successful send in
+  `push/events._send_to_user` (today only failures warn — the 199 smoke
+  had to prove success by absence of warnings + a direct sender call).
+- **Pairing:** F51 (same delegate surface).
+
+### F53 (NEW) — Customer-facing `push` channel on the Phase 170 notification queue
+
+- **Surfaced:** Phase 199 Step 0 audit (2026-09-02). Phase 170's
+  queue-only customer-notification system (`shop/notifications.py`,
+  channels email/sms/in_app, "expects a future transport layer") is a
+  different audience (bike owners) from 199's mechanic pushes; the user
+  resolved the fork as mechanic-first. The `PushSender` seam +
+  `device_tokens` registry now exist, so a customer `push` channel is a
+  transport-wiring task, not a substrate one.
+- **Scope when picked up:** customers need a device (Phase 200
+  customer-facing share view is web — so this waits for a customer app
+  or web-push), a `channel='push'` transport in the 170 queue drained
+  through `get_sender()`, and the 170 templates (customer-voiced — do
+  NOT reuse 199's mechanic copy). Backend-only until a customer client
+  exists.
+
+### F54 (NEW) — Backend `implementation.md` inventory drift for Track I substrate
+
+- **Surfaced:** Phase 199 close (2026-09-02), F9 subtype-9 family
+  (SSOT-shadow doc drift). Per `ROADMAP_AUTHORITY.md` (2026-05-17) the
+  backend aggregate surfaces stopped mirroring Track I *status* — but
+  the backend `implementation.md` **Package Inventory** and **Database
+  Tables** sections are architecture inventories, not status, and they
+  now lack the Track I backend substrate: Phase 194 `work_order_photos`,
+  Phase 195 `voice_transcripts` (+ 195B cost ledger), Phase 199 `push/`
+  package + `device_tokens` (migration 044). Also the header's
+  `pyproject.toml` bump narrative stops at 195B.
+- **Scope when picked up:** one docs-only backend commit adding the
+  missing package rows / table rows / migration references, and a
+  one-line rule in `ROADMAP_AUTHORITY.md` clarifying that inventories
+  (packages, tables, migrations, CLI commands) stay mirrored in the
+  backend even when Track I status rows do not.
+- **Decision:** filed, not fixed here — the authority doc is the
+  user's call and the fix touches the frozen backend aggregate surface.
+
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
 - **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:

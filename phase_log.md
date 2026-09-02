@@ -197,3 +197,44 @@ Next: launch on physical iPhone via Xcode (Developer Mode + trust +
   filed (pending rows in Sessions list); ledger docs → `completed/`.
 - **Track I same-day hat-trick context:** 198 planned → built → smoked in
   one day, the third consecutive phase at that cadence (196B, 197, 198).
+
+---
+
+### 2026-09-02 17:00 — Phase 199 COMPLETE: push notifications shipped + device-smoked
+
+- **Project-level additions:** first push/APNs surface in the app —
+  `src/services/pushRegistration.ts` (token lifecycle: cold-mount
+  register, sign-in resync, sign-out deregister-before-clear; injectable
+  deps) wired at the App.tsx single integration point + HomeScreen key
+  handlers; cold-start regression guard extended. New dep
+  `@react-native-community/push-notification-ios` (spike-gated). Native:
+  `AppDelegate.swift` remote-notification delegate methods,
+  `ios/MotoDiag/MotoDiag-Bridging-Header.h` (the pod defines no Swift
+  module), `SWIFT_OBJC_BRIDGING_HEADER` + `CODE_SIGN_ENTITLEMENTS` on
+  BOTH build configs (Debug had neither — the spike build was signed
+  without `aps-environment`). `jest.setup.js` global mock for the lib;
+  `api-schema` + `api-types` refreshed (`/v1/push/register`).
+- **Device smoke (2026-09-02):** spike gate PASS after the three native
+  fixes (`register event: token(64 chars)`); real service →
+  `POST /v1/push/register 200` → `device_tokens` row; WO assign + open
+  transition by a second user (curl) → APNs sandbox accepted
+  (`PushResult(ok=True)`); app terminated so iOS renders the banners —
+  visual confirmation on the phone left to the user.
+- **Dev-loop change (RN 0.85):** Metro no longer prints app
+  `console.log`; attach to Metro's CDP inspector (`:8081/json` →
+  websocket with `Origin: http://localhost:8081` → `Runtime.enable`
+  replays Hermes' console). `xcodebuild` + `xcrun devicectl` replaced
+  the Xcode Run button for build/install/launch.
+- **Suite:** 69 suites / 864 tests green (+11); tsc clean; eslint 0
+  errors.
+- **Project docs:** `implementation.md` 0.2.0 → 0.2.1 (199 Phase History
+  row + services inventory); ROADMAP 199 ✅; **F51** (deep-link on tap),
+  **F52** (foreground presentation via `willPresent` + in-app
+  `notification` listener + backend success log line), **F53**
+  (customer-queue `push` channel on the Phase 170 substrate), **F54**
+  (backend `implementation.md` Package Inventory / Database Tables
+  missing Track I substrate: 194 `work_order_photos`, 195
+  `voice_transcripts`, 199 `push/` + `device_tokens`) filed; ledger docs
+  → `completed/` (backend repo).
+- **Track I cadence:** fourth consecutive same-day plan → build → smoke
+  (196B, 197, 198, 199).
