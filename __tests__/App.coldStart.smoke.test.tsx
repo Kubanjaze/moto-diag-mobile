@@ -5,6 +5,9 @@
 // - photoStorageCache.cleanupOldPhotos (Phase 194 photo 7-day sweep)
 // - audioStorageCache.cleanupOldAudio (Phase 195 audio 7-day sweep — NEW)
 // - clearActiveShopId (Phase 193 sticky-picker reset)
+// - startOfflineBoot (Phase 198 offline-layer boot; stop on unmount)
+// - startPushRegistration (Phase 199 push-token registration; stop on
+//   unmount)
 //
 // **Why this test exists**: Mobile Commit 1 shipped audioStorageCache
 // with a tested cleanupOldAudio function but missed the App.tsx
@@ -58,6 +61,15 @@ jest.mock('../src/services/offlineBoot', () => ({
   startOfflineBoot: () => mockStartOfflineBoot(),
 }));
 
+// Phase 199 — push-registration wiring guard (same family): the
+// service exists AND App.tsx boots it on cold mount, AND its listener
+// teardown runs on unmount.
+const mockPushStop = jest.fn();
+const mockStartPushRegistration = jest.fn(() => ({stop: mockPushStop}));
+jest.mock('../src/services/pushRegistration', () => ({
+  startPushRegistration: () => mockStartPushRegistration(),
+}));
+
 // Mock the navigation tree + providers so we don't need a full RN
 // runtime to render App.
 jest.mock('@react-navigation/native', () => ({
@@ -80,6 +92,10 @@ import ReactTestRenderer from 'react-test-renderer';
 import App from '../App';
 
 beforeEach(() => {
+  mockStartOfflineBoot.mockClear();
+  mockOfflineStop.mockClear();
+  mockStartPushRegistration.mockClear();
+  mockPushStop.mockClear();
   mockCleanupOldShares.mockClear();
   mockCleanupOldPhotos.mockClear();
   mockCleanupOldAudio.mockClear();
@@ -100,11 +116,15 @@ describe('App cold-mount sweep wiring', () => {
     // Phase 198 — the offline boot fires with the sweeps, and its
     // connectivity listener is torn down on unmount.
     expect(mockStartOfflineBoot).toHaveBeenCalledTimes(1);
+    // Phase 199 — push registration boots with them; listeners are
+    // detached on unmount.
+    expect(mockStartPushRegistration).toHaveBeenCalledTimes(1);
 
     ReactTestRenderer.act(() => {
       renderer.unmount();
     });
     expect(mockOfflineStop).toHaveBeenCalledTimes(1);
+    expect(mockPushStop).toHaveBeenCalledTimes(1);
   });
 
   it('passes Date.now() to all three time-bounded sweeps', () => {

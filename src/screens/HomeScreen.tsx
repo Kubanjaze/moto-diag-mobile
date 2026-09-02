@@ -40,6 +40,10 @@ import {api, describeError} from '../api';
 import {bleService} from '../ble/BleService';
 import {OBD_SUPPORT} from '../config/features';
 import {useApiKey} from '../hooks/useApiKey';
+import {
+  deregisterPushToken,
+  resyncPushRegistration,
+} from '../services/pushRegistration';
 import {version as appVersion} from '../../package.json';
 import type {HomeStackParamList} from '../navigation/types';
 import type {VehicleListResponse, VersionResponse} from '../types/api';
@@ -108,6 +112,10 @@ export function HomeScreen() {
   const handleSubmitKey = useCallback(
     async (key: string) => {
       await setApiKey(key);
+      // Phase 199 — the APNs token usually lands before a key exists
+      // (first launch → that POST 401s); re-register it now that the
+      // key is stored. Best-effort, logged inside the service.
+      void resyncPushRegistration();
       setKeyModalVisible(false);
       // Reset the smoke result so the user can re-test against the new key.
       setVehiclesState({kind: 'idle'});
@@ -122,6 +130,10 @@ export function HomeScreen() {
         text: 'Clear',
         style: 'destructive',
         onPress: async () => {
+          // Phase 199 — sign-out hygiene: DELETE the device token
+          // while the key is still valid (the endpoint is authed), so
+          // this phone stops receiving the outgoing user's pushes.
+          await deregisterPushToken();
           await clearApiKey();
           setVehiclesState({kind: 'idle'});
         },

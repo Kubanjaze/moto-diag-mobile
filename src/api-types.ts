@@ -1184,6 +1184,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/push/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register (or rebind) the caller's push device token */
+        post: operations["register_push_token_v1_push_register_post"];
+        /** Deregister a push device token (sign-out hygiene) */
+        delete: operations["deregister_push_token_v1_push_register_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1531,6 +1549,22 @@ export interface components {
         PortalSessionResponse: {
             /** Portal Url */
             portal_url: string;
+        };
+        /** PushRegisterRequest */
+        PushRegisterRequest: {
+            /** Token */
+            token: string;
+            /**
+             * Platform
+             * @default ios
+             * @enum {string}
+             */
+            platform: "ios" | "android";
+        };
+        /** PushRegisterResponse */
+        PushRegisterResponse: {
+            /** Registered */
+            registered: boolean;
         };
         /** SessionCreateRequest */
         SessionCreateRequest: {
@@ -5420,6 +5454,84 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    register_push_token_v1_push_register_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushRegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushRegisterResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    deregister_push_token_v1_push_register_delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushRegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushRegisterResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
             /** @description Validation Error */
             422: {
                 headers: {

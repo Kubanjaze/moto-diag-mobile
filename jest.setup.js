@@ -27,3 +27,20 @@ jest.mock('@react-native-community/netinfo', () => ({
     addEventListener: jest.fn(() => jest.fn()),
   },
 }));
+
+// Phase 199 — push-notification-ios is a native module (iOS-only);
+// any suite that transitively imports src/services/pushRegistration
+// (App.tsx, HomeScreen) gets this inert double. The service's own
+// tests inject a typed fake instead of touching this.
+jest.mock('@react-native-community/push-notification-ios', () => ({
+  __esModule: true,
+  default: {
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    requestPermissions: jest.fn(async () => ({
+      alert: false,
+      badge: false,
+      sound: false,
+    })),
+  },
+}));

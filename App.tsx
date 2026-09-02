@@ -7,6 +7,7 @@ import {ApiKeyProvider} from './src/contexts/ApiKeyProvider';
 import {RootNavigator} from './src/navigation/RootNavigator';
 import {clearActiveShopId} from './src/services/activeShopStorage';
 import {startOfflineBoot} from './src/services/offlineBoot';
+import {startPushRegistration} from './src/services/pushRegistration';
 import {audioStorageCache} from './src/services/audioStorageCache';
 import {photoStorageCache} from './src/services/photoStorageCache';
 import {cleanupOldShares} from './src/services/shareTempCleanup';
@@ -72,14 +73,17 @@ function App() {
     // every connectivity regain. Single shared integration point
     // (regression-guarded in App.coldStart.smoke.test.tsx).
     const offline = startOfflineBoot();
-    // ═══ SPIKE (Phase 199 Spike Gate) — DELETE WITH pushSpike.SPIKE.ts ═══
-    if (__DEV__) {
-      void import('./src/services/pushSpike.SPIKE').then((m) =>
-        m.runPushSpike(),
-      );
-    }
-    // ═══ END SPIKE ═══
-    return () => offline.stop();
+    // Phase 199 — push registration: permission → APNs token →
+    // POST /v1/push/register on every cold start (idempotent upsert;
+    // token-rotation safety). Same single-integration-point +
+    // regression-guard posture as the offline boot. Sign-in resync
+    // and sign-out deregister live beside the key handlers in
+    // HomeScreen.
+    const push = startPushRegistration();
+    return () => {
+      offline.stop();
+      push.stop();
+    };
   }, []);
 
   return (

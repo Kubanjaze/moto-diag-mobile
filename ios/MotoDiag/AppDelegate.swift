@@ -2,7 +2,8 @@ import UIKit
 import React
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
-import RNCPushNotificationIOS  // Phase 199 — APNs token/notification bridge
+// Phase 199 — RNCPushNotificationIOS comes in via MotoDiag-Bridging-Header.h
+// (the pod defines no Swift module; a direct `import` fails to resolve).
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
