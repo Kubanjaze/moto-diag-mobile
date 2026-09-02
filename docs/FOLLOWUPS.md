@@ -331,6 +331,26 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
 - **Scope estimate:** small. A calibration script run + a one-line threshold constant change + a phase-log / ADR note recording the synthetic-vs-real delta. Could be a tiny fix-cycle commit or folded into whatever phase next touches `transcript_extraction`.
 - **Decision:** Filed as a tracked obligation. Trigger fires on transcript-count, surfaced via `costs report`'s `whisper` cost-event count, watched by the F33 pre-plan audit step of the next phase to touch the voice/extraction path. Phase 195B's plan v1.0 Risk #2 references this ticket as the mitigation.
 
+### F49 (NEW) — Phase 197 motorcycle PID-coverage verification (n/a path vs real bike ECU)
+
+- **Surfaced:** Phase 197 device smoke (2026-09-02). The smoke ran against a
+  car ECU — protocol-identical (SAE J1979 Mode 01) and the STRONGER
+  functional check (all six channels exercised live: RPM/speed/coolant/
+  throttle/intake/ATRV voltage all tracked the engine). What a car cannot
+  exercise: the **subset/n-a path** — motorcycles commonly expose only a
+  few of the core six, so the `0100` supported-bitmask filter + per-gauge
+  "n/a" rendering have unit coverage but no real-hardware datapoint.
+- **Scope when picked up:** connect to a real motorcycle ECU (MX+ or BLE
+  adapter), record the 0100 bitmask, confirm unsupported gauges render
+  n/a and supported ones read correctly; note the bike's
+  make/model/year + bitmask in the Phase 197 ledger docs as an addendum.
+- **Watcher (F47-style deterministic trigger):** the CLAUDE.md Step 0 audit
+  of any future phase whose noun-audit touches `pids`, `pidPoller`,
+  `LiveData`, or `useLiveSensorData` MUST check whether F49 has a bike
+  datapoint yet; if not, the bike verification folds into that phase's
+  device smoke. Independently: first session with any motorcycle on the
+  bench runs it opportunistically (~10 min).
+
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
 - **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:

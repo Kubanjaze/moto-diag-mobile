@@ -153,3 +153,22 @@ Next: launch on physical iPhone via Xcode (Developer Mode + trust +
   195C Phase History rows still pending backfill). ROADMAP row 196B ✅.
 - **Per-phase docs:** backend ledger `196B_*.md` → v1.1 final, moved
   `in_progress/` → `completed/`.
+
+---
+
+### 2026-09-02 10:25 — Phase 197 COMPLETE: live sensor dashboard shipped + device-smoked
+
+- **Project-level additions:** `src/obd/pids.ts` (J1979 catalog mirror,
+  formulas test-pinned to the backend's `hardware/sensors.py`),
+  `src/obd/pidPoller.ts`, `src/obd/activeObdConnection.ts` (cross-screen
+  provider holder), `src/hooks/useLiveSensorData.ts`,
+  `src/components/SensorGauge.tsx`, `src/screens/LiveDataScreen.tsx`
+  (+ OBD_SUPPORT-gated `LiveData` route; ObdConnect connected-pane entry).
+- **Device smoke PASS (2026-09-02, car ECU over MX+/classic):** all six
+  channels live — RPM/voltage responding, coolant/intake temps correct,
+  throttle tracking, speed moved with the vehicle. Motorcycle subset/n-a
+  verification filed as **F49** (deterministic Step-0 watcher).
+- **Suite:** 65 suites / 837 tests green (+33); tsc clean. Seam property
+  held a third time: poller/hook/screen depend on `ObdProvider` only.
+- **Project docs:** `implementation.md` 0.1.8 → 0.1.9 (197 Phase History
+  row); ROADMAP row 197 ✅; per-phase ledger docs → `completed/`.
