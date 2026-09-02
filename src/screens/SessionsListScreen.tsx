@@ -27,6 +27,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {Button} from '../components/Button';
+import {PendingOpsBadge} from '../components/PendingOpsBadge';
 import {useSessions} from '../hooks/useSessions';
 import type {SessionsStackParamList} from '../navigation/types';
 import type {SessionResponse} from '../types/api';
@@ -103,6 +104,13 @@ export function SessionsListScreen({navigation}: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+      {/* Phase 198 fix #3 — the pending badge lives WHERE USERS LOOK
+          for their sessions, not just on the create form (first smoke:
+          the alert navigates away from the form, so the badge was
+          effectively invisible). */}
+      <View style={styles.pendingWrap}>
+        <PendingOpsBadge />
+      </View>
       {error ? (
         <View style={styles.errorBanner} testID="sessions-error-banner">
           <Text style={styles.errorText}>{error}</Text>
@@ -229,6 +237,7 @@ function QuotaFooter({
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#f5f5f7'},
+  pendingWrap: {paddingHorizontal: 16, paddingTop: 8},
   errorBanner: {
     backgroundColor: '#fee',
     borderLeftWidth: 4,
