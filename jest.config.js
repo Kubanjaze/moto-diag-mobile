@@ -1,5 +1,8 @@
 module.exports = {
   preset: '@react-native/jest-preset',
+  // Phase 198: global native-dep mocks (op-sqlite, netinfo) — see
+  // jest.setup.js header for the rationale.
+  setupFiles: ['<rootDir>/jest.setup.js'],
   // Phase 191C Commit 3 (2026-05-04): exclude eslint-plugin-motodiag/
   // from jest collection. The plugin uses ESLint's RuleTester (its own
   // discipline; see eslint-plugin-motodiag/rules/__tests__/*.test.js)
@@ -15,5 +18,7 @@ module.exports = {
     '/node_modules/',
     '/eslint-plugin-motodiag/',
     '/__tests__/obd/FakeObdProvider\\.ts$',
+    // Phase 198: offline-layer test doubles — imported, not a suite.
+    '/__tests__/offline/fakes\\.ts$',
   ],
 };

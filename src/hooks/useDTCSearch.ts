@@ -22,6 +22,8 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 
 import {api, describeError} from '../api';
+import {getDb} from '../db/database';
+import {DtcCacheStore} from '../db/dtcCache';
 import type {DTCResponse} from '../types/api';
 
 export const DTC_SEARCH_DEBOUNCE_MS = 300;
@@ -41,6 +43,8 @@ export interface UseDTCSearchResult {
   isLoading: boolean;
   /** Human-readable error string, or null. */
   error: string | null;
+  /** Phase 198 — true when `results` came from the offline cache. */
+  fromCache: boolean;
 }
 
 export function useDTCSearch(): UseDTCSearchResult {
@@ -50,6 +54,7 @@ export function useDTCSearch(): UseDTCSearchResult {
   const [total, setTotal] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState<boolean>(false);
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef<number>(0);
@@ -104,9 +109,28 @@ export function useDTCSearch(): UseDTCSearchResult {
         }
         setResults(data.items as DTCResponse[]);
         setTotal(data.total);
+        setFromCache(false);
       } catch (err) {
         if (aborted) return;
         if (myId !== requestIdRef.current) return;
+        // Phase 198 — transport-level failure: serve the offline KB
+        // snapshot. Empty cache results are still results (no error)
+        // so the screen renders "no matches" + the offline chip.
+        try {
+          const cache = new DtcCacheStore(await getDb());
+          const cached = await cache.searchDtcs(
+            debouncedQuery,
+            DTC_SEARCH_LIMIT,
+          );
+          if (aborted || myId !== requestIdRef.current) return;
+          setResults(cached as DTCResponse[]);
+          setTotal(cached.length);
+          setFromCache(true);
+          setError(null);
+          return;
+        } catch {
+          // cache unavailable — fall through to the network error
+        }
         setError(describeError(err));
         setResults([]);
         setTotal(0);
@@ -121,5 +145,5 @@ export function useDTCSearch(): UseDTCSearchResult {
     };
   }, [debouncedQuery]);
 
-  return {query, setQuery, results, total, isLoading, error};
+  return {query, setQuery, results, total, isLoading, error, fromCache};
 }

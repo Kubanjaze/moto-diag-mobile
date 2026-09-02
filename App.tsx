@@ -6,6 +6,7 @@ import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {ApiKeyProvider} from './src/contexts/ApiKeyProvider';
 import {RootNavigator} from './src/navigation/RootNavigator';
 import {clearActiveShopId} from './src/services/activeShopStorage';
+import {startOfflineBoot} from './src/services/offlineBoot';
 import {audioStorageCache} from './src/services/audioStorageCache';
 import {photoStorageCache} from './src/services/photoStorageCache';
 import {cleanupOldShares} from './src/services/shareTempCleanup';
@@ -66,6 +67,12 @@ function App() {
       // last-active shop sticky into this session. Next cold-start
       // retries.
     });
+    // Phase 198 — offline-layer boot: open/migrate the local db,
+    // replay queued ops, sync the KB snapshot, and re-run both on
+    // every connectivity regain. Single shared integration point
+    // (regression-guarded in App.coldStart.smoke.test.tsx).
+    const offline = startOfflineBoot();
+    return () => offline.stop();
   }, []);
 
   return (

@@ -36,6 +36,9 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {api, describeError, isProblemDetail} from '../api';
 import {Button} from '../components/Button';
+import {PendingOpsBadge} from '../components/PendingOpsBadge';
+import {getDb} from '../db/database';
+import {makeTempId, OpQueueStore} from '../services/opQueue';
 import {
   Field,
   validateRequired,
@@ -103,16 +106,15 @@ export function NewSessionScreen({navigation}: Props) {
     }
     setErrors({});
     setSubmitting(true);
+    const body: SessionCreateRequest = {
+      vehicle_make: make.trim(),
+      vehicle_model: model.trim(),
+      vehicle_year: Number.parseInt(year, 10),
+      vehicle_id: vehicleId ?? undefined,
+      symptoms: packSymptoms(symptomsText),
+      fault_codes: packFaultCodes(faultCodesText),
+    };
     try {
-      const body: SessionCreateRequest = {
-        vehicle_make: make.trim(),
-        vehicle_model: model.trim(),
-        vehicle_year: Number.parseInt(year, 10),
-        vehicle_id: vehicleId ?? undefined,
-        symptoms: packSymptoms(symptomsText),
-        fault_codes: packFaultCodes(faultCodesText),
-      };
-
       const {data, error: apiError} = await api.POST('/v1/sessions', {body});
 
       if (apiError) {
@@ -127,6 +129,22 @@ export function NewSessionScreen({navigation}: Props) {
       // the list (not back to this form).
       navigation.replace('SessionDetail', {sessionId: data.id});
     } catch (err) {
+      // Phase 198 — transport-level failure (offline): queue the
+      // create durably instead of losing the mechanic's input. The
+      // op replays FIFO on connectivity regain (opQueue/offlineBoot);
+      // the pending badge reflects it meanwhile.
+      try {
+        const queue = new OpQueueStore(await getDb());
+        await queue.enqueue('create_session', body, makeTempId());
+        Alert.alert(
+          'Saved offline',
+          'No connection — this session is queued and will sync automatically when you are back online.',
+          [{text: 'OK', onPress: () => navigation.goBack()}],
+        );
+        return;
+      } catch {
+        // Queue unavailable — surface the original network error.
+      }
       Alert.alert('Start failed', describeError(err));
     } finally {
       setSubmitting(false);
@@ -150,6 +168,7 @@ export function NewSessionScreen({navigation}: Props) {
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled">
+          <PendingOpsBadge />
           <Text style={styles.sectionTitle}>Bike</Text>
 
           <Field

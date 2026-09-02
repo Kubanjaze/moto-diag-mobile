@@ -15,12 +15,17 @@
 import {useCallback, useEffect, useState} from 'react';
 
 import {api} from '../api';
+import {getDb} from '../db/database';
+import {DtcCacheStore} from '../db/dtcCache';
 import type {DTCResponse} from '../types/api';
 import {classifyDTCError, type DTCError} from './dtcErrors';
 
 export interface UseDTCResult {
   dtc: DTCResponse | null;
   isLoading: boolean;
+  /** Phase 198 — true when `dtc` was served from the offline cache
+   *  (network unreachable); screens show the offline chip. */
+  fromCache: boolean;
   /** Typed error — switch on `error.kind` for distinct UX per
    *  failure mode (404 / 5xx / network / other). Replaces the
    *  prior string-with-substring-match approach. */
@@ -32,6 +37,7 @@ export function useDTC(code: string): UseDTCResult {
   const [dtc, setDTC] = useState<DTCResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<DTCError | null>(null);
+  const [fromCache, setFromCache] = useState<boolean>(false);
 
   const fetchOnce = useCallback(
     async (alive: {current: boolean}): Promise<void> => {
@@ -57,8 +63,25 @@ export function useDTC(code: string): UseDTCResult {
           return;
         }
         setDTC(data as DTCResponse);
+        setFromCache(false);
       } catch (err) {
         if (!alive.current) return;
+        // Phase 198 — transport-level failure (network unreachable):
+        // fall back to the offline KB snapshot before surfacing an
+        // error. Cache miss keeps the original network error.
+        try {
+          const cache = new DtcCacheStore(await getDb());
+          const cached = await cache.getDtc(code);
+          if (!alive.current) return;
+          if (cached) {
+            setDTC(cached as DTCResponse);
+            setFromCache(true);
+            setError(null);
+            return;
+          }
+        } catch {
+          // cache unavailable — fall through to the network error
+        }
         setError(classifyDTCError({thrown: err, code}));
         setDTC(null);
       } finally {
@@ -81,5 +104,5 @@ export function useDTC(code: string): UseDTCResult {
     };
   }, [fetchOnce]);
 
-  return {dtc, isLoading, error, refetch};
+  return {dtc, isLoading, error, refetch, fromCache};
 }

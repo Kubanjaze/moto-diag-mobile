@@ -325,6 +325,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/kb/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Full KB snapshot for offline caching (Phase 198)
+         * @description Return every DTC + category-meta row plus a content-hash stamp.
+         *
+         *     Mobile offline cache (Phase 198): the client compares `kb_version`
+         *     to its stored stamp and replaces its local snapshot atomically when
+         *     they differ. Full-snapshot by design — see the Phase 198 plan's
+         *     scale finding (delta machinery would outweigh ~55 rows).
+         */
+        get: operations["kb_export_endpoint_v1_kb_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/kb/dtc": {
         parameters: {
             query?: never;
@@ -1082,9 +1107,16 @@ export interface paths {
          *     4. Enforce quotas (402 on cap).
          *     5. Insert DB row with placeholder audio_path; resolve canonical
          *        disk path; write bytes; update DB row.
-         *     6. Run keyword extraction over preview_text; create
-         *        extracted_symptoms rows; flip extraction_state to 'extracted'.
-         *     7. Return 201 with full transcript + extracted_symptoms.
+         *     6. Phase 195B: leave extraction_state at 'extracting' + hand the
+         *        async pipeline (Whisper → keyword → threshold → Claude →
+         *        atomic finalize) to BackgroundTasks. The route does NOT run
+         *        extraction synchronously anymore — the pipeline runs keyword +
+         *        Claude on the best-available (Whisper-canonical) transcript
+         *        out-of-band, then atomically flips to 'extracted' /
+         *        'extraction_failed'.
+         *     7. Return 201 immediately with the transcript in 'extracting'
+         *        state + zero extracted_symptoms (the mobile UI shows the
+         *        'refining…' badge until a refetch sees 'extracted').
          */
         post: operations["upload_voice_transcript_v1_shop__shop_id__work_orders__wo_id__transcripts_post"];
         delete?: never;
@@ -1345,14 +1377,46 @@ export interface components {
             /**
              * Category
              * @default other
+             * @enum {string}
              */
-            category: string;
+            category: "accessories" | "brakes" | "cooling" | "drivetrain" | "electrical" | "engine" | "exhaust" | "fuel_system" | "other" | "rider_complaint" | "suspension" | "tires_wheels" | "transmission";
             /**
              * Severity
              * @default medium
              * @enum {string}
              */
             severity: "low" | "medium" | "high" | "critical";
+        };
+        /**
+         * KBExportCategory
+         * @description Phase 198 — one dtc_category_meta row in the offline export.
+         */
+        KBExportCategory: {
+            /** Category */
+            category: string;
+            /** Description */
+            description?: string | null;
+            /** Applicable Powertrains */
+            applicable_powertrains?: string[];
+            /** Severity Default */
+            severity_default?: string | null;
+        };
+        /**
+         * KBExportResponse
+         * @description Phase 198 — full KB snapshot for the mobile offline cache.
+         *
+         *     `kb_version` is a content hash (sha256 over the canonical JSON of
+         *     the payload) — no `updated_at` column exists, and at KB scale
+         *     (~55 DTC rows) hashing per request is cheap. Clients store the
+         *     stamp and refetch the whole snapshot when it changes.
+         */
+        KBExportResponse: {
+            /** Kb Version */
+            kb_version: string;
+            /** Dtcs */
+            dtcs: components["schemas"]["DTCResponse"][];
+            /** Categories */
+            categories: components["schemas"]["KBExportCategory"][];
         };
         /** KnownIssueListResponse */
         KnownIssueListResponse: {
@@ -1409,8 +1473,11 @@ export interface components {
         };
         /** NotificationTriggerRequest */
         NotificationTriggerRequest: {
-            /** Event */
-            event: string;
+            /**
+             * Event
+             * @enum {string}
+             */
+            event: "approval_requested" | "estimate_ready" | "invoice_issued" | "invoice_paid" | "parts_arrived" | "wo_cancelled" | "wo_completed" | "wo_in_progress" | "wo_on_hold" | "wo_opened";
             /** Wo Id */
             wo_id?: number | null;
             /** Invoice Id */
@@ -2974,6 +3041,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DTCCategoryResponse"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    kb_export_endpoint_v1_kb_export_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KBExportResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];

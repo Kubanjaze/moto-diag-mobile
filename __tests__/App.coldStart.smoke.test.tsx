@@ -49,6 +49,15 @@ jest.mock('../src/services/activeShopStorage', () => ({
   clearActiveShopId: () => mockClearActiveShopId(),
 }));
 
+// Phase 198 — offline-layer boot wiring guard (same integration-gap
+// family as the four sweeps: startOfflineBoot exists AND App.tsx
+// invokes it on cold mount).
+const mockOfflineStop = jest.fn();
+const mockStartOfflineBoot = jest.fn(() => ({stop: mockOfflineStop}));
+jest.mock('../src/services/offlineBoot', () => ({
+  startOfflineBoot: () => mockStartOfflineBoot(),
+}));
+
 // Mock the navigation tree + providers so we don't need a full RN
 // runtime to render App.
 jest.mock('@react-navigation/native', () => ({
@@ -88,10 +97,14 @@ describe('App cold-mount sweep wiring', () => {
     expect(mockCleanupOldPhotos).toHaveBeenCalledTimes(1);
     expect(mockCleanupOldAudio).toHaveBeenCalledTimes(1);
     expect(mockClearActiveShopId).toHaveBeenCalledTimes(1);
+    // Phase 198 — the offline boot fires with the sweeps, and its
+    // connectivity listener is torn down on unmount.
+    expect(mockStartOfflineBoot).toHaveBeenCalledTimes(1);
 
     ReactTestRenderer.act(() => {
       renderer.unmount();
     });
+    expect(mockOfflineStop).toHaveBeenCalledTimes(1);
   });
 
   it('passes Date.now() to all three time-bounded sweeps', () => {
