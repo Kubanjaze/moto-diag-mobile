@@ -47,6 +47,16 @@ export interface PushRegistrationError {
 }
 
 /** The slice of RNCPushNotificationIOS this service depends on. */
+/** The slice of the library's notification object this layer touches.
+ *  `finish` is not optional in spirit: the AppDelegate forwards iOS's
+ *  fetch-completion handler into JS, so failing to call it makes iOS
+ *  throttle later deliveries. */
+export interface PushNotificationLike {
+  getAlert?: () => unknown;
+  getData?: () => unknown;
+  finish?: (result: string) => void;
+}
+
 export interface PushModuleLike {
   addEventListener(
     type: 'register',
@@ -56,7 +66,13 @@ export interface PushModuleLike {
     type: 'registrationError',
     handler: (error: PushRegistrationError) => void,
   ): void;
-  removeEventListener(type: 'register' | 'registrationError'): void;
+  addEventListener(
+    type: 'notification',
+    handler: (notification: PushNotificationLike) => void,
+  ): void;
+  removeEventListener(
+    type: 'register' | 'registrationError' | 'notification',
+  ): void;
   requestPermissions(permissions: {
     alert: boolean;
     badge: boolean;
@@ -252,6 +268,26 @@ export function startPushRegistration(
       );
     });
   });
+  // F52 — a push that lands while the app is FOREGROUNDED. Until the
+  // AppDelegate adopted UNUserNotificationCenterDelegate, iOS rendered
+  // nothing at all in this case and this event never fired, so a
+  // mechanic mid-task simply missed the notification. The banner is the
+  // native half; this listener is the JS half, and it must call
+  // finish() because the AppDelegate hands iOS's fetch-completion
+  // handler through to us.
+  push.addEventListener('notification', (notification) => {
+    try {
+      console.log(
+        `${TAG} foreground notification:`,
+        JSON.stringify(notification.getData?.() ?? {}),
+      );
+    } finally {
+      // NoData: we render nothing extra ourselves, the banner is the
+      // payload. Guarded because a notification delivered through some
+      // paths carries no finish().
+      notification.finish?.('UIBackgroundFetchResultNoData');
+    }
+  });
   push.addEventListener('registrationError', (error) => {
     // "no valid aps-environment" lands here — entitlement missing on
     // the current build config (the exact silent failure the spike
@@ -278,6 +314,7 @@ export function startPushRegistration(
     stop: () => {
       push.removeEventListener('register');
       push.removeEventListener('registrationError');
+      push.removeEventListener('notification');
     },
   };
 }

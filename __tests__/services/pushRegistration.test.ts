@@ -33,6 +33,7 @@ import {
   type PushApiLike,
   type PushApiResult,
   type PushModuleLike,
+  type PushNotificationLike,
   type PushPlatform,
   type PushRegistrationError,
   type PushTokenStoreLike,
@@ -44,6 +45,9 @@ const TOKEN_B = 'b'.repeat(64);
 class FakePush implements PushModuleLike {
   registerHandler: ((token: string) => void) | null = null;
   errorHandler: ((error: PushRegistrationError) => void) | null = null;
+  notificationHandler:
+    | ((notification: PushNotificationLike) => void)
+    | null = null;
   removed: string[] = [];
   permissionRequests = 0;
   permissions: PushNotificationPermissions = {
@@ -54,19 +58,26 @@ class FakePush implements PushModuleLike {
   };
 
   addEventListener(
-    type: 'register' | 'registrationError',
+    type: 'register' | 'registrationError' | 'notification',
     handler:
       | ((token: string) => void)
-      | ((error: PushRegistrationError) => void),
+      | ((error: PushRegistrationError) => void)
+      | ((notification: PushNotificationLike) => void),
   ): void {
     if (type === 'register') {
       this.registerHandler = handler as (token: string) => void;
-    } else {
+    } else if (type === 'registrationError') {
       this.errorHandler = handler as (error: PushRegistrationError) => void;
+    } else {
+      this.notificationHandler = handler as (
+        notification: PushNotificationLike,
+      ) => void;
     }
   }
 
-  removeEventListener(type: 'register' | 'registrationError'): void {
+  removeEventListener(
+    type: 'register' | 'registrationError' | 'notification',
+  ): void {
     this.removed.push(type);
   }
 
@@ -170,11 +181,47 @@ describe('startPushRegistration', () => {
     expect(deps.store.token).toBeNull();
   });
 
-  it('stop() detaches both listeners', () => {
+  it('attaches a foreground notification listener and always finishes it (F52)', async () => {
+    const deps = makeDeps();
+    startPushRegistration(deps);
+    await flush();
+    expect(deps.push.notificationHandler).not.toBeNull();
+
+    const finish = jest.fn();
+    deps.push.notificationHandler?.({
+      getData: () => ({wo: 1}),
+      finish,
+    });
+    // iOS throttles later deliveries if the fetch-completion handler
+    // the AppDelegate forwarded is never called.
+    expect(finish).toHaveBeenCalledWith('UIBackgroundFetchResultNoData');
+  });
+
+  it('finishes the notification even when reading its data throws (F52)', async () => {
+    const deps = makeDeps();
+    startPushRegistration(deps);
+    await flush();
+    const finish = jest.fn();
+    expect(() =>
+      deps.push.notificationHandler?.({
+        getData: () => {
+          throw new Error('malformed payload');
+        },
+        finish,
+      }),
+    ).toThrow('malformed payload');
+    expect(finish).toHaveBeenCalledTimes(1);
+  });
+
+  it('stop() detaches all three listeners', () => {
     const deps = makeDeps();
     const handles = startPushRegistration(deps);
     handles.stop();
-    expect(deps.push.removed).toEqual(['register', 'registrationError']);
+    expect(deps.push.removed).toEqual([
+      'register',
+      'registrationError',
+      'notification',
+    ]);
   });
 
   it('is a no-op off iOS (the lib is iOS-only)', async () => {

@@ -273,3 +273,38 @@ Next: launch on physical iPhone via Xcode (Developer Mode + trust +
   row); ROADMAP 200 ✅; **F55** filed. Ledger docs → `completed/`.
 - **Track I cadence:** fifth consecutive same-day plan → build → smoke
   (196B, 197, 198, 199, 200).
+
+---
+
+### 2026-09-02 — Pre-Gate-10 cleanup: F52 + F54 + F55 closed, Phase 196 closed
+
+Debt pass over what Phases 196B-200 left behind, run before Gate 10
+rather than carried into it.
+
+- **F52 — foreground push presentation (mobile + backend).** A push
+  arriving while the app was open rendered nothing. `AppDelegate` now
+  adopts `UNUserNotificationCenterDelegate`; `pushRegistration` attaches
+  a `notification` listener that always calls `finish()`; the backend
+  logs successful sends instead of only failures.
+- **The first F52 build was wrong in an instructive way.** Adopting the
+  delegate is precisely what makes iOS stop calling
+  `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)`
+  for a foreground alert — the only place the community library emits
+  its JS event — so the textbook fix produced a visible banner and a
+  silent app. Resolved by forwarding the payload from `willPresent`.
+  **Verified on device:** `[199 push] foreground notification` appears
+  with the app open, which also proves the presentation options were
+  returned since the log comes from that same forward.
+- **F55 — sessions can name their customer.** Backend migration 046 +
+  resolver; the Phase 200 share page renders "Prepared for <name>".
+- **F54 — backend inventory repaired** and `ROADMAP_AUTHORITY.md` gains
+  an "Inventories are not status" rule.
+- **Phase 196 closed** after ten days at 🔄 with finished code. Its BLE
+  connect/handshake gate needs a BLE-class adapter (the reference dongle
+  is classic Bluetooth), re-scoped to **F56**. `in_progress/` is now
+  empty across the ledger.
+- **Still open on purpose:** F51 (deep-link on tap — phase-shaped, but
+  cheaper now that F52 landed its native half), F53 (customer-queue push
+  channel — needs a customer client that does not exist), F50, F56.
+- **Suite:** 70 suites / 876 tests green (+2, into the existing push-registration suite); tsc clean; eslint 0
+  errors.

@@ -384,6 +384,12 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
   detail screens; also a natural pair with F52.
 
 - **Decision (2026-09-02, user):** defer — fold into whichever phase next touches the work-order screens. Phase 200 is customer-facing (report viewer), so it does NOT pick this up.
+- **Cheaper now (2026-09-02):** F52's cleanup landed the native half —
+  `AppDelegate` forwards `didReceive` (a tap) to the library, so what
+  remains is JS-side: a `navigationRef` singleton, handling
+  `getInitialNotification()` for the cold-launch tap, and routing on
+  the payload. Add a `data` block to the backend push payload at the
+  same time; today's alerts carry no ids to route on.
 
 ### F52 (NEW) — Foreground presentation of pushes (+ backend success log)
 
@@ -407,6 +413,18 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
 - **Pairing:** F51 (same delegate surface).
 
 - **Decision (2026-09-02, user):** defer — same disposition as F51; both share the notification-center delegate surface, so they land together in the next work-order-screen phase.
+
+- **CLOSED 2026-09-02** (pre-Gate-10 cleanup). AppDelegate adopts
+  `UNUserNotificationCenterDelegate` (banner + list + sound + badge in
+  the foreground); JS attaches a `notification` listener that always
+  calls `finish()`; backend logs one INFO line per successful send.
+  **The fix had a bug the ticket did not anticipate:** adopting the
+  delegate is exactly what stops iOS calling
+  `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)`
+  for a foreground alert, which is the only place the library emits its
+  JS event — so the textbook implementation gave a visible banner and a
+  silent app. Fixed by forwarding the payload from `willPresent`;
+  verified on device.
 
 ### F53 (NEW) — Customer-facing `push` channel on the Phase 170 notification queue
 
@@ -443,6 +461,16 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
 - **Decision:** filed, not fixed here — the authority doc is the
   user's call and the fix touches the frozen backend aggregate surface.
 
+- **CLOSED 2026-09-02** (pre-Gate-10 cleanup). Backend
+  `implementation.md` had drifted further than this ticket described:
+  the `api` package was still "empty, awaiting Phase 175", and
+  `reporting`, `push`, `work_order_photos`, `voice_transcripts`,
+  `cost_events`, `device_tokens` and `report_shares` had no rows at all,
+  with `schema_version` still claiming v38. All rewritten from the code.
+  `ROADMAP_AUTHORITY.md` gains an **"Inventories are not status"** rule
+  so the same correct reasoning cannot take the architecture sections
+  down with the status ones again.
+
 ### F55 (NEW) — `diagnostic_sessions` has no `customer_id`
 
 - **Surfaced:** Phase 200 Step 0 audit (2026-09-02), and deliberately
@@ -467,6 +495,37 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
   belongs to "Unassigned".
 - **Pairing:** whichever phase next touches session ownership or the
   customer share page.
+
+- **CLOSED 2026-09-02** (pre-Gate-10 cleanup). Migration 046 adds
+  nullable `diagnostic_sessions.customer_id`, backfilled from
+  `vehicles.customer_id` **skipping the id-1 sentinel** exactly as this
+  ticket warned. `resolve_session_customer_name` prefers the session
+  column and falls back through the vehicle, which is the live path
+  since nothing writes the new column yet. The Phase 200 share page now
+  renders "Prepared for <name>", HTML-only by design (adding it to the
+  PDF would move bytes that 192B's deterministic tests pin).
+
+### F56 (NEW) — BLE connect + handshake needs a BLE-class adapter
+
+- **Surfaced:** Phase 196 close-out (2026-09-02). The phase's provider,
+  seam contract and 54 unit tests are done, and BLE **scan** passed on
+  device (2026-08-23). Connect and handshake were never exercised
+  because the only dongle available is an OBDLink MX+ (MX201) — classic
+  Bluetooth 3.0 + MFi, undiscoverable by `react-native-ble-plx` **by
+  design**, not by fault.
+- **This is a purchase, not a bug.** Candidates named in the Phase 196
+  ledger: OBDLink CX, or a Vgate iCar Pro BT4.0-class adapter. Anything
+  advertising BLE / Bluetooth 4.0+ rather than "Bluetooth 3.0" or "works
+  with iPhone via MFi".
+- **Not blocking anything.** Phase 196B's `ClassicBtObdProvider`
+  device-smoked PASS against the MX+ ("ELM327 v1.4b", 2026-08-25), so
+  the app talks to the real dongle today through the same
+  `ObdConnection` seam.
+- **When picked up:** run the original 196 gate — dongle appears in
+  scan → connect → `idle → scanning → connecting → handshaking →
+  connected` with the banner — and append the result to ADR-002's
+  condition-#2 running record, pass or fail. Then tick the `[~]` item in
+  `196_implementation.md`.
 
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
