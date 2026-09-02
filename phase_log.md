@@ -308,3 +308,54 @@ rather than carried into it.
   channel — needs a customer client that does not exist), F50, F56.
 - **Suite:** 70 suites / 876 tests green (+2, into the existing push-registration suite); tsc clean; eslint 0
   errors.
+
+---
+
+### 2026-09-02 — SESSION PAUSE — resume state
+
+Nothing is mid-flight. Both repos are clean and in sync with origin, the
+phase ledger's `in_progress/` is empty, and no phase is part-built.
+
+**Where things stand**
+
+- Track I closed through **Phase 200**. Backend `master` and mobile
+  `main` both carry it plus the pre-Gate-10 cleanup (F52, F54, F55,
+  Phase 196). Backend regression 4662 passed; mobile 70 suites / 876
+  tests; tsc and eslint clean.
+- Schema is at **46**. If a session starts and the health check reports
+  anything lower, the running server predates migration 046 — restart it
+  rather than trusting it (that exact staleness cost time on 2026-09-02:
+  a server left running from a prior session had no push routes and
+  looked healthy).
+
+**Next up**
+
+1. **Phase 201 — parts ordering from mobile** is the next roadmap row.
+   Run the CLAUDE.md Step 0 audit first; the backend already has
+   `parts_requisitions`, `parts_requisition_items`,
+   `sourcing_recommendations` and a `parts` repo, so expect EXTENSION
+   territory, not greenfield — the same shape Phase 200 turned out to be.
+2. **Gate 10 (Phase 204)** is the real test of the recent pace: film a
+   bike → diagnose → share the report, plus first TestFlight build.
+   Three phases out.
+
+**Open follow-ups, none blocking:** F50 (pending sessions as rows in the
+list), F51 (deep-link on push tap — phase-shaped, but F52 landed its
+native half so only the JS side remains), F53 (customer-queue push
+channel — needs a customer client that does not exist), F56 (BLE
+connect/handshake — needs a Bluetooth 4 adapter; a purchase, not a bug).
+
+**Watch-items for whoever resumes**
+
+- The video-task stash must stay at `stash@{0}` in this repo
+  (`wip: multipart fix + upload diagnostic`). lint-staged shuffles stash
+  positions on a failed commit — check `git stash list` after one.
+- Dev-loop on RN 0.85: Metro does not print app `console.log`. Use the
+  CDP reader at `~/Projects/p199_cdp_console.cjs`, and
+  `xcodebuild` + `xcrun devicectl` for build / install / launch.
+- Backend `pyproject.toml` is still 0.6.0. Phases 199 and 200 added
+  backend surface without a bump; deliberately left for the user to
+  decide at the next backend-led release.
+- Left running at pause on the Mac: `motodiag serve --host 0.0.0.0` with
+  the live APNs env, and Metro on 8081. Both are disposable; restart
+  commands are in the Phase 199 and 200 ledger entries.
