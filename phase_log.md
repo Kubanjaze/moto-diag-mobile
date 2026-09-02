@@ -265,7 +265,8 @@ Next: launch on physical iPhone via Xcode (Developer Mode + trust +
 - **Smoke (2026-09-02):** minted over the tailnet URL the phone uses,
   fetched with **no credentials** → 200 HTML; the deliberately seeded
   mechanic-only note appeared **0 times**; revoke → 410; unknown → 404.
-  In-app tap of the new button is the user's confirmation.
+  **In-app tap confirmed by the user on device (2026-09-02): both the
+  new Share link action and the existing Share PDF action work.**
 - **Suite:** 70 suites / 874 tests green (+10); tsc clean; eslint 0
   errors. Backend regression 4650 passed, 0 failed.
 - **Project docs:** `implementation.md` 0.2.1 → 0.2.2 (200 Phase History
