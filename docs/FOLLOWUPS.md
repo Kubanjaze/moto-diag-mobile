@@ -443,6 +443,31 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
 - **Decision:** filed, not fixed here — the authority doc is the
   user's call and the fix touches the frozen backend aggregate surface.
 
+### F55 (NEW) — `diagnostic_sessions` has no `customer_id`
+
+- **Surfaced:** Phase 200 Step 0 audit (2026-09-02), and deliberately
+  NOT fixed in passing. `work_orders`, `invoices` and `appointments` all
+  carry `customer_id` NOT NULL, but `diagnostic_sessions` only ever got
+  `user_id` (the Phase 178 owner retrofit). "Which customer owns this
+  session" is answerable today only indirectly, via
+  `diagnostic_sessions.vehicle_id → vehicles.customer_id`, itself
+  retrofitted with `DEFAULT 1` pointing at the seeded "unassigned"
+  customer.
+- **Why it did not block Phase 200:** the share binds to a SESSION and
+  the token is the capability, so no customer identity is on the
+  critical path. The cost is cosmetic but real — the customer-facing
+  page cannot say "prepared for <customer>", which is exactly the line a
+  bike owner expects on a document about their own bike.
+- **Scope when picked up:** a migration adding a nullable
+  `customer_id` to `diagnostic_sessions` with a backfill from
+  `vehicles.customer_id` (skipping the id-1 sentinel rather than
+  asserting it), a resolver in the reporting builder, and a "Prepared
+  for" line in the HTML renderer's header. Watch the `DEFAULT 1`
+  sentinel: backfilling it blindly would claim every orphan session
+  belongs to "Unassigned".
+- **Pairing:** whichever phase next touches session ownership or the
+  customer share page.
+
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
 - **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:

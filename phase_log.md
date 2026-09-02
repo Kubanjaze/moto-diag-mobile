@@ -238,3 +238,37 @@ Next: launch on physical iPhone via Xcode (Developer Mode + trust +
   → `completed/` (backend repo).
 - **Track I cadence:** fourth consecutive same-day plan → build → smoke
   (196B, 197, 198, 199).
+
+---
+
+### 2026-09-02 — Phase 200 COMPLETE: customer-facing share view shipped + smoked
+
+- **Project-level additions:** first customer-facing surface in the
+  product — `src/hooks/useReportShareLink.ts` mints a server-side
+  capability URL and shares the LINK, deliberately a separate path from
+  `useReportShare` (which shares a local PDF file) since their failure
+  modes have nothing in common; "Share link" button beside "Share PDF"
+  in `ReportViewerScreen`. Backend gained a `report_shares` registry, an
+  `HtmlReportRenderer`, and the app's **first unauthenticated route**.
+- **Step 0 shaped the phase:** the `customer` report preset
+  (`_CUSTOMER_HIDDEN_HEADINGS`) already existed, so Phase 200 added
+  reach rather than report content, and consumed the preset instead of
+  declaring a parallel notion of customer-safe. Two latent intent
+  signals were picked up: the `share_report` RBAC permission seeded
+  since migration 012 with no consumer, and 192B's deterministic-PDF
+  flag added "for share-flow correctness".
+- **Security posture:** the token IS the authorization, so the model is
+  entropy + hard expiry + revocation, plus a generic 404 and anonymous
+  rate limiting left ON. Two contract tests pin it: OpenAPI must mark
+  the route public, and the route must stay OFF the rate-limit exempt
+  list. Page ships no-store, noindex, and no-referrer.
+- **Smoke (2026-09-02):** minted over the tailnet URL the phone uses,
+  fetched with **no credentials** → 200 HTML; the deliberately seeded
+  mechanic-only note appeared **0 times**; revoke → 410; unknown → 404.
+  In-app tap of the new button is the user's confirmation.
+- **Suite:** 70 suites / 874 tests green (+10); tsc clean; eslint 0
+  errors. Backend regression 4650 passed, 0 failed.
+- **Project docs:** `implementation.md` 0.2.1 → 0.2.2 (200 Phase History
+  row); ROADMAP 200 ✅; **F55** filed. Ledger docs → `completed/`.
+- **Track I cadence:** fifth consecutive same-day plan → build → smoke
+  (196B, 197, 198, 199, 200).
