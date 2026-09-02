@@ -72,6 +72,13 @@ function App() {
     // every connectivity regain. Single shared integration point
     // (regression-guarded in App.coldStart.smoke.test.tsx).
     const offline = startOfflineBoot();
+    // ═══ SPIKE (Phase 199 Spike Gate) — DELETE WITH pushSpike.SPIKE.ts ═══
+    if (__DEV__) {
+      void import('./src/services/pushSpike.SPIKE').then((m) =>
+        m.runPushSpike(),
+      );
+    }
+    // ═══ END SPIKE ═══
     return () => offline.stop();
   }, []);
 
