@@ -383,6 +383,8 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
 - **Pairing:** whichever phase next touches WO detail or the session
   detail screens; also a natural pair with F52.
 
+- **Decision (2026-09-02, user):** defer — fold into whichever phase next touches the work-order screens. Phase 200 is customer-facing (report viewer), so it does NOT pick this up.
+
 ### F52 (NEW) — Foreground presentation of pushes (+ backend success log)
 
 - **Surfaced:** Phase 199 close (2026-09-02). Plan v1.0 listed "renders
@@ -403,6 +405,8 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
   `push/events._send_to_user` (today only failures warn — the 199 smoke
   had to prove success by absence of warnings + a direct sender call).
 - **Pairing:** F51 (same delegate surface).
+
+- **Decision (2026-09-02, user):** defer — same disposition as F51; both share the notification-center delegate surface, so they land together in the next work-order-screen phase.
 
 ### F53 (NEW) — Customer-facing `push` channel on the Phase 170 notification queue
 
