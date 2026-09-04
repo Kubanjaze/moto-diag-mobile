@@ -447,3 +447,40 @@ connect/handshake — needs a Bluetooth 4 adapter; a purchase, not a bug).
   docstring predicted this exact moment), **F61** (no seat model: every
   mechanic needs their own paid shop subscription), **F62** (offline
   clock-in needs a client-clock trust model) filed.
+
+---
+
+### 2026-09-04 — Phase 203 COMPLETE: dark mode + shop-friendly UI
+
+- **The app's first design system.** `src/theme/` now holds 25 semantic
+  tokens × light/dark, a Context provider in the `ApiKeyProvider` shape,
+  and `createThemedStyles` — the primitive that made a 35-file sweep
+  mechanical instead of bespoke.
+- **Step 0's headline finding:** the app was **already dark-capable at
+  the native layer** on both platforms, so a phone set to dark had been
+  wrapping light-hardcoded content all along. 203 fixed a latent
+  inconsistency rather than adding a capability.
+- **Diagnostic colour is data, not decoration.** Severity, extraction
+  state and symptom source encode meaning a mechanic reads by colour.
+  Their dark values are chosen against the dark surface and tests pin
+  that all four levels stay mutually distinct in both schemes — an
+  inverted palette would have collapsed them into indistinguishable
+  browns and nothing else in the suite would have noticed.
+- **Tri-state, not a toggle:** dark mode is actively worse in direct
+  sunlight, so a mechanic outdoors can force light while their phone
+  sits on dark. It lives in the app's first Settings screen, which
+  `App.tsx` had been referring to since Phase 193.
+- **Readability, bounded as planned:** type floor raised across 209
+  declarations, 13 touch targets lifted to the 48dp the roadmap already
+  claimed as a principle, and `Button` now labels itself from its title
+  — the whole codebase had exactly one `accessibilityLabel` before.
+- **Smoke PASSED, verified by screenshot** in both schemes on the
+  simulator, with the themed build also running on the physical device.
+  The first device leg to actually run since Phase 198; two things fixed
+  it, a second VPN being turned off and treating the simulator as a
+  first-class surface for a pure-UI change.
+- **Suite:** 78 suites / 982 tests green (+51); tsc clean; eslint 0
+  errors repo-wide. Zero backend changes, as the audit predicted.
+- **Declined again:** the icon library `RootNavigator` defers "until a
+  design pass earns it". This was the design pass; the answer is still
+  no, and now it is on the record as a decision.
