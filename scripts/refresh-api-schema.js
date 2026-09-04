@@ -14,6 +14,12 @@
 
 'use strict';
 
+/* eslint-env node */
+// This is a Node build script, not app code: the repo's React Native
+// eslint config has no Node globals, so `Buffer` read as undefined.
+// `lint-staged` only lints STAGED files, which is why a repo-wide
+// `eslint .` has been failing since Phase 187 while every commit passed.
+
 const fs = require('node:fs');
 const path = require('node:path');
 
