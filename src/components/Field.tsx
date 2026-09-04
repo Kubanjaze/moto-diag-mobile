@@ -8,13 +8,8 @@
 // so callers can pass keyboardType/autoCapitalize/etc. directly.
 
 import React, {forwardRef, useCallback} from 'react';
-import {
-  StyleSheet,
-  Text,
-  TextInput,
-  type TextInputProps,
-  View,
-} from 'react-native';
+import {createThemedStyles} from '../theme/createThemedStyles';
+import {Text, TextInput, type TextInputProps, View, } from 'react-native';
 
 interface Props extends Omit<TextInputProps, 'style'> {
   label: string;
@@ -31,6 +26,7 @@ export const Field = forwardRef<TextInput, Props>(function Field(
   {label, error, required, ...inputProps},
   ref,
 ) {
+  const styles = useStyles();
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>
@@ -97,21 +93,21 @@ export const parseOptionalFloat = (value: string): number | undefined => {
 /** Noop placeholder for places that want a stable identity callback. */
 export const useNoopCallback = () => useCallback(() => {}, []);
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((t) => ({
   wrap: {marginBottom: 12},
-  label: {fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 6},
-  requiredMark: {color: '#b00020'},
+  label: {fontSize: 13, fontWeight: '600', color: t.textSecondary, marginBottom: 6},
+  requiredMark: {color: t.danger},
   input: {
-    borderColor: '#ccc',
+    borderColor: t.border,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#111',
+    color: t.textPrimary,
     minHeight: 48,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
   },
-  inputError: {borderColor: '#b00020'},
-  errorLine: {fontSize: 12, color: '#b00020', marginTop: 4},
-});
+  inputError: {borderColor: t.danger},
+  errorLine: {fontSize: 12, color: t.danger, marginTop: 4},
+}));

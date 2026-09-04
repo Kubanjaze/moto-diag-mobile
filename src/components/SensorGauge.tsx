@@ -8,7 +8,8 @@
 //                 expose the PID)
 
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {Text, View} from 'react-native';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 export interface SensorGaugeProps {
   name: string;
@@ -38,6 +39,7 @@ export function SensorGauge({
   unsupported,
   testID,
 }: SensorGaugeProps) {
+  const styles = useStyles();
   return (
     <View style={styles.tile} testID={testID}>
       {unsupported ? (
@@ -58,10 +60,10 @@ export function SensorGauge({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((t) => ({
   tile: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 12,
     paddingVertical: 18,
     paddingHorizontal: 12,
@@ -71,16 +73,16 @@ const styles = StyleSheet.create({
     minHeight: 110,
   },
   valueRow: {flexDirection: 'row', alignItems: 'baseline', gap: 4},
-  value: {fontSize: 34, fontWeight: '700', color: '#111'},
-  unit: {fontSize: 14, fontWeight: '600', color: '#666'},
-  staleValue: {color: '#aaa'},
-  na: {fontSize: 26, fontWeight: '700', color: '#bbb'},
-  name: {fontSize: 12, color: '#555', marginTop: 6, textAlign: 'center'},
+  value: {fontSize: 34, fontWeight: '700', color: t.textPrimary},
+  unit: {fontSize: 14, fontWeight: '600', color: t.textMuted},
+  staleValue: {color: t.textDisabled},
+  na: {fontSize: 26, fontWeight: '700', color: t.textDisabled},
+  name: {fontSize: 12, color: t.textSecondary, marginTop: 6, textAlign: 'center'},
   staleTag: {
     fontSize: 10,
-    color: '#b00020',
+    color: t.danger,
     fontWeight: '700',
     textTransform: 'uppercase',
     marginTop: 2,
   },
-});
+}));

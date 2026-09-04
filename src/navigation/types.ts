@@ -49,6 +49,11 @@ export type VideoPlaybackParams = {videoId: string; sessionId: number};
 
 export type HomeStackParamList = {
   Home: undefined;
+  /** Phase 203 — app-level settings (appearance today). Lives in
+   *  HomeStack rather than ShopStack because it is app-level and
+   *  ShopStack sits behind the shop picker: a mechanic with no shop
+   *  membership must still be able to reach their display settings. */
+  Settings: undefined;
   DTCSearch: undefined;
   DTCDetail: DTCDetailParams;
   /** Phase 196 — OBD-II adapter connection screen. Scan for nearby

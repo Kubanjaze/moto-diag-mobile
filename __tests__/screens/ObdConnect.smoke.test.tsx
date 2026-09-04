@@ -43,6 +43,7 @@ import {BleObdProvider} from '../../src/obd/ObdConnection';
 import {ClassicBtObdProvider} from '../../src/obd/ClassicBtObdProvider';
 import {getActiveObdConnection} from '../../src/obd/activeObdConnection';
 import {FakeObdProvider} from '../obd/FakeObdProvider';
+import {withTheme} from '../withTheme';
 
 // ---------------------------------------------------------------
 // Nav prop stub — the screen only calls navigation.goBack().
@@ -162,7 +163,7 @@ function renderScreenAt(
   const {props} = makeNavProps();
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   ReactTestRenderer.act(() => {
-    renderer = ReactTestRenderer.create(<ObdConnectScreen {...props} />);
+    renderer = ReactTestRenderer.create(withTheme(<ObdConnectScreen {...props} />));
   });
   return {renderer, result};
 }
@@ -295,7 +296,7 @@ describe('ObdConnectScreen — scan → list → connect happy path (BLE mocked)
     const {props} = makeNavProps();
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
-      renderer = ReactTestRenderer.create(<ObdConnectScreen {...props} />);
+      renderer = ReactTestRenderer.create(withTheme(<ObdConnectScreen {...props} />));
     });
 
     // idle → tap Scan.
@@ -396,7 +397,7 @@ describe('ObdConnectScreen — 196B transport-picker wiring guard', () => {
     const {props} = makeNavProps();
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
-      renderer = ReactTestRenderer.create(<ObdConnectScreen {...props} />);
+      renderer = ReactTestRenderer.create(withTheme(<ObdConnectScreen {...props} />));
     });
     // Holder is published while connected (LiveData's data source):
     expect(getActiveObdConnection()).not.toBeNull();

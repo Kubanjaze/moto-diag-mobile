@@ -37,6 +37,7 @@ import {
 } from '../../src/hooks/useLiveSensorData';
 import type {ActiveObdConnection} from '../../src/obd/activeObdConnection';
 import type {SensorReading} from '../../src/obd/pids';
+import {withTheme} from '../withTheme';
 
 const mockedHook = useLiveSensorData as jest.MockedFunction<
   typeof useLiveSensorData
@@ -94,7 +95,7 @@ function renderAt(result: UseLiveSensorDataResult) {
   const {props} = makeNavProps();
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   ReactTestRenderer.act(() => {
-    renderer = ReactTestRenderer.create(<LiveDataScreen {...props} />);
+    renderer = ReactTestRenderer.create(withTheme(<LiveDataScreen {...props} />));
   });
   return renderer;
 }

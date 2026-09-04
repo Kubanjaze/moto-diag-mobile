@@ -6,10 +6,11 @@
 // exists — noted as acceptable MVP plumbing in the plan docs).
 
 import React, {useEffect, useState} from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {Text, View} from 'react-native';
 
 import {getDb} from '../db/database';
 import {OpQueueStore} from '../services/opQueue';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 export const PENDING_POLL_MS = 3000;
 
@@ -41,6 +42,7 @@ export function usePendingOps(pollMs: number = PENDING_POLL_MS): number {
 }
 
 export function PendingOpsBadge() {
+  const styles = useStyles();
   const count = usePendingOps();
   if (count === 0) return null;
   return (
@@ -52,13 +54,13 @@ export function PendingOpsBadge() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((t) => ({
   badge: {
-    backgroundColor: '#fff4e0',
+    backgroundColor: t.severity.high.bg,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginBottom: 8,
   },
-  text: {fontSize: 12, color: '#8a5b00', fontWeight: '600'},
-});
+  text: {fontSize: 12, color: t.warning, fontWeight: '600'},
+}));

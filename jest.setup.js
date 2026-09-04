@@ -44,3 +44,36 @@ jest.mock('@react-native-community/push-notification-ios', () => ({
     })),
   },
 }));
+
+// Phase 203 — AsyncStorage global mock.
+//
+// It was mocked per-file until now (activeShopStorage, pushRegistration).
+// ThemeProvider pulls it into the import graph of every screen, so every
+// smoke test would otherwise fail on the package's untranspiled ESM.
+// Same reasoning as the 198 op-sqlite / netinfo mocks above: mocking
+// globally beats per-file churn once a dependency becomes ambient.
+//
+// Backed by a real in-memory Map rather than bare jest.fn()s, so the
+// theme provider's hydrate-then-persist round trip behaves like storage
+// in tests that exercise it.
+jest.mock('@react-native-async-storage/async-storage', () => {
+  const store = new Map();
+  return {
+    __esModule: true,
+    default: {
+      getItem: jest.fn(async (key) =>
+        store.has(key) ? store.get(key) : null,
+      ),
+      setItem: jest.fn(async (key, value) => {
+        store.set(key, String(value));
+      }),
+      removeItem: jest.fn(async (key) => {
+        store.delete(key);
+      }),
+      clear: jest.fn(async () => {
+        store.clear();
+      }),
+      __store: store,
+    },
+  };
+});

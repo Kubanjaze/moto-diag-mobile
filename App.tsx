@@ -4,6 +4,9 @@ import {NavigationContainer} from '@react-navigation/native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 
 import {ApiKeyProvider} from './src/contexts/ApiKeyProvider';
+import {ThemeProvider} from './src/theme/ThemeProvider';
+import {toNavigationTheme} from './src/theme/navigationTheme';
+import {useTheme} from './src/theme/useTheme';
 import {RootNavigator} from './src/navigation/RootNavigator';
 import {clearActiveShopId} from './src/services/activeShopStorage';
 import {startOfflineBoot} from './src/services/offlineBoot';
@@ -88,13 +91,35 @@ function App() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle="dark-content" />
-      <ApiKeyProvider>
-        <NavigationContainer>
-          <RootNavigator />
-        </NavigationContainer>
-      </ApiKeyProvider>
+      {/* Phase 203 — ThemeProvider is OUTSIDE the chrome so StatusBar
+          and NavigationContainer can both read the resolved scheme.
+          Everything visual lives inside Themed. */}
+      <ThemeProvider>
+        <ApiKeyProvider>
+          <Themed />
+        </ApiKeyProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
+  );
+}
+
+/** The themed chrome. Split out because it must sit INSIDE
+ *  ThemeProvider to call useTheme, and App itself is the provider's
+ *  parent. */
+function Themed() {
+  const {theme, scheme} = useTheme();
+  return (
+    <>
+      {/* Light content (white glyphs) on dark, dark on light — the
+          inverse of the surface, not of the preference. */}
+      <StatusBar
+        barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'}
+        backgroundColor={theme.background}
+      />
+      <NavigationContainer theme={toNavigationTheme(theme)}>
+        <RootNavigator />
+      </NavigationContainer>
+    </>
   );
 }
 

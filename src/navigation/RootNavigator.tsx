@@ -35,10 +35,12 @@ import {HomeStack} from './HomeStack';
 import {SessionsStack} from './SessionsStack';
 import {ShopStack} from './ShopStack';
 import type {RootTabParamList} from './types';
+import {useTheme} from '../theme/useTheme';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
 export function RootNavigator() {
+  const {theme} = useTheme();
   // Tier-reactive visibility for ShopTab. useTier handles AppState
   // 'active' refetches internally so the user's external Stripe-
   // portal upgrade lands here without explicit wiring.
@@ -50,8 +52,12 @@ export function RootNavigator() {
       initialRouteName="HomeTab"
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#007aff',
-        tabBarInactiveTintColor: '#8e8e93',
+        tabBarActiveTintColor: theme.accent,
+        tabBarInactiveTintColor: theme.tabInactive,
+        tabBarStyle: {
+          backgroundColor: theme.surface,
+          borderTopColor: theme.border,
+        },
         // Phase 191 fix-cycle Bug 3 — suppress
         // @react-navigation/elements' default MissingIcon (a `⏷`
         // Unicode glyph rendered when no tabBarIcon is provided).

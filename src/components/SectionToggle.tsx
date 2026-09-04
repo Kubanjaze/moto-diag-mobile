@@ -13,6 +13,7 @@
 
 import React, {memo} from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 import {
   PRESET_LABELS,
@@ -28,6 +29,7 @@ interface Props {
 }
 
 function SectionToggleImpl({value, onChange, testID}: Props) {
+  const styles = useStyles();
   return (
     <View style={styles.container} testID={testID}>
       <Text style={styles.label}>View as</Text>
@@ -67,18 +69,18 @@ function SectionToggleImpl({value, onChange, testID}: Props) {
 
 export const SectionToggle = memo(SectionToggleImpl);
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((t) => ({
   container: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ddd',
+    borderBottomColor: t.border,
   },
   label: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#888',
+    color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 6,
@@ -96,17 +98,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipActive: {
-    backgroundColor: '#1976d2',
-    borderColor: '#1976d2',
+    backgroundColor: t.accent,
+    borderColor: t.accent,
   },
   chipIdle: {
     backgroundColor: 'transparent',
-    borderColor: '#bbb',
+    borderColor: t.textDisabled,
   },
   chipText: {
     fontSize: 14,
     fontWeight: '600',
   },
-  chipTextActive: {color: '#fff'},
-  chipTextIdle: {color: '#333'},
-});
+  chipTextActive: {color: t.surface},
+  chipTextIdle: {color: t.textSecondary},
+}));

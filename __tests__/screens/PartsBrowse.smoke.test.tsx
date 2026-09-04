@@ -44,19 +44,20 @@ import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 
 import {PartsBrowseScreen} from '../../src/screens/PartsBrowseScreen';
+import {withTheme} from '../withTheme';
 
 function render(params: Record<string, unknown> = {}) {
   const navigation = {goBack: jest.fn(), navigate: jest.fn()};
   let tree!: ReactTestRenderer.ReactTestRenderer;
   ReactTestRenderer.act(() => {
     tree = ReactTestRenderer.create(
-      React.createElement(PartsBrowseScreen, {
+      withTheme(React.createElement(PartsBrowseScreen, {
         navigation,
         route: {
           key: 'k', name: 'PartsBrowse',
           params: {shopId: 3, woId: 5, make: 'honda', model: 'CBR600RR', ...params},
         },
-      } as never),
+      } as never)),
     );
   });
   return {tree, navigation};

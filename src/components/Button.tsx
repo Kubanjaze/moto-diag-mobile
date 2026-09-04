@@ -11,13 +11,8 @@
 // - danger: red border + red text — delete / clear / destructive.
 
 import React, {memo} from 'react';
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  type TouchableOpacityProps,
-  View,
-} from 'react-native';
+import {createThemedStyles} from '../theme/createThemedStyles';
+import {Text, TouchableOpacity, type TouchableOpacityProps, View, } from 'react-native';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger';
 
@@ -39,6 +34,7 @@ function ButtonImpl({
   style,
   ...rest
 }: Props) {
+  const styles = useStyles();
   return (
     <TouchableOpacity
       accessibilityRole="button"
@@ -48,13 +44,13 @@ function ButtonImpl({
         styles.base,
         compact ? styles.compact : styles.full,
         block ? styles.block : null,
-        variantBackgroundStyle(variant),
+        variantBackgroundStyle(styles, variant),
         disabled ? styles.disabled : null,
         style,
       ]}
       {...rest}>
       <View style={styles.labelRow}>
-        <Text style={[styles.label, variantLabelStyle(variant)]}>{title}</Text>
+        <Text style={[styles.label, variantLabelStyle(styles, variant)]}>{title}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -62,7 +58,12 @@ function ButtonImpl({
 
 export const Button = memo(ButtonImpl);
 
-function variantBackgroundStyle(variant: ButtonVariant) {
+// Phase 203 — these take `styles` now: the sheet is per-theme, so a
+// module-scope helper cannot close over it any more.
+function variantBackgroundStyle(
+  styles: ReturnType<typeof useStyles>,
+  variant: ButtonVariant,
+) {
   switch (variant) {
     case 'primary':
       return styles.primaryBg;
@@ -73,7 +74,10 @@ function variantBackgroundStyle(variant: ButtonVariant) {
   }
 }
 
-function variantLabelStyle(variant: ButtonVariant) {
+function variantLabelStyle(
+  styles: ReturnType<typeof useStyles>,
+  variant: ButtonVariant,
+) {
   switch (variant) {
     case 'primary':
       return styles.primaryLabel;
@@ -84,7 +88,7 @@ function variantLabelStyle(variant: ButtonVariant) {
   }
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((t) => ({
   base: {
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -98,10 +102,10 @@ const styles = StyleSheet.create({
   labelRow: {flexDirection: 'row', alignItems: 'center'},
   label: {fontSize: 16, fontWeight: '600'},
   disabled: {opacity: 0.5},
-  primaryBg: {backgroundColor: '#007aff', borderColor: '#007aff'},
-  primaryLabel: {color: '#fff'},
-  secondaryBg: {backgroundColor: '#eee', borderColor: '#ddd'},
-  secondaryLabel: {color: '#333'},
-  dangerBg: {backgroundColor: '#fff', borderColor: '#b00020'},
-  dangerLabel: {color: '#b00020'},
-});
+  primaryBg: {backgroundColor: t.accent, borderColor: t.accent},
+  primaryLabel: {color: t.surface},
+  secondaryBg: {backgroundColor: t.divider, borderColor: t.border},
+  secondaryLabel: {color: t.textSecondary},
+  dangerBg: {backgroundColor: t.surface, borderColor: t.danger},
+  dangerLabel: {color: t.danger},
+}));

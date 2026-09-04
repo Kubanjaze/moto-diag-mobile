@@ -17,14 +17,8 @@
 // so the contract is testable without rendering.
 
 import React, {useState} from 'react';
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import {createThemedStyles} from '../theme/createThemedStyles';
+import {Modal, Pressable, Text, TouchableOpacity, View, } from 'react-native';
 
 // ---------------------------------------------------------------
 // Public types
@@ -166,6 +160,7 @@ export function getTriggerDisplay<T extends string>(args: {
 // ---------------------------------------------------------------
 
 export function SelectField<T extends string>(props: Props<T>) {
+  const styles = useStyles();
   const [open, setOpen] = useState<boolean>(false);
 
   // Pull union-safe slices for the helpers. Narrow inline (via
@@ -303,35 +298,35 @@ export function SelectField<T extends string>(props: Props<T>) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((t) => ({
   wrap: {marginBottom: 12},
-  label: {fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 6},
-  requiredMark: {color: '#b00020'},
+  label: {fontSize: 13, fontWeight: '600', color: t.textSecondary, marginBottom: 6},
+  requiredMark: {color: t.danger},
   trigger: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingVertical: 12,
-    borderColor: '#ccc',
+    borderColor: t.border,
     borderWidth: 1,
     borderRadius: 8,
     minHeight: 48,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
   },
-  triggerText: {fontSize: 16, color: '#111'},
-  triggerChevron: {fontSize: 14, color: '#888'},
+  triggerText: {fontSize: 16, color: t.textPrimary},
+  triggerChevron: {fontSize: 14, color: t.textMuted},
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: t.scrim,
     justifyContent: 'center',
     padding: 24,
   },
-  sheet: {backgroundColor: '#fff', borderRadius: 12, padding: 16},
+  sheet: {backgroundColor: t.surface, borderRadius: 12, padding: 16},
   sheetTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#888',
+    color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
@@ -345,8 +340,8 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: 8,
   },
-  optionSelected: {backgroundColor: '#e8f1ff'},
-  optionText: {fontSize: 16, color: '#111'},
-  optionTextSelected: {fontWeight: '700', color: '#007aff'},
-  checkmark: {fontSize: 18, color: '#007aff'},
-});
+  optionSelected: {backgroundColor: t.controlSecondaryBg},
+  optionText: {fontSize: 16, color: t.textPrimary},
+  optionTextSelected: {fontWeight: '700', color: t.accent},
+  checkmark: {fontSize: 18, color: t.accent},
+}));

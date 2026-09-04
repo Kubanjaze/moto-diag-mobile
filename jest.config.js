@@ -20,5 +20,7 @@ module.exports = {
     '/__tests__/obd/FakeObdProvider\\.ts$',
     // Phase 198: offline-layer test doubles — imported, not a suite.
     '/__tests__/offline/fakes\\.ts$',
+    // Phase 203: the ThemeProvider render helper — imported, not a suite.
+    '/__tests__/withTheme\\.tsx$',
   ],
 };

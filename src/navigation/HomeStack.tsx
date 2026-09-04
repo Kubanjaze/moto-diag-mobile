@@ -12,6 +12,7 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {OBD_SUPPORT} from '../config/features';
 import {DTCDetailScreen} from '../screens/DTCDetailScreen';
 import {DTCSearchScreen} from '../screens/DTCSearchScreen';
+import {SettingsScreen} from '../screens/SettingsScreen';
 import {HomeScreen} from '../screens/HomeScreen';
 import {ObdConnectScreen} from '../screens/ObdConnectScreen';
 import {LiveDataScreen} from '../screens/LiveDataScreen';
@@ -26,6 +27,11 @@ export function HomeStack() {
         name="Home"
         component={HomeScreen}
         options={{title: 'MotoDiag'}}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{title: 'Settings'}}
       />
       <Stack.Screen
         name="DTCSearch"

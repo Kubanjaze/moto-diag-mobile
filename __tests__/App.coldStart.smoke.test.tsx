@@ -75,6 +75,25 @@ jest.mock('../src/services/pushRegistration', () => ({
 jest.mock('@react-navigation/native', () => ({
   NavigationContainer: ({children}: {children: React.ReactNode}) =>
     children as React.ReactElement,
+  // Phase 203 — App now passes a theme to NavigationContainer, built
+  // from these two constants. A mock that omits them makes the bridge
+  // read `colors` off undefined.
+  DefaultTheme: {
+    dark: false,
+    colors: {
+      primary: '#000', background: '#fff', card: '#fff',
+      text: '#000', border: '#ccc', notification: '#f00',
+    },
+    fonts: {},
+  },
+  DarkTheme: {
+    dark: true,
+    colors: {
+      primary: '#fff', background: '#000', card: '#000',
+      text: '#fff', border: '#333', notification: '#f00',
+    },
+    fonts: {},
+  },
 }));
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaProvider: ({children}: {children: React.ReactNode}) =>

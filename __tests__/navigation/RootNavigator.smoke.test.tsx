@@ -102,6 +102,7 @@ jest.mock('@react-navigation/bottom-tabs', () => {
 });
 
 import {RootNavigator} from '../../src/navigation/RootNavigator';
+import {withTheme} from '../withTheme';
 
 /** Find all tab labels rendered in the tree. The bottom-tab nav
  *  uses Text nodes inside accessibility-role=button elements;
@@ -167,7 +168,7 @@ describe('Smoke gate Step 10 — tier-reactive ShopTab visibility', () => {
     mockTier = 'individual';
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
-      renderer = ReactTestRenderer.create(<RootNavigator />);
+      renderer = ReactTestRenderer.create(withTheme(<RootNavigator />));
     });
     const labels = _tabLabels(renderer);
     expect(labels).toContain('Home');
@@ -183,7 +184,7 @@ describe('Smoke gate Step 10 — tier-reactive ShopTab visibility', () => {
     mockTier = null;
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
-      renderer = ReactTestRenderer.create(<RootNavigator />);
+      renderer = ReactTestRenderer.create(withTheme(<RootNavigator />));
     });
     const labels = _tabLabels(renderer);
     expect(labels).not.toContain('Shop');
@@ -196,7 +197,7 @@ describe('Smoke gate Step 10 — tier-reactive ShopTab visibility', () => {
     mockTier = 'shop';
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
-      renderer = ReactTestRenderer.create(<RootNavigator />);
+      renderer = ReactTestRenderer.create(withTheme(<RootNavigator />));
     });
     const labels = _tabLabels(renderer);
     expect(labels).toContain('Shop');
@@ -209,7 +210,7 @@ describe('Smoke gate Step 10 — tier-reactive ShopTab visibility', () => {
     mockTier = 'company';
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
-      renderer = ReactTestRenderer.create(<RootNavigator />);
+      renderer = ReactTestRenderer.create(withTheme(<RootNavigator />));
     });
     const labels = _tabLabels(renderer);
     expect(labels).toContain('Shop');
@@ -236,7 +237,7 @@ describe('Smoke gate Step 10 — tier-reactive ShopTab visibility', () => {
     mockTier = 'individual';
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
-      renderer = ReactTestRenderer.create(<RootNavigator />);
+      renderer = ReactTestRenderer.create(withTheme(<RootNavigator />));
     });
     expect(_tabLabels(renderer)).not.toContain('Shop');
 
@@ -246,7 +247,7 @@ describe('Smoke gate Step 10 — tier-reactive ShopTab visibility', () => {
     // background.
     mockTier = 'shop';
     ReactTestRenderer.act(() => {
-      renderer.update(<RootNavigator />);
+      renderer.update(withTheme(<RootNavigator />));
     });
 
     expect(_tabLabels(renderer)).toContain('Shop');
@@ -264,13 +265,13 @@ describe('Smoke gate Step 10 — tier-reactive ShopTab visibility', () => {
     mockTier = 'shop';
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
-      renderer = ReactTestRenderer.create(<RootNavigator />);
+      renderer = ReactTestRenderer.create(withTheme(<RootNavigator />));
     });
     expect(_tabLabels(renderer)).toContain('Shop');
 
     mockTier = 'individual';
     ReactTestRenderer.act(() => {
-      renderer.update(<RootNavigator />);
+      renderer.update(withTheme(<RootNavigator />));
     });
 
     expect(_tabLabels(renderer)).not.toContain('Shop');
