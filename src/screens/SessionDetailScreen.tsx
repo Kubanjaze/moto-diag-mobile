@@ -47,6 +47,7 @@ import {
 import {MAX_VIDEOS_PER_SESSION, type SessionVideo} from '../types/video';
 import type {SessionsStackParamList} from '../navigation/types';
 import type {SessionResponse, SessionUpdateRequest} from '../types/api';
+import {createThemedStyles} from '../theme/createThemedStyles';
 import {
   deriveSeverityState,
   packSeverityForSubmit,
@@ -63,6 +64,7 @@ type Props = NativeStackScreenProps<SessionsStackParamList, 'SessionDetail'>;
 // ---------------------------------------------------------------
 
 export function SessionDetailScreen({navigation, route}: Props) {
+  const styles = useStyles();
   const {sessionId} = route.params;
   const {session, isLoading, error, refetch} = useSession(sessionId);
   const [lifecycleSubmitting, setLifecycleSubmitting] =
@@ -280,12 +282,12 @@ export function SessionDetailScreen({navigation, route}: Props) {
             <Text style={styles.cardTitle}>Lifecycle</Text>
             <DetailRow
               label="Created"
-              value={formatTimestamp(session.created_at)}
+              value={formatTimestamp(styles, session.created_at)}
             />
             {session.closed_at ? (
               <DetailRow
                 label="Closed"
-                value={formatTimestamp(session.closed_at)}
+                value={formatTimestamp(styles, session.closed_at)}
               />
             ) : null}
             <View style={styles.spacer} />
@@ -338,6 +340,7 @@ export function SessionDetailScreen({navigation, route}: Props) {
 // ---------------------------------------------------------------
 
 function VehicleCard({session}: {session: SessionResponse}) {
+  const styles = useStyles();
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>Vehicle</Text>
@@ -432,6 +435,7 @@ function VideosCard({
   onRecordPress: () => void;
   onVideoPress: (videoId: string) => void;
 }) {
+  const styles = useStyles();
   const {videos, atCap, capReason, isLoading, error, refresh} =
     useSessionVideos(sessionId);
   const isClosed = sessionStatus === 'closed';
@@ -547,6 +551,7 @@ function VideoRow({
   video: SessionVideo;
   onPress: () => void;
 }) {
+  const styles = useStyles();
   const [findingsExpanded, setFindingsExpanded] = useState<boolean>(false);
   const canExpand =
     video.analysisState === 'analyzed' && video.analysisFindings != null;
@@ -616,6 +621,7 @@ function AnalysisBadge({
   onToggle: () => void;
   testIDBase: string;
 }) {
+  const styles = useStyles();
   let label = '';
   let style = styles.analysisBadge;
   switch (state) {
@@ -670,6 +676,7 @@ function FindingsExpansion({
   findings: NonNullable<SessionVideo['analysisFindings']>;
   testIDBase: string;
 }) {
+  const styles = useStyles();
   const list = findings.findings ?? [];
   const followUp = findings.suggested_diagnostics ?? [];
   return (
@@ -691,7 +698,7 @@ function FindingsExpansion({
               <View style={styles.findingsItemHeader}>
                 {finding.severity ? (
                   <View
-                    style={severityBadgeStyleFor(finding.severity)}
+                    style={severityBadgeStyleFor(styles, finding.severity)}
                     testID={`${testIDBase}-findings-severity-${idx}`}>
                     <Text style={styles.findingsSeverityText}>
                       {finding.severity}
@@ -747,7 +754,8 @@ function FindingsExpansion({
 /** Map a finding severity to the badge style variant. The four-color
  *  palette mirrors the diagnosis severity badge convention used in
  *  DiagnosisCard (low / medium / high / critical). */
-function severityBadgeStyleFor(severity: string) {
+function severityBadgeStyleFor(
+  styles: ReturnType<typeof useStyles>,severity: string) {
   switch (severity) {
     case 'low':
       return styles.findingsSeverityLow;
@@ -788,6 +796,7 @@ function NotesCard({
   session: SessionResponse;
   onAppend: (text: string) => Promise<void>;
 }) {
+  const styles = useStyles();
   // Notes is a single concatenated string on the backend (not an
   // array). Display it as a paragraph; append goes through the same
   // POST /notes path.
@@ -836,6 +845,7 @@ function AppendListCard({
   onItemPress?: (item: string, idx: number) => void;
   testIDPrefix: string;
 }) {
+  const styles = useStyles();
   return (
     <View style={styles.card} testID={`${testIDPrefix}-card`}>
       <Text style={styles.cardTitle}>{title}</Text>
@@ -948,6 +958,7 @@ function DiagnosisCard({
   session: SessionResponse;
   onPatch: (patch: SessionUpdateRequest) => Promise<boolean>;
 }) {
+  const styles = useStyles();
   const [mode, setMode] = useState<'view' | 'edit'>('view');
 
   if (mode === 'edit') {
@@ -1007,6 +1018,7 @@ function DiagnosisEditPane({
   onDone: () => void;
   onPatch: (patch: SessionUpdateRequest) => Promise<boolean>;
 }) {
+  const styles = useStyles();
   const initialSeverity = deriveSeverityState(session.severity);
 
   const [diagnosis, setDiagnosis] = useState<string>(session.diagnosis ?? '');
@@ -1183,6 +1195,7 @@ function DiagnosisEditPane({
 // ---------------------------------------------------------------
 
 function StatusBadge({status}: {status: SessionResponse['status']}) {
+  const styles = useStyles();
   const variant =
     status === 'closed'
       ? styles.badgeClosed
@@ -1208,6 +1221,7 @@ function DetailRow({
   value: string;
   multiline?: boolean;
 }) {
+  const styles = useStyles();
   return (
     <View style={multiline ? styles.rowStack : styles.row}>
       <Text style={multiline ? styles.rowLabelStack : styles.rowLabel}>
@@ -1222,7 +1236,8 @@ function DetailRow({
   );
 }
 
-function formatTimestamp(iso: string | null | undefined): string {
+function formatTimestamp(
+  styles: ReturnType<typeof useStyles>,iso: string | null | undefined): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
@@ -1230,8 +1245,8 @@ function formatTimestamp(iso: string | null | undefined): string {
     .toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`;
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f5f5f7'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.background},
   centered: {justifyContent: 'center', alignItems: 'center'},
   kav: {flex: 1},
   scroll: {padding: 16, paddingBottom: 40},
@@ -1243,19 +1258,19 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 12,
   },
-  title: {fontSize: 24, fontWeight: '700', color: '#111'},
+  title: {fontSize: 24, fontWeight: '700', color: t.textPrimary},
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
   },
   cardTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#888',
+    color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 8,
@@ -1264,26 +1279,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 8,
-    borderBottomColor: '#eee',
+    borderBottomColor: t.divider,
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 12,
   },
   rowStack: {
     paddingVertical: 8,
-    borderBottomColor: '#eee',
+    borderBottomColor: t.divider,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  rowLabel: {fontSize: 14, color: '#555', flex: 1},
+  rowLabel: {fontSize: 14, color: t.textSecondary, flex: 1},
   rowLabelStack: {
     fontSize: 13,
-    color: '#888',
+    color: t.textMuted,
     marginBottom: 4,
     fontWeight: '600',
   },
-  rowValue: {fontSize: 14, color: '#111', flex: 1, textAlign: 'right'},
-  rowValueStack: {fontSize: 14, color: '#111', lineHeight: 20},
-  emptyListText: {fontSize: 13, color: '#888', fontStyle: 'italic'},
-  notesText: {fontSize: 14, color: '#222', lineHeight: 20},
+  rowValue: {fontSize: 14, color: t.textPrimary, flex: 1, textAlign: 'right'},
+  rowValueStack: {fontSize: 14, color: t.textPrimary, lineHeight: 20},
+  emptyListText: {fontSize: 13, color: t.textMuted, fontStyle: 'italic'},
+  notesText: {fontSize: 14, color: t.textPrimary, lineHeight: 20},
   listBody: {marginTop: 2},
   listItem: {flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 2},
   // Phase 190 commit 2 — tappable variant for fault-code rows
@@ -1295,42 +1310,42 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 4,
     minHeight: 44,
-    borderBottomColor: '#f3f3f3',
+    borderBottomColor: t.surfaceSunken,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  listItemChevron: {fontSize: 22, color: '#bbb', marginLeft: 8, fontWeight: '500'},
-  listBullet: {fontSize: 14, color: '#888', width: 14},
-  listItemText: {fontSize: 14, color: '#222', flex: 1, lineHeight: 20},
+  listItemChevron: {fontSize: 22, color: t.textDisabled, marginLeft: 8, fontWeight: '500'},
+  listBullet: {fontSize: 14, color: t.textMuted, width: 14},
+  listItemText: {fontSize: 14, color: t.textPrimary, flex: 1, lineHeight: 20},
   listItemTextMono: {
     fontSize: 14,
-    color: '#222',
+    color: t.textPrimary,
     flex: 1,
     lineHeight: 20,
     fontFamily: 'monospace',
   },
   appendDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#eee',
+    backgroundColor: t.divider,
     marginVertical: 12,
   },
   // Phase 191 commit 5 — VideosCard styles. Reuses
   // listItemTappable + listItemChevron from the fault-code-row
   // pattern (Phase 190 commit 2) for the row container.
-  videoIcon: {fontSize: 18, color: '#888', width: 24},
+  videoIcon: {fontSize: 18, color: t.textMuted, width: 24},
   videoRowMain: {flex: 1, gap: 4},
-  videoRowTitle: {fontSize: 14, color: '#222', fontWeight: '600'},
+  videoRowTitle: {fontSize: 14, color: t.textPrimary, fontWeight: '600'},
   videoRowMeta: {flexDirection: 'row', gap: 12, flexWrap: 'wrap'},
-  videoRowMetaItem: {fontSize: 12, color: '#666'},
-  videoRowPaused: {fontSize: 12, color: '#a85e00', fontWeight: '600'},
+  videoRowMetaItem: {fontSize: 12, color: t.textMuted},
+  videoRowPaused: {fontSize: 12, color: t.warning, fontWeight: '600'},
   videoCapPane: {
-    backgroundColor: '#fff8e6',
+    backgroundColor: t.severity.medium.bg,
     borderRadius: 8,
     padding: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#f0e0a0',
+    borderColor: t.severity.high.border,
   },
-  videoCapText: {fontSize: 14, color: '#7a5500', fontWeight: '600'},
-  videoCapHint: {fontSize: 13, color: '#7a5500', marginTop: 4},
+  videoCapText: {fontSize: 14, color: t.severity.high.fg, fontWeight: '600'},
+  videoCapHint: {fontSize: 13, color: t.severity.high.fg, marginTop: 4},
   // Phase 191B commit 6 — analysis badge variants. Five states; null
   // analysisState renders no badge. Sized to fit on the same row
   // as the metadata under the title. Tap target met by paddingV/H.
@@ -1341,7 +1356,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginTop: 4,
     minHeight: 28,
-    backgroundColor: '#eef',
+    backgroundColor: t.surfaceSunken,
   },
   analysisBadgePending: {
     alignSelf: 'flex-start',
@@ -1350,7 +1365,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginTop: 4,
     minHeight: 28,
-    backgroundColor: '#eee',
+    backgroundColor: t.divider,
   },
   analysisBadgeAnalyzing: {
     alignSelf: 'flex-start',
@@ -1359,7 +1374,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginTop: 4,
     minHeight: 28,
-    backgroundColor: '#e0eaff',
+    backgroundColor: t.controlSecondaryBg,
   },
   analysisBadgeAnalyzed: {
     alignSelf: 'flex-start',
@@ -1368,7 +1383,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginTop: 4,
     minHeight: 28,
-    backgroundColor: '#e3f5e0',
+    backgroundColor: t.severity.low.bg,
   },
   analysisBadgeFailed: {
     alignSelf: 'flex-start',
@@ -1377,7 +1392,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginTop: 4,
     minHeight: 28,
-    backgroundColor: '#fff0d6',
+    backgroundColor: t.severity.high.bg,
   },
   analysisBadgeUnsupported: {
     alignSelf: 'flex-start',
@@ -1386,29 +1401,29 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginTop: 4,
     minHeight: 28,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: t.surfaceSunken,
   },
-  analysisBadgeText: {fontSize: 12, color: '#333', fontWeight: '600'},
+  analysisBadgeText: {fontSize: 12, color: t.textSecondary, fontWeight: '600'},
   // Findings expansion — appears below the row when analyzed-badge
   // is tapped. White card-within-card so it visually nests under
   // the row's chevron.
   findingsExpansion: {
-    backgroundColor: '#fafafa',
+    backgroundColor: t.surface,
     borderRadius: 8,
     padding: 12,
     marginTop: 4,
     marginBottom: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e6e6e6',
+    borderColor: t.border,
   },
-  findingsAssessment: {fontSize: 14, color: '#222', lineHeight: 20},
+  findingsAssessment: {fontSize: 14, color: t.textPrimary, lineHeight: 20},
   findingsList: {marginTop: 10, gap: 10},
   findingsItem: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 6,
     padding: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#eee',
+    borderColor: t.divider,
   },
   findingsItemHeader: {
     flexDirection: 'row',
@@ -1418,17 +1433,17 @@ const styles = StyleSheet.create({
   },
   findingsType: {
     fontSize: 13,
-    color: '#222',
+    color: t.textPrimary,
     fontWeight: '700',
     fontFamily: 'monospace',
   },
-  findingsDescription: {fontSize: 13, color: '#333', lineHeight: 18},
-  findingsLocation: {fontSize: 12, color: '#666', marginTop: 4},
-  findingsEmpty: {fontSize: 13, color: '#777', fontStyle: 'italic', marginTop: 8},
+  findingsDescription: {fontSize: 13, color: t.textSecondary, lineHeight: 18},
+  findingsLocation: {fontSize: 12, color: t.textMuted, marginTop: 4},
+  findingsEmpty: {fontSize: 13, color: t.textMuted, fontStyle: 'italic', marginTop: 8},
   findingsFollowUp: {marginTop: 12},
   findingsFollowUpTitle: {
     fontSize: 12,
-    color: '#888',
+    color: t.textMuted,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -1436,57 +1451,57 @@ const styles = StyleSheet.create({
   },
   findingsFollowUpItem: {
     fontSize: 13,
-    color: '#333',
+    color: t.textSecondary,
     lineHeight: 18,
     paddingVertical: 2,
   },
   findingsCost: {
     fontSize: 12,
-    color: '#666',
+    color: t.textMuted,
     marginTop: 10,
     fontFamily: 'monospace',
   },
   findingsSeverityText: {
     fontSize: 11,
-    color: '#fff',
+    color: t.surface,
     fontWeight: '700',
     textTransform: 'uppercase',
   },
   findingsSeverityLow: {
-    backgroundColor: '#5caa5c',
+    backgroundColor: t.success,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
   findingsSeverityMedium: {
-    backgroundColor: '#d39e00',
+    backgroundColor: t.warning,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
   findingsSeverityHigh: {
-    backgroundColor: '#d05a2e',
+    backgroundColor: t.warning,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
   findingsSeverityCritical: {
-    backgroundColor: '#b00020',
+    backgroundColor: t.danger,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
   badge: {paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12},
-  badgeOpen: {backgroundColor: '#e0eaff'},
-  badgeInProgress: {backgroundColor: '#fff4d6'},
-  badgeClosed: {backgroundColor: '#e6e6ea'},
-  badgeText: {fontSize: 12, fontWeight: '600', color: '#333'},
+  badgeOpen: {backgroundColor: t.controlSecondaryBg},
+  badgeInProgress: {backgroundColor: t.severity.medium.bg},
+  badgeClosed: {backgroundColor: t.divider},
+  badgeText: {fontSize: 12, fontWeight: '600', color: t.textSecondary},
   spacer: {height: 12},
   bottomSpacer: {height: 24},
   buttonGap: {height: 10},
   actions: {marginTop: 12, flexDirection: 'column', alignItems: 'stretch'},
   errorPane: {flex: 1, padding: 24, justifyContent: 'center'},
-  errorTitle: {fontSize: 20, fontWeight: '700', color: '#b00020'},
-  errorBody: {fontSize: 14, color: '#555', marginTop: 8, lineHeight: 20},
+  errorTitle: {fontSize: 20, fontWeight: '700', color: t.danger},
+  errorBody: {fontSize: 14, color: t.textSecondary, marginTop: 8, lineHeight: 20},
   errorSpacer: {height: 16},
-});
+}));

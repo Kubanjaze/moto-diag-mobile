@@ -11,13 +11,7 @@
 // friendly not-connected pane instead of polling nothing.
 
 import React, {useMemo} from 'react';
-import {
-  FlatList,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import {FlatList, Text, useWindowDimensions, View, } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
@@ -30,6 +24,7 @@ import {
 } from '../hooks/useLiveSensorData';
 import {TRANSPORT_LABELS} from '../obd/providerFactory';
 import type {HomeStackParamList} from '../navigation/types';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'LiveData'>;
 
@@ -46,6 +41,7 @@ export function chunkIntoPages<T>(items: ReadonlyArray<T>, size: number): T[][] 
 }
 
 export function LiveDataScreen({navigation}: Props) {
+  const styles = useStyles();
   const {connection, readings, unsupported, polling, linkError} =
     useLiveSensorData();
   const {width, height} = useWindowDimensions();
@@ -141,15 +137,15 @@ export function LiveDataScreen({navigation}: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f5f5f7'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.background},
   pane: {padding: 24, gap: 8},
   header: {paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8},
-  title: {fontSize: 22, fontWeight: '700', color: '#111'},
-  body: {fontSize: 14, color: '#555', lineHeight: 20},
-  errorBody: {fontSize: 14, color: '#7a1320', lineHeight: 20, marginTop: 4},
+  title: {fontSize: 22, fontWeight: '700', color: t.textPrimary},
+  body: {fontSize: 14, color: t.textSecondary, lineHeight: 20},
+  errorBody: {fontSize: 14, color: t.severity.critical.fg, lineHeight: 20, marginTop: 4},
   page: {paddingHorizontal: 12, paddingVertical: 8},
   grid: {flexDirection: 'row', flexWrap: 'wrap'},
   footer: {padding: 16},
   spacer: {height: 12},
-});
+}));

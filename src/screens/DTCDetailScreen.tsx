@@ -33,6 +33,7 @@ import type {
   SessionsStackParamList,
 } from '../navigation/types';
 import {renderSeverityForView} from '../types/sessionEnums';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 // Same-route-name in two stacks. Either signature works at the
 // type level because `code` and `sourceSessionId` are present in
@@ -44,6 +45,7 @@ type Props = NativeStackScreenProps<
 >;
 
 export function DTCDetailScreen({navigation, route}: Props) {
+  const styles = useStyles();
   const {code, sourceSessionId} = route.params;
   const {dtc, isLoading, error, refetch} = useDTC(code);
 
@@ -187,6 +189,7 @@ function SeverityBadge({
   severity: string | null;
   display: string;
 }) {
+  const styles = useStyles();
   // Closed-set severities get colored backgrounds; off-enum custom
   // values fall through to a neutral grey badge so the screen still
   // renders something sensible for legacy / new-enum data.
@@ -210,6 +213,7 @@ function SeverityBadge({
 }
 
 function DetailRow({label, value}: {label: string; value: string}) {
+  const styles = useStyles();
   return (
     <View style={styles.row}>
       <Text style={styles.rowLabel}>{label}</Text>
@@ -220,8 +224,8 @@ function DetailRow({label, value}: {label: string; value: string}) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f5f5f7'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.background},
   centered: {justifyContent: 'center', alignItems: 'center'},
   scroll: {padding: 16, paddingBottom: 40},
   header: {
@@ -235,60 +239,60 @@ const styles = StyleSheet.create({
   code: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#111',
+    color: t.textPrimary,
     fontFamily: 'monospace',
     letterSpacing: 1,
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
   },
   cardTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#888',
+    color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 8,
   },
-  bodyText: {fontSize: 15, color: '#222', lineHeight: 22},
+  bodyText: {fontSize: 15, color: t.textPrimary, lineHeight: 22},
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 8,
-    borderBottomColor: '#eee',
+    borderBottomColor: t.divider,
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 12,
   },
-  rowLabel: {fontSize: 14, color: '#555', flex: 1},
-  rowValue: {fontSize: 14, color: '#111', flex: 1, textAlign: 'right'},
-  emptyListText: {fontSize: 13, color: '#888', fontStyle: 'italic'},
+  rowLabel: {fontSize: 14, color: t.textSecondary, flex: 1},
+  rowValue: {fontSize: 14, color: t.textPrimary, flex: 1, textAlign: 'right'},
+  emptyListText: {fontSize: 13, color: t.textMuted, fontStyle: 'italic'},
   listBody: {marginTop: 2},
   listItem: {flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 4},
-  listBullet: {fontSize: 14, color: '#888', width: 14, marginTop: 1},
-  listItemText: {fontSize: 14, color: '#222', flex: 1, lineHeight: 20},
+  listBullet: {fontSize: 14, color: t.textMuted, width: 14, marginTop: 1},
+  listItemText: {fontSize: 14, color: t.textPrimary, flex: 1, lineHeight: 20},
   badge: {paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14},
-  badgeLow: {backgroundColor: '#e0eaff'},
-  badgeMedium: {backgroundColor: '#fff4d6'},
-  badgeHigh: {backgroundColor: '#ffe0d6'},
-  badgeCritical: {backgroundColor: '#ffd6d6'},
-  badgeNeutral: {backgroundColor: '#e6e6ea'},
-  badgeText: {fontSize: 13, fontWeight: '700', color: '#333'},
+  badgeLow: {backgroundColor: t.controlSecondaryBg},
+  badgeMedium: {backgroundColor: t.severity.medium.bg},
+  badgeHigh: {backgroundColor: t.severity.high.bg},
+  badgeCritical: {backgroundColor: t.severity.critical.bg},
+  badgeNeutral: {backgroundColor: t.divider},
+  badgeText: {fontSize: 13, fontWeight: '700', color: t.textSecondary},
   sourceFooter: {
     paddingTop: 12,
     paddingHorizontal: 4,
     alignItems: 'center',
   },
-  sourceText: {fontSize: 12, color: '#888', fontStyle: 'italic'},
+  sourceText: {fontSize: 12, color: t.textMuted, fontStyle: 'italic'},
   bottomSpacer: {height: 24},
   buttonGap: {height: 10},
   errorPane: {flex: 1, padding: 24, justifyContent: 'center'},
-  errorTitle: {fontSize: 20, fontWeight: '700', color: '#b00020'},
-  errorBody: {fontSize: 14, color: '#555', marginTop: 8, lineHeight: 20},
-  errorHint: {fontSize: 13, color: '#666', marginTop: 12, lineHeight: 18},
+  errorTitle: {fontSize: 20, fontWeight: '700', color: t.danger},
+  errorBody: {fontSize: 14, color: t.textSecondary, marginTop: 8, lineHeight: 20},
+  errorHint: {fontSize: 13, color: t.textMuted, marginTop: 12, lineHeight: 18},
   errorSpacer: {height: 16},
-});
+}));

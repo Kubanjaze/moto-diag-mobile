@@ -38,6 +38,7 @@ import {useTranscriptAudio} from '../hooks/useTranscriptAudio';
 import {useWorkOrderTranscripts} from '../hooks/useWorkOrderTranscripts';
 import type {ShopStackParamList} from '../navigation/types';
 import type {ExtractedSymptom} from '../types/workOrder';
+import {createThemedStyles} from '../theme/createThemedStyles';
 import {
   ExtractedSymptomEditModal,
   type ExtractedSymptomEditPayload,
@@ -46,6 +47,7 @@ import {
 type Props = NativeStackScreenProps<ShopStackParamList, 'TranscriptReview'>;
 
 export function TranscriptReviewScreen({navigation, route}: Props) {
+  const styles = useStyles();
   const {shopId, woId, transcriptId} = route.params;
 
   const {transcripts, confirmExtractedSymptom} =
@@ -291,8 +293,8 @@ function _formatDuration(durationMs: number): string {
 }
 
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f5f5f7'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.background},
   centered: {
     flex: 1,
     alignItems: 'center',
@@ -301,24 +303,24 @@ const styles = StyleSheet.create({
   },
   scroll: {padding: 16, gap: 14, paddingBottom: 40},
   headerCard: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
     gap: 8,
   },
   headerLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#888',
+    color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  headerMeta: {fontSize: 12, color: '#666'},
+  headerMeta: {fontSize: 12, color: t.textMuted},
   previewBody: {
     fontSize: 15,
-    color: '#111',
+    color: t.textPrimary,
     fontStyle: 'italic',
     lineHeight: 22,
     marginTop: 4,
@@ -327,63 +329,63 @@ const styles = StyleSheet.create({
   audioErrorBox: {
     marginTop: 8,
     padding: 10,
-    backgroundColor: '#fee',
+    backgroundColor: t.severity.critical.bg,
     borderRadius: 8,
     gap: 6,
   },
-  audioErrorTitle: {fontSize: 13, fontWeight: '700', color: '#a00'},
-  audioErrorBody: {fontSize: 13, color: '#700', lineHeight: 18},
+  audioErrorTitle: {fontSize: 13, fontWeight: '700', color: t.danger},
+  audioErrorBody: {fontSize: 13, color: t.danger, lineHeight: 18},
   sectionLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#666',
+    color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginTop: 4,
   },
   emptyCard: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
   },
-  emptyText: {fontSize: 14, color: '#666', fontStyle: 'italic'},
+  emptyText: {fontSize: 14, color: t.textMuted, fontStyle: 'italic'},
   chipList: {gap: 8},
   chip: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 10,
     padding: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
     gap: 4,
   },
   chipConfirmed: {
-    borderColor: '#5a8f5a',
+    borderColor: t.success,
     borderWidth: 1,
-    backgroundColor: '#f4faf4',
+    backgroundColor: t.severity.low.bg,
   },
-  chipText: {fontSize: 15, color: '#111', fontWeight: '500'},
-  chipMeta: {fontSize: 12, color: '#888'},
+  chipText: {fontSize: 15, color: t.textPrimary, fontWeight: '500'},
+  chipMeta: {fontSize: 12, color: t.textMuted},
   chipConfirmedBadge: {
     fontSize: 11,
-    color: '#1b5e20',
+    color: t.severity.low.fg,
     fontWeight: '700',
     marginTop: 2,
   },
   helperText: {
     fontSize: 12,
-    color: '#888',
+    color: t.textMuted,
     fontStyle: 'italic',
     textAlign: 'center',
     paddingHorizontal: 24,
     marginTop: 4,
   },
   notFoundTitle: {
-    fontSize: 18, fontWeight: '700', color: '#111', marginBottom: 4,
+    fontSize: 18, fontWeight: '700', color: t.textPrimary, marginBottom: 4,
   },
   notFoundBody: {
-    fontSize: 14, color: '#444', textAlign: 'center', lineHeight: 20,
+    fontSize: 14, color: t.textSecondary, textAlign: 'center', lineHeight: 20,
   },
   spacer: {height: 12},
-});
+}));

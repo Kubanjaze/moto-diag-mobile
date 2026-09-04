@@ -48,6 +48,7 @@ import {useVehicles} from '../hooks/useVehicles';
 import type {SessionsStackParamList} from '../navigation/types';
 import type {SessionCreateRequest, VehicleResponse} from '../types/api';
 import {packFaultCodes, packSymptoms} from './sessionFormHelpers';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 type Props = NativeStackScreenProps<SessionsStackParamList, 'NewSession'>;
 
@@ -62,6 +63,7 @@ interface Errors {
 // ---------------------------------------------------------------
 
 export function NewSessionScreen({navigation}: Props) {
+  const styles = useStyles();
   // Form state
   const [make, setMake] = useState<string>('');
   const [model, setModel] = useState<string>('');
@@ -295,6 +297,7 @@ function GaragePicker({
   selectedId: number | null;
   onPick: (v: VehicleResponse) => void;
 }) {
+  const styles = useStyles();
   if (isLoading) {
     return (
       <View style={styles.pickerCard} testID="new-session-garage-loading">
@@ -365,29 +368,29 @@ function handleApiError(error: unknown): void {
 // Styles
 // ---------------------------------------------------------------
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f5f5f7'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.background},
   kav: {flex: 1},
   scroll: {padding: 16, paddingBottom: 40},
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#888',
+    color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginTop: 8,
     marginBottom: 12,
   },
   pickerCard: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
   },
-  pickerLabel: {fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 8},
-  pickerHelp: {fontSize: 13, color: '#666', lineHeight: 18},
+  pickerLabel: {fontSize: 13, fontWeight: '600', color: t.textSecondary, marginBottom: 8},
+  pickerHelp: {fontSize: 13, color: t.textMuted, lineHeight: 18},
   pickerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -397,11 +400,11 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: 8,
   },
-  pickerRowSelected: {backgroundColor: '#e8f1ff'},
-  pickerRowText: {fontSize: 15, color: '#111'},
-  pickerCheck: {fontSize: 18, color: '#007aff'},
+  pickerRowSelected: {backgroundColor: t.controlSecondaryBg},
+  pickerRowText: {fontSize: 15, color: t.textPrimary},
+  pickerCheck: {fontSize: 18, color: t.accent},
   linkedBanner: {
-    backgroundColor: '#e8f1ff',
+    backgroundColor: t.controlSecondaryBg,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
@@ -409,8 +412,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  linkedText: {fontSize: 13, color: '#1a4f9c', fontWeight: '600'},
-  linkedClear: {fontSize: 13, color: '#007aff', fontWeight: '600'},
+  linkedText: {fontSize: 13, color: t.accentPressed, fontWeight: '600'},
+  linkedClear: {fontSize: 13, color: t.accent, fontWeight: '600'},
   spacer: {height: 20},
   gap: {height: 10},
-});
+}));

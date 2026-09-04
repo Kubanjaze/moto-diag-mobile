@@ -7,16 +7,9 @@
 // flow later.
 
 import React, {useCallback, useEffect, useState} from 'react';
-import {
-  Alert,
-  Modal,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import {createThemedStyles} from '../theme/createThemedStyles';
+import {Alert, Modal, Platform, Text, TextInput, TouchableOpacity, View, } from 'react-native';
+import {useTheme} from '../theme/useTheme';
 
 interface Props {
   visible: boolean;
@@ -33,6 +26,8 @@ interface Props {
 const KEY_PREFIX_HINT = 'mdk_';
 
 export function ApiKeyModal({visible, initialValue, onSubmit, onCancel}: Props) {
+  const styles = useStyles();
+  const {theme} = useTheme();
   const [draft, setDraft] = useState<string>(initialValue ?? '');
   const [submitting, setSubmitting] = useState<boolean>(false);
 
@@ -98,7 +93,7 @@ export function ApiKeyModal({visible, initialValue, onSubmit, onCancel}: Props) 
             value={draft}
             onChangeText={setDraft}
             placeholder="mdk_live_..."
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.textDisabled}
             autoCapitalize="none"
             autoCorrect={false}
             multiline={false}
@@ -129,31 +124,31 @@ export function ApiKeyModal({visible, initialValue, onSubmit, onCancel}: Props) 
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((t) => ({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: t.scrim,
   },
   sheet: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: Platform.select({ios: 36, android: 24}),
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
   },
-  title: {fontSize: 20, fontWeight: '700', marginBottom: 8, color: '#111'},
-  help: {fontSize: 14, color: '#555', marginBottom: 16, lineHeight: 20},
+  title: {fontSize: 20, fontWeight: '700', marginBottom: 8, color: t.textPrimary},
+  help: {fontSize: 14, color: t.textSecondary, marginBottom: 16, lineHeight: 20},
   input: {
-    borderColor: '#ccc',
+    borderColor: t.border,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 14,
     fontFamily: Platform.select({ios: 'Menlo', android: 'monospace'}),
-    color: '#111',
+    color: t.textPrimary,
     minHeight: 48,
   },
   buttons: {
@@ -171,8 +166,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cancel: {backgroundColor: '#eee'},
-  cancelText: {color: '#333', fontSize: 16, fontWeight: '600'},
-  save: {backgroundColor: '#007aff'},
-  saveText: {color: '#fff', fontSize: 16, fontWeight: '600'},
-});
+  cancel: {backgroundColor: t.divider},
+  cancelText: {color: t.textSecondary, fontSize: 16, fontWeight: '600'},
+  save: {backgroundColor: t.accent},
+  saveText: {color: t.surface, fontSize: 16, fontWeight: '600'},
+}));

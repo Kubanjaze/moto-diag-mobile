@@ -37,6 +37,7 @@ import {
 import {getActiveShopId} from '../services/activeShopStorage';
 import type {ShopStackParamList} from '../navigation/types';
 import {shopAccessErrorCopy} from './shopAccessErrorCopy';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 type Props = NativeStackScreenProps<ShopStackParamList, 'WorkOrderList'>;
 
@@ -58,6 +59,7 @@ const STATUS_OPTIONS: ReadonlyArray<{
 ];
 
 export function WorkOrderListScreen({navigation}: Props) {
+  const styles = useStyles();
   const [shopId, setShopId] = useState<number | null>(null);
   const [shopIdLoading, setShopIdLoading] = useState<boolean>(true);
   const [sortBy, setSortBy] = useState<WorkOrderSort>('newest');
@@ -235,6 +237,7 @@ function WorkOrderRow({
   wo: WorkOrderListRow;
   onPress: () => void;
 }) {
+  const styles = useStyles();
   return (
     <TouchableOpacity
       style={styles.row}
@@ -255,13 +258,13 @@ function WorkOrderRow({
       <View
         style={[
           styles.statusBadge,
-          _statusBadgeStyle(wo.status),
+          _statusBadgeStyle(styles, wo.status),
         ]}
       >
         <Text
           style={[
             styles.statusBadgeText,
-            _statusBadgeTextStyle(wo.status),
+            _statusBadgeTextStyle(styles, wo.status),
           ]}
         >
           {wo.status.replace('_', ' ')}
@@ -271,7 +274,8 @@ function WorkOrderRow({
   );
 }
 
-function _statusBadgeStyle(status: WorkOrderStatus) {
+function _statusBadgeStyle(
+  styles: ReturnType<typeof useStyles>,status: WorkOrderStatus) {
   switch (status) {
     case 'open': return styles.badgeOpen;
     case 'in_progress': return styles.badgeInProgress;
@@ -283,7 +287,8 @@ function _statusBadgeStyle(status: WorkOrderStatus) {
   }
 }
 
-function _statusBadgeTextStyle(status: WorkOrderStatus) {
+function _statusBadgeTextStyle(
+  styles: ReturnType<typeof useStyles>,status: WorkOrderStatus) {
   switch (status) {
     case 'open': return styles.badgeTextOpen;
     case 'in_progress': return styles.badgeTextInProgress;
@@ -295,20 +300,20 @@ function _statusBadgeTextStyle(status: WorkOrderStatus) {
   }
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f5f5f7'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.background},
   centered: {justifyContent: 'center', alignItems: 'center'},
   toolbar: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ddd',
+    borderBottomColor: t.border,
   },
   toolbarLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#888',
+    color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 6,
@@ -332,25 +337,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chipActive: {backgroundColor: '#1976d2', borderColor: '#1976d2'},
-  chipIdle: {backgroundColor: 'transparent', borderColor: '#bbb'},
+  chipActive: {backgroundColor: t.accent, borderColor: t.accent},
+  chipIdle: {backgroundColor: 'transparent', borderColor: t.textDisabled},
   chipText: {fontSize: 13, fontWeight: '600'},
   chipTextSmall: {fontSize: 12, fontWeight: '500'},
-  chipTextActive: {color: '#fff'},
-  chipTextIdle: {color: '#333'},
-  separator: {height: StyleSheet.hairlineWidth, backgroundColor: '#eee'},
+  chipTextActive: {color: t.surface},
+  chipTextIdle: {color: t.textSecondary},
+  separator: {height: StyleSheet.hairlineWidth, backgroundColor: t.divider},
   row: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     minHeight: 48,
     alignItems: 'center',
     gap: 12,
   },
   rowMain: {flex: 1},
-  rowTitle: {fontSize: 15, fontWeight: '600', color: '#111'},
-  rowMeta: {fontSize: 12, color: '#666', marginTop: 4},
+  rowTitle: {fontSize: 15, fontWeight: '600', color: t.textPrimary},
+  rowMeta: {fontSize: 12, color: t.textMuted, marginTop: 4},
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -359,27 +364,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusBadgeText: {fontSize: 11, fontWeight: '700'},
-  badgeDraft: {backgroundColor: '#eee'},
-  badgeTextDraft: {color: '#444'},
-  badgeOpen: {backgroundColor: '#e0eaff'},
-  badgeTextOpen: {color: '#0d47a1'},
-  badgeInProgress: {backgroundColor: '#fff4d6'},
-  badgeTextInProgress: {color: '#7a5c00'},
-  badgeOnHold: {backgroundColor: '#fff4e0'},
-  badgeTextOnHold: {color: '#7a4400'},
-  badgeCompleted: {backgroundColor: '#e3f5e3'},
-  badgeTextCompleted: {color: '#1b5e20'},
-  badgeCancelled: {backgroundColor: '#fee'},
-  badgeTextCancelled: {color: '#a00000'},
+  badgeDraft: {backgroundColor: t.divider},
+  badgeTextDraft: {color: t.textSecondary},
+  badgeOpen: {backgroundColor: t.controlSecondaryBg},
+  badgeTextOpen: {color: t.accentPressed},
+  badgeInProgress: {backgroundColor: t.severity.medium.bg},
+  badgeTextInProgress: {color: t.severity.medium.fg},
+  badgeOnHold: {backgroundColor: t.severity.high.bg},
+  badgeTextOnHold: {color: t.severity.high.fg},
+  badgeCompleted: {backgroundColor: t.severity.low.bg},
+  badgeTextCompleted: {color: t.severity.low.fg},
+  badgeCancelled: {backgroundColor: t.severity.critical.bg},
+  badgeTextCancelled: {color: t.severity.critical.fg},
   emptyText: {
     fontSize: 14,
-    color: '#888',
+    color: t.textMuted,
     textAlign: 'center',
     padding: 32,
     fontStyle: 'italic',
   },
   errorPane: {flex: 1, padding: 24, justifyContent: 'center', alignItems: 'center'},
-  errorTitle: {fontSize: 20, fontWeight: '700', color: '#b00020', marginBottom: 8},
-  errorBody: {fontSize: 14, color: '#555', textAlign: 'center', lineHeight: 20},
+  errorTitle: {fontSize: 20, fontWeight: '700', color: t.danger, marginBottom: 8},
+  errorBody: {fontSize: 14, color: t.textSecondary, textAlign: 'center', lineHeight: 20},
   errorSpacer: {height: 16},
-});
+}));

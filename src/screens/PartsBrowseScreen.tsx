@@ -26,10 +26,12 @@ import type {ShopStackParamList} from '../navigation/types';
 import {usePartsSearch} from '../hooks/usePartsSearch';
 import {useWorkOrderParts} from '../hooks/useWorkOrderParts';
 import type {CatalogPart} from '../types/workOrder';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 type Props = NativeStackScreenProps<ShopStackParamList, 'PartsBrowse'>;
 
 export function PartsBrowseScreen({navigation, route}: Props) {
+  const styles = useStyles();
   const {shopId, woId, make, model, year} = route.params;
   const {results, isSearching, error, hasSearched, search} =
     usePartsSearch(shopId);
@@ -84,7 +86,7 @@ export function PartsBrowseScreen({navigation, route}: Props) {
         />
       </View>
     </View>
-  ), [isMutating, justAdded, onAdd]);
+  ), [isMutating, justAdded, onAdd, styles]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
@@ -153,8 +155,8 @@ export function PartsBrowseScreen({navigation, route}: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {flex: 1, backgroundColor: '#F7F8FA'},
+const useStyles = createThemedStyles((t) => ({
+  safe: {flex: 1, backgroundColor: t.background},
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -163,33 +165,33 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: t.surface,
     borderWidth: 1,
-    borderColor: '#E3E6EB',
+    borderColor: t.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
-    color: '#16181D',
+    color: t.textPrimary,
   },
   list: {paddingHorizontal: 12, paddingBottom: 24},
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: t.surface,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E3E6EB',
+    borderColor: t.border,
     padding: 12,
     marginBottom: 8,
   },
   rowMain: {flex: 1, paddingRight: 12},
   rowTrailing: {alignItems: 'flex-end', gap: 6},
-  name: {fontSize: 15, fontWeight: '500', color: '#16181D'},
-  meta: {fontSize: 13, color: '#6B7280', marginTop: 2},
-  cost: {fontSize: 13, color: '#4A5160'},
-  empty: {padding: 24, textAlign: 'center', color: '#6B7280', fontSize: 14},
-  error: {paddingHorizontal: 16, paddingBottom: 8, color: '#B42318'},
+  name: {fontSize: 15, fontWeight: '500', color: t.textPrimary},
+  meta: {fontSize: 13, color: t.textMuted, marginTop: 2},
+  cost: {fontSize: 13, color: t.textSecondary},
+  empty: {padding: 24, textAlign: 'center', color: t.textMuted, fontSize: 14},
+  error: {paddingHorizontal: 16, paddingBottom: 8, color: t.danger},
   spinner: {marginTop: 32},
   footer: {
     flexDirection: 'row',
@@ -197,8 +199,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E3E6EB',
-    backgroundColor: '#FFFFFF',
+    borderTopColor: t.border,
+    backgroundColor: t.surface,
   },
-  footerText: {fontSize: 14, color: '#4A5160'},
-});
+  footerText: {fontSize: 14, color: t.textSecondary},
+}));

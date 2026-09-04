@@ -32,10 +32,12 @@ import {Button} from '../components/Button';
 import {useSessionVideos} from '../hooks/useSessionVideos';
 import type {SessionsStackParamList} from '../navigation/types';
 import {formatElapsed, formatFileSize} from './videoCaptureHelpers';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 type Props = NativeStackScreenProps<SessionsStackParamList, 'VideoPlayback'>;
 
 export function VideoPlaybackScreen({navigation, route}: Props) {
+  const styles = useStyles();
   const {videoId, sessionId} = route.params;
   const {videos, deleteVideo, isLoading, error} = useSessionVideos(sessionId);
 
@@ -236,35 +238,35 @@ function formatRecordingTimestamp(iso: string): string {
 // Styles
 // ---------------------------------------------------------------
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#000'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.textPrimary},
   centered: {justifyContent: 'center', alignItems: 'center'},
-  statusText: {color: '#fff', fontSize: 16},
-  videoContainer: {flex: 1, backgroundColor: '#000'},
+  statusText: {color: t.surface, fontSize: 16},
+  videoContainer: {flex: 1, backgroundColor: t.textPrimary},
   video: {flex: 1},
   metaBand: {
-    backgroundColor: '#111',
+    backgroundColor: t.textPrimary,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderTopColor: '#333',
+    borderTopColor: t.textSecondary,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  metaTitle: {color: '#fff', fontSize: 14, fontWeight: '600'},
+  metaTitle: {color: t.surface, fontSize: 14, fontWeight: '600'},
   metaRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 16,
     marginTop: 6,
   },
-  metaItem: {color: '#aaa', fontSize: 13},
+  metaItem: {color: t.textDisabled, fontSize: 13},
   pausedBadge: {
-    color: '#ffb454',
+    color: t.severity.medium.fg,
     fontSize: 13,
     fontWeight: '600',
     marginTop: 8,
   },
   actions: {
-    backgroundColor: '#111',
+    backgroundColor: t.textPrimary,
     paddingHorizontal: 16,
     paddingVertical: 12,
     paddingBottom: 24,
@@ -273,9 +275,9 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     justifyContent: 'center',
-    backgroundColor: '#f5f5f7',
+    backgroundColor: t.background,
   },
-  errorTitle: {fontSize: 22, fontWeight: '700', color: '#b00020'},
-  errorBody: {fontSize: 14, color: '#555', marginTop: 12, lineHeight: 20},
+  errorTitle: {fontSize: 22, fontWeight: '700', color: t.danger},
+  errorBody: {fontSize: 14, color: t.textSecondary, marginTop: 12, lineHeight: 20},
   spacer: {height: 16},
-});
+}));

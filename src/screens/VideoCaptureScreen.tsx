@@ -56,6 +56,8 @@ import {isProblemDetail} from '../api';
 import {useCameraPermissions} from '../hooks/useCameraPermissions';
 import {useSessionVideos} from '../hooks/useSessionVideos';
 import type {SessionsStackParamList} from '../navigation/types';
+import {createThemedStyles} from '../theme/createThemedStyles';
+import {useTheme} from '../theme/useTheme';
 // Phase 191D Commit 3 — MAX_VIDEOS_PER_SESSION moved to src/types/
 // video.ts as the canonical SSOT (was duplicated here + in
 // SessionDetailScreen.tsx through Phase 191B). The value remains
@@ -83,6 +85,8 @@ type Props = NativeStackScreenProps<SessionsStackParamList, 'VideoCapture'>;
 // ---------------------------------------------------------------
 
 export function VideoCaptureScreen({navigation, route}: Props) {
+  const styles = useStyles();
+  const {theme} = useTheme();
   const {sessionId} = route.params;
 
   const [state, dispatch] = useReducer(
@@ -574,7 +578,7 @@ export function VideoCaptureScreen({navigation, route}: Props) {
           <View style={styles.stoppingOverlay}>
             <ActivityIndicator
               size="large"
-              color="#fff"
+              color={theme.textOnAccent}
               testID="video-capture-stopping-spinner"
             />
             <Text style={styles.stoppingText}>Saving…</Text>
@@ -610,6 +614,7 @@ function RecordButton({
   onStart: () => void;
   onStop: () => void;
 }) {
+  const styles = useStyles();
   if (state === 'recording') {
     return (
       <TouchableOpacity
@@ -643,6 +648,7 @@ function CapReachedHint({
   count: number;
   capReason: 'count' | 'size';
 }) {
+  const styles = useStyles();
   const reasonText =
     capReason === 'count'
       ? `${count}/${MAX_VIDEOS_PER_SESSION} videos`
@@ -669,6 +675,8 @@ function UploadingPane({
   bytesUploaded: number;
   bytesTotal: number;
 }) {
+  const styles = useStyles();
+  const {theme} = useTheme();
   const showProgress = bytesTotal > 0;
   const pct = showProgress
     ? Math.min(100, Math.round((bytesUploaded / bytesTotal) * 100))
@@ -679,7 +687,7 @@ function UploadingPane({
       <View style={styles.spacer} />
       <ActivityIndicator
         size="large"
-        color="#1b7c2f"
+        color={theme.success}
         testID="video-capture-uploading-spinner"
       />
       <View style={styles.spacer} />
@@ -710,6 +718,7 @@ function FailedPane({
   onCancel: () => void;
   onOpenSettings: () => void;
 }) {
+  const styles = useStyles();
   let title = 'Recording failed';
   let body = '';
   let primaryLabel: string | null = 'Try again';
@@ -854,8 +863,8 @@ function classifyUploadError(err: unknown): RecordingError {
 // Styles
 // ---------------------------------------------------------------
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#000'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.textPrimary},
   centered: {justifyContent: 'center', alignItems: 'center'},
   cameraContainer: {flex: 1},
   camera: {
@@ -872,12 +881,12 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: t.scrim,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeButtonText: {color: '#fff', fontSize: 22, fontWeight: '600'},
-  closeButtonTextDisabled: {color: '#888'},
+  closeButtonText: {color: t.surface, fontSize: 22, fontWeight: '600'},
+  closeButtonTextDisabled: {color: t.textMuted},
   recordingIndicator: {
     position: 'absolute',
     top: 16,
@@ -888,13 +897,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  recordingDot: {width: 12, height: 12, borderRadius: 6, backgroundColor: '#e63946'},
+  recordingDot: {width: 12, height: 12, borderRadius: 6, backgroundColor: t.danger},
   recordingTime: {
-    color: '#fff',
+    color: t.surface,
     fontSize: 18,
     fontWeight: '700',
     fontFamily: 'monospace',
-    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowColor: t.scrim,
     textShadowOffset: {width: 0, height: 1},
     textShadowRadius: 2,
   },
@@ -904,12 +913,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: t.scrim,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
   },
-  stoppingText: {color: '#fff', fontSize: 16, fontWeight: '600'},
+  stoppingText: {color: t.surface, fontSize: 16, fontWeight: '600'},
   bottomControls: {
     position: 'absolute',
     bottom: 32,
@@ -921,9 +930,9 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: t.scrim,
     borderWidth: 4,
-    borderColor: '#fff',
+    borderColor: t.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -932,15 +941,15 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#e63946',
+    backgroundColor: t.danger,
   },
   stopButton: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: t.scrim,
     borderWidth: 4,
-    borderColor: '#fff',
+    borderColor: t.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -948,19 +957,19 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 4,
-    backgroundColor: '#e63946',
+    backgroundColor: t.danger,
   },
   capReachedPane: {
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: t.scrim,
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderRadius: 12,
     marginHorizontal: 24,
     alignItems: 'center',
   },
-  capReachedTitle: {color: '#fff', fontSize: 16, fontWeight: '700'},
+  capReachedTitle: {color: t.surface, fontSize: 16, fontWeight: '700'},
   capReachedHint: {
-    color: '#ddd',
+    color: t.border,
     fontSize: 13,
     marginTop: 6,
     textAlign: 'center',
@@ -969,33 +978,33 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     justifyContent: 'center',
-    backgroundColor: '#f5f5f7',
+    backgroundColor: t.background,
   },
-  blockedTitle: {fontSize: 22, fontWeight: '700', color: '#111'},
-  blockedBody: {fontSize: 14, color: '#555', marginTop: 12, lineHeight: 20},
+  blockedTitle: {fontSize: 22, fontWeight: '700', color: t.textPrimary},
+  blockedBody: {fontSize: 14, color: t.textSecondary, marginTop: 12, lineHeight: 20},
   spacer: {height: 16},
   buttonGap: {height: 10},
   failedPane: {
     flex: 1,
     padding: 24,
     justifyContent: 'center',
-    backgroundColor: '#f5f5f7',
+    backgroundColor: t.background,
   },
-  failedTitle: {fontSize: 22, fontWeight: '700', color: '#b00020'},
-  failedBody: {fontSize: 14, color: '#555', marginTop: 12, lineHeight: 20},
-  savedPane: {flex: 1, padding: 24, justifyContent: 'center', backgroundColor: '#f5f5f7'},
-  savedTitle: {fontSize: 24, fontWeight: '700', color: '#1b7c2f'},
+  failedTitle: {fontSize: 22, fontWeight: '700', color: t.danger},
+  failedBody: {fontSize: 14, color: t.textSecondary, marginTop: 12, lineHeight: 20},
+  savedPane: {flex: 1, padding: 24, justifyContent: 'center', backgroundColor: t.background},
+  savedTitle: {fontSize: 24, fontWeight: '700', color: t.success},
   savedSummary: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
   },
-  summaryRow: {fontSize: 14, color: '#222', paddingVertical: 4},
+  summaryRow: {fontSize: 14, color: t.textPrimary, paddingVertical: 4},
   summaryRowPaused: {
     fontSize: 14,
-    color: '#a85e00',
+    color: t.warning,
     paddingVertical: 4,
     fontWeight: '600',
   },
@@ -1004,14 +1013,14 @@ const styles = StyleSheet.create({
     padding: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f7',
+    backgroundColor: t.background,
   },
-  uploadingTitle: {fontSize: 22, fontWeight: '700', color: '#1b7c2f'},
+  uploadingTitle: {fontSize: 22, fontWeight: '700', color: t.success},
   uploadingHint: {
     fontSize: 13,
-    color: '#555',
+    color: t.textSecondary,
     textAlign: 'center',
     paddingHorizontal: 24,
     lineHeight: 18,
   },
-});
+}));

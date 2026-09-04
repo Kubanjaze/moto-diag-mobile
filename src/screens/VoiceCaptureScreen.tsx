@@ -19,16 +19,7 @@
 // on return.
 
 import React, {useCallback, useEffect, useReducer, useRef} from 'react';
-import {
-  AppState,
-  type AppStateStatus,
-  Linking,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import {AppState, type AppStateStatus, Linking, Platform, Text, TouchableOpacity, View, } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import AudioRecorderPlayer from 'react-native-audio-recorder-player';
@@ -43,6 +34,7 @@ import {useMicrophonePermissions} from '../hooks/useMicrophonePermissions';
 import {useWorkOrderTranscripts} from '../hooks/useWorkOrderTranscripts';
 import type {ShopStackParamList} from '../navigation/types';
 import type {AudioCacheExt} from '../services/audioStorageCache';
+import {createThemedStyles} from '../theme/createThemedStyles';
 import {
   audioCaptureTransition,
   initialAudioCaptureState,
@@ -67,6 +59,7 @@ function _previewEngineForPlatform(): 'ios-speech' | 'android-speech-recognizer'
 }
 
 export function VoiceCaptureScreen({navigation, route}: Props) {
+  const styles = useStyles();
   const {shopId, woId, issueId} = route.params;
 
   const [state, dispatch] = useReducer(
@@ -420,8 +413,8 @@ export function VoiceCaptureScreen({navigation, route}: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#0d0d0f'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.textPrimary},
   recordingPane: {
     flex: 1,
     alignItems: 'center',
@@ -429,37 +422,37 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 16,
   },
-  title: {fontSize: 22, fontWeight: '700', color: '#fff'},
+  title: {fontSize: 22, fontWeight: '700', color: t.surface},
   body: {
-    fontSize: 14, color: '#bbb', textAlign: 'center', lineHeight: 20,
+    fontSize: 14, color: t.textDisabled, textAlign: 'center', lineHeight: 20,
   },
   recordingLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#ff5050',
+    color: t.danger,
     textTransform: 'uppercase',
     letterSpacing: 2,
   },
   previewText: {
     fontSize: 16,
-    color: '#eee',
+    color: t.divider,
     textAlign: 'center',
     fontStyle: 'italic',
     lineHeight: 24,
   },
   uploadingText: {
-    fontSize: 16, color: '#eee', textAlign: 'center',
+    fontSize: 16, color: t.divider, textAlign: 'center',
   },
   errorText: {
-    fontSize: 14, color: '#fca7a7', textAlign: 'center', lineHeight: 20,
+    fontSize: 14, color: t.severity.critical.border, textAlign: 'center', lineHeight: 20,
   },
   pulseRing: {
     width: 110,
     height: 110,
     borderRadius: 55,
-    backgroundColor: '#3a0a0a',
+    backgroundColor: t.severity.critical.bg,
     borderWidth: 4,
-    borderColor: '#ff5050',
+    borderColor: t.danger,
   },
   controls: {
     paddingHorizontal: 24,
@@ -472,7 +465,7 @@ const styles = StyleSheet.create({
     width: 84,
     height: 84,
     borderRadius: 42,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -480,23 +473,23 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#ff5050',
+    backgroundColor: t.danger,
   },
-  stopButton: {backgroundColor: '#222'},
+  stopButton: {backgroundColor: t.textPrimary},
   stopButtonInner: {
     width: 30,
     height: 30,
     borderRadius: 4,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
   },
   permissionPane: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     padding: 20,
     justifyContent: 'center',
     gap: 12,
   },
-  permissionTitle: {fontSize: 18, fontWeight: '600', color: '#111'},
-  permissionBody: {fontSize: 14, color: '#444', lineHeight: 20},
+  permissionTitle: {fontSize: 18, fontWeight: '600', color: t.textPrimary},
+  permissionBody: {fontSize: 14, color: t.textSecondary, lineHeight: 20},
   spacer: {height: 8},
-});
+}));

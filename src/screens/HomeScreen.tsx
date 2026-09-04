@@ -48,6 +48,7 @@ import {version as appVersion} from '../../package.json';
 import type {HomeStackParamList} from '../navigation/types';
 import type {VehicleListResponse, VersionResponse} from '../types/api';
 import {ApiKeyModal} from './ApiKeyModal';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 type HomeNav = NativeStackNavigationProp<HomeStackParamList, 'Home'>;
 
@@ -64,6 +65,7 @@ type FetchState<T> =
 const SCAN_DURATION_MS = 10_000;
 
 export function HomeScreen() {
+  const styles = useStyles();
   const navigation = useNavigation<HomeNav>();
   const {apiKey, isLoading: keyLoading, setApiKey, clearApiKey} = useApiKey();
 
@@ -320,6 +322,7 @@ export function HomeScreen() {
 // ---------------------------------------------------------------
 
 function Section({title, children}: {title: string; children: ReactNode}) {
+  const styles = useStyles();
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -335,6 +338,7 @@ function BackendBlock({
   state: FetchState<VersionResponse>;
   onRetry: () => void;
 }) {
+  const styles = useStyles();
   if (state.kind === 'idle' || state.kind === 'loading') {
     return <Text style={styles.statusLine}>Checking…</Text>;
   }
@@ -377,6 +381,7 @@ function AuthBlock({
   onSet: () => void;
   onClear: () => void;
 }) {
+  const styles = useStyles();
   if (isLoading) {
     return <Text style={styles.statusLine}>Loading from Keychain…</Text>;
   }
@@ -423,6 +428,7 @@ function VehiclesBlock({
   onTest: () => void;
   disabled: boolean;
 }) {
+  const styles = useStyles();
   return (
     <View>
       <TouchableOpacity
@@ -481,43 +487,43 @@ function maskKey(key: string): string {
   return `${key.slice(0, 13)}•••`;
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f5f5f7'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.background},
   scrollContent: {paddingHorizontal: 16, paddingBottom: 32, paddingTop: 8},
-  title: {fontSize: 32, fontWeight: '700', marginTop: 16, color: '#111'},
-  subtitle: {fontSize: 13, color: '#666', marginTop: 2, marginBottom: 16},
+  title: {fontSize: 32, fontWeight: '700', marginTop: 16, color: t.textPrimary},
+  subtitle: {fontSize: 13, color: t.textMuted, marginTop: 2, marginBottom: 16},
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
   },
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#888',
+    color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 8,
   },
   sectionBody: {},
-  sectionHelp: {fontSize: 14, color: '#555', marginBottom: 12, lineHeight: 20},
-  statusLine: {fontSize: 14, color: '#333', marginBottom: 4, lineHeight: 20},
-  successText: {color: '#1b7c2f', fontWeight: '600'},
-  errorText: {color: '#b00020', fontWeight: '600'},
-  helpText: {fontSize: 12, color: '#888', marginTop: 4, fontStyle: 'italic'},
+  sectionHelp: {fontSize: 14, color: t.textSecondary, marginBottom: 12, lineHeight: 20},
+  statusLine: {fontSize: 14, color: t.textSecondary, marginBottom: 4, lineHeight: 20},
+  successText: {color: t.success, fontWeight: '600'},
+  errorText: {color: t.danger, fontWeight: '600'},
+  helpText: {fontSize: 12, color: t.textMuted, marginTop: 4, fontStyle: 'italic'},
   keyMask: {
     fontSize: 13,
-    color: '#444',
+    color: t.textSecondary,
     fontFamily: Platform.select({ios: 'Menlo', android: 'monospace'}),
     marginBottom: 8,
     marginTop: 2,
   },
-  vehicleLine: {fontSize: 14, color: '#333', marginLeft: 4, marginTop: 2},
+  vehicleLine: {fontSize: 14, color: t.textSecondary, marginLeft: 4, marginTop: 2},
   button: {
-    backgroundColor: '#007aff',
+    backgroundColor: t.accent,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
@@ -526,10 +532,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 8,
   },
-  buttonDisabled: {backgroundColor: '#9ec5ff'},
-  buttonText: {color: '#fff', fontSize: 16, fontWeight: '600'},
+  buttonDisabled: {backgroundColor: t.accent},
+  buttonText: {color: t.surface, fontSize: 16, fontWeight: '600'},
   smallButton: {
-    backgroundColor: '#eee',
+    backgroundColor: t.divider,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
@@ -538,9 +544,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 8,
   },
-  smallButtonText: {color: '#333', fontSize: 14, fontWeight: '600'},
+  smallButtonText: {color: t.textSecondary, fontSize: 14, fontWeight: '600'},
   buttonRow: {flexDirection: 'row', gap: 8, marginTop: 4},
   replaceButton: {flex: 1},
-  dangerButton: {backgroundColor: '#fee', flex: 1},
-  dangerButtonText: {color: '#b00020', fontSize: 14, fontWeight: '600'},
-});
+  dangerButton: {backgroundColor: t.severity.critical.bg, flex: 1},
+  dangerButtonText: {color: t.danger, fontSize: 14, fontWeight: '600'},
+}));

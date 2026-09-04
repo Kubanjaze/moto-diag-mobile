@@ -75,10 +75,12 @@ import {
   type SectionOverrides,
 } from './reportPresets';
 import {shareErrorCopy} from './reportShareErrorCopy';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 type Props = NativeStackScreenProps<SessionsStackParamList, 'ReportViewer'>;
 
 export function ReportViewerScreen({navigation, route}: Props) {
+  const styles = useStyles();
   const {sessionId} = route.params;
   const {report, isLoading, error, refetch} = useReport(sessionId);
   // Section C2 (ε) — preset state lives in component state, not
@@ -316,8 +318,8 @@ export function ReportViewerScreen({navigation, route}: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f5f5f7'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.background},
   centered: {justifyContent: 'center', alignItems: 'center'},
   scroll: {padding: 16, paddingBottom: 40},
   // Phase 192B Commit 3 — header strip co-locates SectionToggle +
@@ -325,9 +327,9 @@ const styles = StyleSheet.create({
   // we stack the share button below in the same strip + add a
   // bottom border on shareRow to maintain the visual divider.
   headerStrip: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ddd',
+    borderBottomColor: t.border,
   },
   shareRow: {
     paddingHorizontal: 16,
@@ -339,39 +341,39 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#111',
+    color: t.textPrimary,
     marginTop: 4,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 15,
-    color: '#444',
+    color: t.textSecondary,
     marginBottom: 8,
   },
   issuedAt: {
     fontSize: 12,
-    color: '#888',
+    color: t.textMuted,
     marginBottom: 16,
   },
   footer: {
     fontSize: 11,
-    color: '#888',
+    color: t.textMuted,
     textAlign: 'center',
     marginTop: 12,
     marginBottom: 8,
   },
   emptyState: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     padding: 24,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
     alignItems: 'center',
   },
-  emptyText: {fontSize: 14, color: '#666', textAlign: 'center'},
+  emptyText: {fontSize: 14, color: t.textMuted, textAlign: 'center'},
   errorPane: {flex: 1, padding: 24, justifyContent: 'center'},
-  errorTitle: {fontSize: 20, fontWeight: '700', color: '#b00020'},
-  errorBody: {fontSize: 14, color: '#555', marginTop: 8, lineHeight: 20},
+  errorTitle: {fontSize: 20, fontWeight: '700', color: t.danger},
+  errorBody: {fontSize: 14, color: t.textSecondary, marginTop: 8, lineHeight: 20},
   errorSpacer: {height: 16},
   buttonGap: {height: 10},
-});
+}));

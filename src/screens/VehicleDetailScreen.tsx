@@ -34,6 +34,7 @@ import {
 import {SelectField} from '../components/SelectField';
 import {useVehicle} from '../hooks/useVehicle';
 import type {GarageStackParamList} from '../navigation/types';
+import {createThemedStyles} from '../theme/createThemedStyles';
 import type {
   BatteryChemistryLiteral,
   EngineTypeLiteral,
@@ -66,6 +67,7 @@ interface EditErrors {
 }
 
 export function VehicleDetailScreen({navigation, route}: Props) {
+  const styles = useStyles();
   const {vehicleId} = route.params;
   const {vehicle, isLoading, error, refetch} = useVehicle(vehicleId);
   const [mode, setMode] = useState<'view' | 'edit'>('view');
@@ -246,6 +248,7 @@ function EditPane({
   onDone: () => void;
   onCancel: () => void;
 }) {
+  const styles = useStyles();
   // Seed form state from the loaded vehicle.
   const [make, setMake] = useState<string>(vehicle.make);
   const [model, setModel] = useState<string>(vehicle.model);
@@ -508,6 +511,7 @@ function DetailCard({
   title: string;
   children: React.ReactNode;
 }) {
+  const styles = useStyles();
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>{title}</Text>
@@ -517,6 +521,7 @@ function DetailCard({
 }
 
 function DetailRow({label, value}: {label: string; value: string}) {
+  const styles = useStyles();
   return (
     <View style={styles.row}>
       <Text style={styles.rowLabel}>{label}</Text>
@@ -538,39 +543,39 @@ function formatBool(v: unknown): string {
   return '—';
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f5f5f7'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.background},
   centered: {justifyContent: 'center', alignItems: 'center'},
   kav: {flex: 1},
   scroll: {padding: 16, paddingBottom: 40},
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#111',
+    color: t.textPrimary,
     marginTop: 4,
     marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#888',
+    color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginTop: 8,
     marginBottom: 12,
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
   },
   cardTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#888',
+    color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 8,
@@ -579,18 +584,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 8,
-    borderBottomColor: '#eee',
+    borderBottomColor: t.divider,
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 12,
   },
-  rowLabel: {fontSize: 14, color: '#555', flex: 1},
-  rowValue: {fontSize: 14, color: '#111', flex: 1, textAlign: 'right'},
-  notesText: {fontSize: 14, color: '#333', lineHeight: 20},
+  rowLabel: {fontSize: 14, color: t.textSecondary, flex: 1},
+  rowValue: {fontSize: 14, color: t.textPrimary, flex: 1, textAlign: 'right'},
+  notesText: {fontSize: 14, color: t.textSecondary, lineHeight: 20},
   actions: {marginTop: 16, flexDirection: 'column', alignItems: 'stretch'},
   buttonGap: {height: 10},
   spacer: {height: 20},
   errorPane: {flex: 1, padding: 24, justifyContent: 'center'},
-  errorTitle: {fontSize: 20, fontWeight: '700', color: '#b00020'},
-  errorBody: {fontSize: 14, color: '#555', marginTop: 8, lineHeight: 20},
+  errorTitle: {fontSize: 20, fontWeight: '700', color: t.danger},
+  errorBody: {fontSize: 14, color: t.textSecondary, marginTop: 8, lineHeight: 20},
   errorSpacer: {height: 16},
-});
+}));

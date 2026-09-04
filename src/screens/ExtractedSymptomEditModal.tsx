@@ -33,6 +33,7 @@ import {
   type SymptomCatalogEntry,
 } from '../hooks/useSymptomSearch';
 import type {ExtractedSymptom} from '../types/workOrder';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 
 export interface ExtractedSymptomEditPayload {
@@ -68,6 +69,7 @@ const KNOWN_CATEGORIES = [
 export function ExtractedSymptomEditModal({
   visible, symptom, onSave, onCancel,
 }: Props) {
+  const styles = useStyles();
   const [text, setText] = useState<string>('');
   const [linkedId, setLinkedId] = useState<number | null>(null);
   const [category, setCategory] = useState<string | null>(null);
@@ -274,92 +276,92 @@ export function ExtractedSymptomEditModal({
 }
 
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#fff'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.surface},
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ddd',
+    borderBottomColor: t.border,
   },
-  headerTitle: {fontSize: 18, fontWeight: '700', color: '#111'},
+  headerTitle: {fontSize: 18, fontWeight: '700', color: t.textPrimary},
   headerCancel: {paddingHorizontal: 8, paddingVertical: 4},
-  headerCancelText: {fontSize: 15, color: '#3a7'},
+  headerCancelText: {fontSize: 15, color: t.success},
   body: {padding: 16, gap: 8, paddingBottom: 32},
   fieldLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#666',
+    color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginTop: 8,
   },
   textInput: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#bbb',
+    borderColor: t.textDisabled,
     borderRadius: 8,
     padding: 10,
     fontSize: 15,
     minHeight: 40,
-    color: '#111',
+    color: t.textPrimary,
   },
   categoryRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 6},
   categoryChip: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 14,
-    backgroundColor: '#eee',
+    backgroundColor: t.divider,
   },
-  categoryChipSelected: {backgroundColor: '#cae3f8'},
-  categoryChipText: {fontSize: 13, color: '#333'},
-  categoryChipTextSelected: {color: '#1a3e6e', fontWeight: '700'},
+  categoryChipSelected: {backgroundColor: t.symptomSource.keyword.border},
+  categoryChipText: {fontSize: 13, color: t.textSecondary},
+  categoryChipTextSelected: {color: t.accentPressed, fontWeight: '700'},
   linkedHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 8,
   },
-  toggleText: {fontSize: 12, color: '#3a7', fontWeight: '600'},
+  toggleText: {fontSize: 12, color: t.success, fontWeight: '600'},
   linkedSelected: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#e6efff',
+    backgroundColor: t.controlSecondaryBg,
     borderRadius: 8,
     padding: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#7aa6ff',
+    borderColor: t.accent,
   },
-  linkedSelectedText: {fontSize: 14, color: '#1a3e6e', flex: 1},
-  linkedClearText: {fontSize: 13, color: '#a00', fontWeight: '600'},
+  linkedSelectedText: {fontSize: 14, color: t.accentPressed, flex: 1},
+  linkedClearText: {fontSize: 13, color: t.danger, fontWeight: '600'},
   searchSpinner: {marginTop: 8},
-  searchError: {fontSize: 13, color: '#a00', marginTop: 6},
+  searchError: {fontSize: 13, color: t.danger, marginTop: 6},
   searchEmpty: {
     fontSize: 13,
-    color: '#888',
+    color: t.textMuted,
     fontStyle: 'italic',
     marginTop: 6,
   },
   searchResults: {
     marginTop: 6,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
     borderRadius: 8,
   },
   searchResultRow: {
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
+    borderBottomColor: t.divider,
   },
-  searchResultRowSelected: {backgroundColor: '#e6efff'},
-  searchResultName: {fontSize: 14, color: '#111', fontWeight: '500'},
-  searchResultMeta: {fontSize: 12, color: '#888', marginTop: 2},
+  searchResultRowSelected: {backgroundColor: t.controlSecondaryBg},
+  searchResultName: {fontSize: 14, color: t.textPrimary, fontWeight: '500'},
+  searchResultMeta: {fontSize: 12, color: t.textMuted, marginTop: 2},
   footer: {
     padding: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#ddd',
+    borderTopColor: t.border,
   },
-});
+}));

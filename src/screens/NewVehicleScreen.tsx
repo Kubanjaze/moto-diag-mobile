@@ -9,15 +9,7 @@
 
 import React, {useCallback, useState} from 'react';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import {Alert, KeyboardAvoidingView, Platform, ScrollView, Text, View, } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {api, describeError, isProblemDetail} from '../api';
@@ -33,6 +25,7 @@ import {
 } from '../components/Field';
 import {SelectField} from '../components/SelectField';
 import type {GarageStackParamList} from '../navigation/types';
+import {createThemedStyles} from '../theme/createThemedStyles';
 import type {
   BatteryChemistryLiteral,
   EngineTypeLiteral,
@@ -63,6 +56,7 @@ interface Errors {
 }
 
 export function NewVehicleScreen({navigation}: Props) {
+  const styles = useStyles();
   // Required text fields
   const [make, setMake] = useState<string>('');
   const [model, setModel] = useState<string>('');
@@ -322,14 +316,14 @@ function handleApiError(error: unknown): void {
   Alert.alert(error.title, describeError(error));
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f5f5f7'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.background},
   kav: {flex: 1},
   scroll: {padding: 16, paddingBottom: 40},
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#888',
+    color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginTop: 8,
@@ -337,4 +331,4 @@ const styles = StyleSheet.create({
   },
   spacer: {height: 20},
   gap: {height: 10},
-});
+}));

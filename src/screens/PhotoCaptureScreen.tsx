@@ -39,6 +39,7 @@ import {useCameraPermissions} from '../hooks/useCameraPermissions';
 import {useWorkOrderPhotos} from '../hooks/useWorkOrderPhotos';
 import {classifyShopAccessError} from '../hooks/shopAccessErrors';
 import type {ShopStackParamList} from '../navigation/types';
+import {createThemedStyles} from '../theme/createThemedStyles';
 import {
   initialPhotoCaptureState,
   photoCaptureTransition,
@@ -48,6 +49,7 @@ import {
 type Props = NativeStackScreenProps<ShopStackParamList, 'PhotoCapture'>;
 
 export function PhotoCaptureScreen({navigation, route}: Props) {
+  const styles = useStyles();
   const {shopId, woId, issueId, pairId} = route.params;
 
   const [state, dispatch] = useReducer(
@@ -397,18 +399,18 @@ function _errorCopy(error: ReturnType<typeof classifyShopAccessError>): string {
   }
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#000'},
-  cameraContainer: {flex: 1, backgroundColor: '#000', overflow: 'hidden'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.textPrimary},
+  cameraContainer: {flex: 1, backgroundColor: t.textPrimary, overflow: 'hidden'},
   previewContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: t.textPrimary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   preview: {width: '100%', height: '100%'},
   controls: {
-    backgroundColor: '#111',
+    backgroundColor: t.textPrimary,
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 24,
@@ -419,7 +421,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -428,37 +430,37 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderWidth: 3,
-    borderColor: '#222',
+    borderColor: t.textPrimary,
   },
   classifyPrompt: {
-    color: '#eee',
+    color: t.divider,
     fontSize: 15,
     fontWeight: '600',
     textAlign: 'center',
   },
   classifyRow: {flexDirection: 'row', gap: 12},
   uploadingText: {
-    color: '#eee',
+    color: t.divider,
     fontSize: 15,
     textAlign: 'center',
     paddingVertical: 12,
   },
   errorText: {
-    color: '#fca7a7',
+    color: t.severity.critical.border,
     fontSize: 14,
     textAlign: 'center',
     paddingVertical: 12,
   },
   permissionPane: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     padding: 20,
     justifyContent: 'center',
     gap: 12,
   },
-  permissionTitle: {fontSize: 18, fontWeight: '600', color: '#111'},
-  permissionBody: {fontSize: 14, color: '#444', lineHeight: 20},
+  permissionTitle: {fontSize: 18, fontWeight: '600', color: t.textPrimary},
+  permissionBody: {fontSize: 14, color: t.textSecondary, lineHeight: 20},
   spacer: {height: 8},
-});
+}));

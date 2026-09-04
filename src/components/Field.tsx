@@ -10,6 +10,7 @@
 import React, {forwardRef, useCallback} from 'react';
 import {createThemedStyles} from '../theme/createThemedStyles';
 import {Text, TextInput, type TextInputProps, View, } from 'react-native';
+import {useTheme} from '../theme/useTheme';
 
 interface Props extends Omit<TextInputProps, 'style'> {
   label: string;
@@ -27,6 +28,7 @@ export const Field = forwardRef<TextInput, Props>(function Field(
   ref,
 ) {
   const styles = useStyles();
+  const {theme} = useTheme();
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>
@@ -36,7 +38,7 @@ export const Field = forwardRef<TextInput, Props>(function Field(
       <TextInput
         ref={ref}
         style={[styles.input, error ? styles.inputError : null]}
-        placeholderTextColor="#999"
+        placeholderTextColor={theme.textDisabled}
         autoCapitalize="none"
         autoCorrect={false}
         {...inputProps}

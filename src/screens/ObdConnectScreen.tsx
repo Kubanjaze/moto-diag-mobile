@@ -42,6 +42,7 @@ import type {ObdDevice, ObdTransport} from '../obd/ObdConnection';
 import type {ScannedDevice} from '../obd/obdConnectionMachine';
 import {describeObdError} from '../obd/obdErrors';
 import type {HomeStackParamList} from '../navigation/types';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'ObdConnect'>;
 
@@ -61,6 +62,7 @@ function sortScanned(devices: ScannedDevice[]): ScannedDevice[] {
 }
 
 export function ObdConnectScreen({navigation}: Props) {
+  const styles = useStyles();
   // Phase 196B — transport selection. The chosen transport maps to a
   // concrete provider through the providerFactory SSOT; the picker is
   // only rendered in the idle state (switching mid-connection is not
@@ -335,6 +337,7 @@ function DeviceRow({
   likelyObd: boolean;
   onPress: () => void;
 }) {
+  const styles = useStyles();
   return (
     <TouchableOpacity
       style={styles.deviceRow}
@@ -359,24 +362,24 @@ function DeviceRow({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f5f5f7'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.background},
   pane: {padding: 24, gap: 8},
-  title: {fontSize: 22, fontWeight: '700', color: '#111'},
-  connectedTitle: {fontSize: 22, fontWeight: '700', color: '#1b7c2f'},
-  errorTitle: {fontSize: 20, fontWeight: '700', color: '#b00020'},
-  body: {fontSize: 14, color: '#555', lineHeight: 20},
-  errorBody: {fontSize: 14, color: '#7a1320', lineHeight: 20},
-  deviceName: {fontSize: 16, fontWeight: '600', color: '#222', marginTop: 4},
+  title: {fontSize: 22, fontWeight: '700', color: t.textPrimary},
+  connectedTitle: {fontSize: 22, fontWeight: '700', color: t.success},
+  errorTitle: {fontSize: 20, fontWeight: '700', color: t.danger},
+  body: {fontSize: 14, color: t.textSecondary, lineHeight: 20},
+  errorBody: {fontSize: 14, color: t.severity.critical.fg, lineHeight: 20},
+  deviceName: {fontSize: 16, fontWeight: '600', color: t.textPrimary, marginTop: 4},
   bannerText: {
     fontSize: 13,
-    color: '#666',
+    color: t.textMuted,
     fontStyle: 'italic',
     marginTop: 2,
   },
   emptyText: {
     fontSize: 14,
-    color: '#888',
+    color: t.textMuted,
     fontStyle: 'italic',
     paddingHorizontal: 24,
     paddingVertical: 12,
@@ -385,26 +388,26 @@ const styles = StyleSheet.create({
   deviceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     paddingHorizontal: 20,
     paddingVertical: 14,
     marginHorizontal: 16,
     marginVertical: 4,
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
     minHeight: 56,
   },
   deviceRowMain: {flex: 1},
-  deviceRowName: {fontSize: 16, fontWeight: '600', color: '#111'},
-  deviceRowMeta: {fontSize: 12, color: '#888', marginTop: 2},
+  deviceRowName: {fontSize: 16, fontWeight: '600', color: t.textPrimary},
+  deviceRowMeta: {fontSize: 12, color: t.textMuted, marginTop: 2},
   obdBadge: {
-    backgroundColor: '#e3f0ff',
+    backgroundColor: t.controlSecondaryBg,
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  obdBadgeText: {fontSize: 12, fontWeight: '700', color: '#007aff'},
+  obdBadgeText: {fontSize: 12, fontWeight: '700', color: t.accent},
   controls: {paddingHorizontal: 24, paddingTop: 8, paddingBottom: 24},
   spacer: {height: 12},
-});
+}));

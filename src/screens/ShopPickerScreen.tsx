@@ -25,6 +25,7 @@ import {Button} from '../components/Button';
 import {useShops, type ShopMembership} from '../hooks/useShops';
 import {setActiveShopId} from '../services/activeShopStorage';
 import {shopAccessErrorCopy} from './shopAccessErrorCopy';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 interface Props {
   /** Called after the user picks a shop. Caller (ShopStack) reads
@@ -35,6 +36,7 @@ interface Props {
 }
 
 export function ShopPickerScreen({onShopPicked}: Props) {
+  const styles = useStyles();
   const {shops, isLoading, error, refetch} = useShops();
 
   const handlePick = useCallback(
@@ -117,26 +119,26 @@ export function ShopPickerScreen({onShopPicked}: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f5f5f7'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.background},
   centered: {justifyContent: 'center', alignItems: 'center'},
-  header: {padding: 16, backgroundColor: '#fff'},
-  title: {fontSize: 22, fontWeight: '700', color: '#111', marginBottom: 4},
-  subtitle: {fontSize: 13, color: '#666', lineHeight: 18},
+  header: {padding: 16, backgroundColor: t.surface},
+  title: {fontSize: 22, fontWeight: '700', color: t.textPrimary, marginBottom: 4},
+  subtitle: {fontSize: 13, color: t.textMuted, lineHeight: 18},
   shopRow: {
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     minHeight: 48,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  shopName: {fontSize: 16, fontWeight: '500', color: '#111'},
-  shopId: {fontSize: 12, color: '#888'},
-  separator: {height: StyleSheet.hairlineWidth, backgroundColor: '#eee'},
+  shopName: {fontSize: 16, fontWeight: '500', color: t.textPrimary},
+  shopId: {fontSize: 12, color: t.textMuted},
+  separator: {height: StyleSheet.hairlineWidth, backgroundColor: t.divider},
   errorPane: {flex: 1, padding: 24, justifyContent: 'center', alignItems: 'center'},
-  errorTitle: {fontSize: 20, fontWeight: '700', color: '#b00020', marginBottom: 8},
-  errorBody: {fontSize: 14, color: '#555', textAlign: 'center', lineHeight: 20},
+  errorTitle: {fontSize: 20, fontWeight: '700', color: t.danger, marginBottom: 8},
+  errorBody: {fontSize: 14, color: t.textSecondary, textAlign: 'center', lineHeight: 20},
   errorSpacer: {height: 16},
-});
+}));

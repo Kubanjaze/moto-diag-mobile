@@ -52,10 +52,12 @@ import type {ShopStackParamList} from '../navigation/types';
 import {buildWorkOrderSections} from './buildWorkOrderSections';
 import {shopAccessErrorCopy} from './shopAccessErrorCopy';
 import type {WorkOrderIssue} from '../types/workOrder';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 type Props = NativeStackScreenProps<ShopStackParamList, 'WorkOrderDetail'>;
 
 export function WorkOrderDetailScreen({navigation, route}: Props) {
+  const styles = useStyles();
   const {shopId, woId} = route.params;
   const {workOrder, isLoading, error, refetch} = useWorkOrder(shopId, woId);
   // Phase 194 — work-order photos. Fetched in parallel; passed to the
@@ -580,89 +582,89 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f5f5f7'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.background},
   centered: {justifyContent: 'center', alignItems: 'center'},
   scroll: {padding: 16, paddingBottom: 40},
   photosCard: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 12,
     padding: 16,
     marginTop: 6,
     marginBottom: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
     gap: 8,
   },
   photosCardTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#888',
+    color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   photosCardSubtitle: {
     fontSize: 13,
-    color: '#555',
+    color: t.textSecondary,
     lineHeight: 18,
     marginBottom: 4,
   },
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#111',
+    color: t.textPrimary,
     marginTop: 4,
     marginBottom: 4,
   },
-  subtitle: {fontSize: 12, color: '#888', marginBottom: 16},
+  subtitle: {fontSize: 12, color: t.textMuted, marginBottom: 16},
   timerRunning: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#1a7f37',
+    color: t.success,
     fontVariant: ['tabular-nums'],
     textAlign: 'center',
     marginBottom: 8,
   },
   actionsCard: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 12,
     padding: 16,
     marginTop: 4,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
   },
   actionsTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#888',
+    color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
   },
   buttonGap: {height: 10},
   errorPane: {flex: 1, padding: 24, justifyContent: 'center', alignItems: 'center'},
-  errorTitle: {fontSize: 20, fontWeight: '700', color: '#b00020', marginBottom: 8},
-  errorBody: {fontSize: 14, color: '#555', textAlign: 'center', lineHeight: 20},
+  errorTitle: {fontSize: 20, fontWeight: '700', color: t.danger, marginBottom: 8},
+  errorBody: {fontSize: 14, color: t.textSecondary, textAlign: 'center', lineHeight: 20},
   errorSpacer: {height: 16},
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: t.scrim,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
   },
   modalCard: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 12,
     padding: 20,
     width: '100%',
     maxWidth: 400,
   },
-  modalTitle: {fontSize: 18, fontWeight: '700', color: '#111', marginBottom: 8},
-  modalSubtitle: {fontSize: 13, color: '#666', marginBottom: 16, lineHeight: 18},
+  modalTitle: {fontSize: 18, fontWeight: '700', color: t.textPrimary, marginBottom: 8},
+  modalSubtitle: {fontSize: 13, color: t.textMuted, marginBottom: 16, lineHeight: 18},
   modalInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: t.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 15,
@@ -671,4 +673,4 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalButtons: {flexDirection: 'column'},
-});
+}));

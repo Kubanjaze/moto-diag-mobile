@@ -35,12 +35,14 @@ import {photoStorageCache} from '../services/photoStorageCache';
 import type {ShopStackParamList} from '../navigation/types';
 import {useWorkOrderPhotos} from '../hooks/useWorkOrderPhotos';
 import type {WorkOrderPhoto} from '../types/workOrder';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 type Props = NativeStackScreenProps<ShopStackParamList, 'ClassifyPhotos'>;
 
 type ClassifyRole = 'before' | 'after' | 'general';
 
 export function ClassifyPhotosScreen({navigation, route}: Props) {
+  const styles = useStyles();
   const {shopId, woId} = route.params;
   const {photos, repair, isLoading} = useWorkOrderPhotos(shopId, woId);
 
@@ -245,8 +247,8 @@ export function ClassifyPhotosScreen({navigation, route}: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f5f5f7'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.background},
   centered: {
     flex: 1,
     alignItems: 'center',
@@ -255,12 +257,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   scroll: {padding: 16, gap: 12, paddingBottom: 40},
-  title: {fontSize: 18, fontWeight: '700', color: '#111'},
-  body: {fontSize: 14, color: '#444', lineHeight: 20},
+  title: {fontSize: 18, fontWeight: '700', color: t.textPrimary},
+  body: {fontSize: 14, color: t.textSecondary, lineHeight: 20},
   sectionLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#666',
+    color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginTop: 8,
@@ -268,13 +270,13 @@ const styles = StyleSheet.create({
   previewWrap: {
     width: '100%',
     aspectRatio: 1.4,
-    backgroundColor: '#000',
+    backgroundColor: t.textPrimary,
     borderRadius: 10,
     overflow: 'hidden',
   },
   preview: {width: '100%', height: '100%'},
   previewPlaceholder: {
-    backgroundColor: '#222',
+    backgroundColor: t.textPrimary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -282,12 +284,12 @@ const styles = StyleSheet.create({
   spacer: {height: 6},
   pairPicker: {
     marginTop: 8,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 10,
     padding: 12,
     gap: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
   },
   pairList: {gap: 10},
   pairItem: {
@@ -296,17 +298,17 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: t.surface,
   },
   pairItemSelected: {
-    backgroundColor: '#e6efff',
+    backgroundColor: t.controlSecondaryBg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#7aa6ff',
+    borderColor: t.accent,
   },
   pairThumb: {
     width: 60,
     height: 60,
     borderRadius: 6,
-    backgroundColor: '#eee',
+    backgroundColor: t.divider,
   },
-});
+}));

@@ -37,10 +37,14 @@ import type {HomeStackParamList} from '../navigation/types';
 import type {DTCResponse} from '../types/api';
 import {renderSeverityForView} from '../types/sessionEnums';
 import {dtcResultKey} from './dtcSearchHelpers';
+import {createThemedStyles} from '../theme/createThemedStyles';
+import {useTheme} from '../theme/useTheme';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'DTCSearch'>;
 
 export function DTCSearchScreen({navigation}: Props) {
+  const styles = useStyles();
+  const {theme} = useTheme();
   const {query, setQuery, results, total, isLoading, error} =
     useDTCSearch();
 
@@ -75,7 +79,7 @@ export function DTCSearchScreen({navigation}: Props) {
           value={query}
           onChangeText={setQuery}
           placeholder="Type a DTC code (e.g. P0171) or describe a symptom"
-          placeholderTextColor="#999"
+          placeholderTextColor={theme.textDisabled}
           autoCapitalize="characters"
           autoCorrect={false}
           autoFocus
@@ -156,6 +160,7 @@ function DTCRow({
   onPress: () => void;
   testID: string;
 }) {
+  const styles = useStyles();
   const severityDisplay = renderSeverityForView(dtc.severity);
   return (
     <TouchableOpacity
@@ -181,48 +186,48 @@ function DTCRow({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f5f5f7'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.background},
   searchBar: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomColor: '#ddd',
+    borderBottomColor: t.border,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   input: {
     fontSize: 16,
-    color: '#111',
+    color: t.textPrimary,
     minHeight: 48,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderColor: '#ccc',
+    borderColor: t.border,
     borderWidth: 1,
     borderRadius: 8,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
   },
   errorBanner: {
-    backgroundColor: '#fee',
+    backgroundColor: t.severity.critical.bg,
     borderLeftWidth: 4,
-    borderLeftColor: '#b00020',
+    borderLeftColor: t.danger,
     padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
   },
-  errorText: {flex: 1, color: '#b00020', fontSize: 14},
+  errorText: {flex: 1, color: t.danger, fontSize: 14},
   listContainer: {padding: 12},
   empty: {flex: 1, padding: 32, justifyContent: 'center', alignItems: 'center'},
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#444',
+    color: t.textSecondary,
     textAlign: 'center',
   },
   emptyHelp: {
     fontSize: 14,
-    color: '#777',
+    color: t.textMuted,
     marginTop: 12,
     lineHeight: 20,
     textAlign: 'center',
@@ -234,31 +239,31 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 12,
   },
-  loadingText: {fontSize: 13, color: '#888'},
+  loadingText: {fontSize: 13, color: t.textMuted},
   footer: {padding: 16, alignItems: 'center'},
-  footerText: {fontSize: 12, color: '#888', textAlign: 'center'},
+  footerText: {fontSize: 12, color: t.textMuted, textAlign: 'center'},
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
     minHeight: 64,
   },
   rowMain: {flex: 1, gap: 4},
   rowCode: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111',
+    color: t.textPrimary,
     fontFamily: 'monospace',
     letterSpacing: 0.5,
   },
-  rowDescription: {fontSize: 13, color: '#444', lineHeight: 18},
+  rowDescription: {fontSize: 13, color: t.textSecondary, lineHeight: 18},
   rowMeta: {flexDirection: 'row', alignItems: 'center', gap: 6},
-  rowSeverity: {fontSize: 12, color: '#888', fontWeight: '600'},
-  rowChevron: {fontSize: 22, color: '#bbb', fontWeight: '500'},
-});
+  rowSeverity: {fontSize: 12, color: t.textMuted, fontWeight: '600'},
+  rowChevron: {fontSize: 22, color: t.textDisabled, fontWeight: '500'},
+}));

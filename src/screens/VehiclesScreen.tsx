@@ -25,10 +25,12 @@ import {Button} from '../components/Button';
 import {useVehicles} from '../hooks/useVehicles';
 import type {GarageStackParamList} from '../navigation/types';
 import type {VehicleResponse} from '../types/api';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 type Props = NativeStackScreenProps<GarageStackParamList, 'Vehicles'>;
 
 export function VehiclesScreen({navigation}: Props) {
+  const styles = useStyles();
   const {vehicles, listResponse, isLoading, error, refetch} = useVehicles();
 
   // Header "+ Add" button.
@@ -44,7 +46,7 @@ export function VehiclesScreen({navigation}: Props) {
         </TouchableOpacity>
       ),
     });
-  }, [navigation]);
+  }, [navigation, styles]);
 
   // Re-fetch on focus (return from detail after edit/delete; return
   // from new after create).
@@ -81,7 +83,7 @@ export function VehiclesScreen({navigation}: Props) {
         </View>
       </TouchableOpacity>
     ),
-    [navigation],
+    [navigation, styles],
   );
 
   return (
@@ -137,6 +139,7 @@ function keyExtractor(item: VehicleResponse): string {
 }
 
 function EmptyState({onAdd}: {onAdd: () => void}) {
+  const styles = useStyles();
   return (
     <View style={styles.empty} testID="vehicles-empty-state">
       <Text style={styles.emptyTitle}>No bikes yet</Text>
@@ -164,6 +167,7 @@ function QuotaFooter({
   quotaLimit: number | null | undefined;
   quotaRemaining: number | null | undefined;
 }) {
+  const styles = useStyles();
   // Company tier = unlimited = no quota line.
   if (!quotaLimit) return null;
   return (
@@ -175,50 +179,50 @@ function QuotaFooter({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f5f5f7'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.background},
   errorBanner: {
-    backgroundColor: '#fee',
+    backgroundColor: t.severity.critical.bg,
     borderLeftWidth: 4,
-    borderLeftColor: '#b00020',
+    borderLeftColor: t.danger,
     padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
   },
-  errorText: {flex: 1, color: '#b00020', fontSize: 14},
+  errorText: {flex: 1, color: t.danger, fontSize: 14},
   listContainer: {padding: 12},
   emptyContainer: {flexGrow: 1, padding: 24, justifyContent: 'center'},
   empty: {alignItems: 'stretch'},
   emptyTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#111',
+    color: t.textPrimary,
     textAlign: 'center',
   },
   emptyHelp: {
     fontSize: 14,
-    color: '#555',
+    color: t.textSecondary,
     marginTop: 8,
     lineHeight: 20,
     textAlign: 'center',
   },
   emptySpacer: {height: 24},
   row: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
     minHeight: 64,
   },
-  rowTitle: {fontSize: 18, fontWeight: '700', color: '#111'},
+  rowTitle: {fontSize: 18, fontWeight: '700', color: t.textPrimary},
   rowMetaRow: {flexDirection: 'row', marginTop: 6, gap: 10, flexWrap: 'wrap'},
-  rowMeta: {fontSize: 13, color: '#666'},
+  rowMeta: {fontSize: 13, color: t.textMuted},
   footer: {padding: 16, alignItems: 'center'},
-  footerText: {fontSize: 12, color: '#888'},
+  footerText: {fontSize: 12, color: t.textMuted},
   headerButton: {paddingHorizontal: 8, paddingVertical: 6, minHeight: 36},
-  headerButtonText: {fontSize: 16, color: '#007aff', fontWeight: '600'},
-});
+  headerButtonText: {fontSize: 16, color: t.accent, fontWeight: '600'},
+}));
