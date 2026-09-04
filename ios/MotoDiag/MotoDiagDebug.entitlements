@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Phase 204 — Debug builds talk to the APNs SANDBOX gateway, which
+	     is what `aps-environment: development` selects. Phase 199 added
+	     this capability with one entitlements file shared by both
+	     configurations; that silently made Release (and therefore
+	     TestFlight) request a sandbox token too, and a sandbox token is
+	     rejected by the production gateway. Splitting the file is the
+	     fix: Debug keeps development, Release gets production. -->
+	<key>aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

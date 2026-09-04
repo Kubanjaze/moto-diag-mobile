@@ -54,6 +54,26 @@
 	<string>MotoDiag accesses your photo library to attach existing photos or videos to diagnostic work orders.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>MotoDiag converts your spoken symptom descriptions into text for the diagnostic record.</string>
+	<!-- Phase 204 — submission keys. -->
+	<!-- Without this, App Store Connect asks the export-compliance
+	     question on EVERY upload and blocks automated processing. The
+	     app uses only HTTPS via the OS, which is exempt. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<!-- Phase 199 delivers pushes while the app is backgrounded; without
+	     this mode iOS will not wake it to hand them over. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+	<!-- Phase 192B/200 write a shared PDF; saving one to Photos needs
+	     the ADD permission, which is distinct from read access. -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>MotoDiag saves diagnostic reports and photos you share to your photo library.</string>
+	<!-- Paired with NSBluetoothAlwaysUsageDescription for older iOS
+	     versions, which read this key instead. -->
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>MotoDiag connects to your OBD-II adapter over Bluetooth to read live sensor data and fault codes.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Phase 204 — export options for `xcodebuild -exportArchive`.
+	     `app-store-connect` is the destination for both TestFlight and
+	     the App Store; they are the same upload. -->
+	<key>method</key>
+	<string>app-store-connect</string>
+	<key>teamID</key>
+	<string>B6QK49DPRZ</string>
+	<key>signingStyle</key>
+	<string>automatic</string>
+	<!-- Symbols let App Store Connect symbolicate crash reports from
+	     testers. Without them a TestFlight crash is a hex address. -->
+	<key>uploadSymbols</key>
+	<true/>
+	<!-- Bitcode has been removed from the toolchain since Xcode 14;
+	     stated explicitly so the export does not warn. -->
+	<key>uploadBitcode</key>
+	<false/>
+	<key>destination</key>
+	<string>export</string>
+</dict>
+</plist>

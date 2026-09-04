@@ -2,7 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Phase 204 — TestFlight and the App Store require `production`.
+	     A build shipped with `development` registers against the APNs
+	     sandbox and its tokens are refused by the production gateway,
+	     so push fails SILENTLY for every tester. This file is now
+	     Release-only; Debug uses MotoDiagDebug.entitlements. -->
 	<key>aps-environment</key>
-	<string>development</string>
+	<string>production</string>
 </dict>
 </plist>
