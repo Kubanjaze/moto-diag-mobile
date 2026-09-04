@@ -351,12 +351,12 @@ const useStyles = createThemedStyles((t) => ({
     marginBottom: 8,
   },
   issuedAt: {
-    fontSize: 12,
+    fontSize: 13,
     color: t.textMuted,
     marginBottom: 16,
   },
   footer: {
-    fontSize: 11,
+    fontSize: 13,
     color: t.textMuted,
     textAlign: 'center',
     marginTop: 12,
@@ -370,10 +370,10 @@ const useStyles = createThemedStyles((t) => ({
     borderColor: t.border,
     alignItems: 'center',
   },
-  emptyText: {fontSize: 14, color: t.textMuted, textAlign: 'center'},
+  emptyText: {fontSize: 16, color: t.textMuted, textAlign: 'center'},
   errorPane: {flex: 1, padding: 24, justifyContent: 'center'},
   errorTitle: {fontSize: 20, fontWeight: '700', color: t.danger},
-  errorBody: {fontSize: 14, color: t.textSecondary, marginTop: 8, lineHeight: 20},
+  errorBody: {fontSize: 16, color: t.textSecondary, marginTop: 8, lineHeight: 20},
   errorSpacer: {height: 16},
   buttonGap: {height: 10},
 }));

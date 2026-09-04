@@ -970,7 +970,7 @@ const useStyles = createThemedStyles((t) => ({
   capReachedTitle: {color: t.surface, fontSize: 16, fontWeight: '700'},
   capReachedHint: {
     color: t.border,
-    fontSize: 13,
+    fontSize: 14,
     marginTop: 6,
     textAlign: 'center',
   },
@@ -981,7 +981,7 @@ const useStyles = createThemedStyles((t) => ({
     backgroundColor: t.background,
   },
   blockedTitle: {fontSize: 22, fontWeight: '700', color: t.textPrimary},
-  blockedBody: {fontSize: 14, color: t.textSecondary, marginTop: 12, lineHeight: 20},
+  blockedBody: {fontSize: 16, color: t.textSecondary, marginTop: 12, lineHeight: 20},
   spacer: {height: 16},
   buttonGap: {height: 10},
   failedPane: {
@@ -991,7 +991,7 @@ const useStyles = createThemedStyles((t) => ({
     backgroundColor: t.background,
   },
   failedTitle: {fontSize: 22, fontWeight: '700', color: t.danger},
-  failedBody: {fontSize: 14, color: t.textSecondary, marginTop: 12, lineHeight: 20},
+  failedBody: {fontSize: 16, color: t.textSecondary, marginTop: 12, lineHeight: 20},
   savedPane: {flex: 1, padding: 24, justifyContent: 'center', backgroundColor: t.background},
   savedTitle: {fontSize: 24, fontWeight: '700', color: t.success},
   savedSummary: {
@@ -1001,9 +1001,9 @@ const useStyles = createThemedStyles((t) => ({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: t.border,
   },
-  summaryRow: {fontSize: 14, color: t.textPrimary, paddingVertical: 4},
+  summaryRow: {fontSize: 16, color: t.textPrimary, paddingVertical: 4},
   summaryRowPaused: {
-    fontSize: 14,
+    fontSize: 16,
     color: t.warning,
     paddingVertical: 4,
     fontWeight: '600',
@@ -1017,7 +1017,7 @@ const useStyles = createThemedStyles((t) => ({
   },
   uploadingTitle: {fontSize: 22, fontWeight: '700', color: t.success},
   uploadingHint: {
-    fontSize: 13,
+    fontSize: 14,
     color: t.textSecondary,
     textAlign: 'center',
     paddingHorizontal: 24,

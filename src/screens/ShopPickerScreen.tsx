@@ -124,7 +124,7 @@ const useStyles = createThemedStyles((t) => ({
   centered: {justifyContent: 'center', alignItems: 'center'},
   header: {padding: 16, backgroundColor: t.surface},
   title: {fontSize: 22, fontWeight: '700', color: t.textPrimary, marginBottom: 4},
-  subtitle: {fontSize: 13, color: t.textMuted, lineHeight: 18},
+  subtitle: {fontSize: 14, color: t.textMuted, lineHeight: 18},
   shopRow: {
     paddingHorizontal: 16,
     paddingVertical: 16,
@@ -135,10 +135,10 @@ const useStyles = createThemedStyles((t) => ({
     alignItems: 'center',
   },
   shopName: {fontSize: 16, fontWeight: '500', color: t.textPrimary},
-  shopId: {fontSize: 12, color: t.textMuted},
+  shopId: {fontSize: 13, color: t.textMuted},
   separator: {height: StyleSheet.hairlineWidth, backgroundColor: t.divider},
   errorPane: {flex: 1, padding: 24, justifyContent: 'center', alignItems: 'center'},
   errorTitle: {fontSize: 20, fontWeight: '700', color: t.danger, marginBottom: 8},
-  errorBody: {fontSize: 14, color: t.textSecondary, textAlign: 'center', lineHeight: 20},
+  errorBody: {fontSize: 16, color: t.textSecondary, textAlign: 'center', lineHeight: 20},
   errorSpacer: {height: 16},
 }));

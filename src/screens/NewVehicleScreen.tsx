@@ -321,7 +321,7 @@ const useStyles = createThemedStyles((t) => ({
   kav: {flex: 1},
   scroll: {padding: 16, paddingBottom: 40},
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     color: t.textMuted,
     textTransform: 'uppercase',

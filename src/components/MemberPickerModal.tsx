@@ -189,7 +189,7 @@ const useStyles = createThemedStyles((t) => ({
     alignItems: 'center',
   },
   errorTitle: {fontSize: 17, fontWeight: '700', color: t.danger, marginBottom: 8},
-  errorBody: {fontSize: 14, color: t.textSecondary, textAlign: 'center', lineHeight: 20},
+  errorBody: {fontSize: 16, color: t.textSecondary, textAlign: 'center', lineHeight: 20},
   filterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -200,8 +200,8 @@ const useStyles = createThemedStyles((t) => ({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: t.border,
   },
-  filterLabel: {fontSize: 13, color: t.textMuted},
-  filterToggleText: {fontSize: 14, color: t.accent, fontWeight: '500'},
+  filterLabel: {fontSize: 14, color: t.textMuted},
+  filterToggleText: {fontSize: 16, color: t.accent, fontWeight: '500'},
   memberRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -214,14 +214,14 @@ const useStyles = createThemedStyles((t) => ({
   memberRowCurrent: {backgroundColor: t.symptomSource.keyword.bg},
   memberRowLeft: {flex: 1},
   memberName: {fontSize: 16, fontWeight: '500', color: t.textPrimary},
-  memberRole: {fontSize: 12, color: t.textMuted, marginTop: 2},
-  currentMark: {fontSize: 12, color: t.accentPressed, fontWeight: '700'},
+  memberRole: {fontSize: 13, color: t.textMuted, marginTop: 2},
+  currentMark: {fontSize: 13, color: t.accentPressed, fontWeight: '700'},
   separator: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: t.divider,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 16,
     color: t.textMuted,
     textAlign: 'center',
     padding: 32,

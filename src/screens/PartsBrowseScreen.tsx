@@ -188,9 +188,9 @@ const useStyles = createThemedStyles((t) => ({
   rowMain: {flex: 1, paddingRight: 12},
   rowTrailing: {alignItems: 'flex-end', gap: 6},
   name: {fontSize: 15, fontWeight: '500', color: t.textPrimary},
-  meta: {fontSize: 13, color: t.textMuted, marginTop: 2},
-  cost: {fontSize: 13, color: t.textSecondary},
-  empty: {padding: 24, textAlign: 'center', color: t.textMuted, fontSize: 14},
+  meta: {fontSize: 14, color: t.textMuted, marginTop: 2},
+  cost: {fontSize: 14, color: t.textSecondary},
+  empty: {padding: 24, textAlign: 'center', color: t.textMuted, fontSize: 16},
   error: {paddingHorizontal: 16, paddingBottom: 8, color: t.danger},
   spinner: {marginTop: 32},
   footer: {
@@ -202,5 +202,5 @@ const useStyles = createThemedStyles((t) => ({
     borderTopColor: t.border,
     backgroundColor: t.surface,
   },
-  footerText: {fontSize: 14, color: t.textSecondary},
+  footerText: {fontSize: 16, color: t.textSecondary},
 }));

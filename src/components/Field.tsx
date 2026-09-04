@@ -97,7 +97,7 @@ export const useNoopCallback = () => useCallback(() => {}, []);
 
 const useStyles = createThemedStyles((t) => ({
   wrap: {marginBottom: 12},
-  label: {fontSize: 13, fontWeight: '600', color: t.textSecondary, marginBottom: 6},
+  label: {fontSize: 14, fontWeight: '600', color: t.textSecondary, marginBottom: 6},
   requiredMark: {color: t.danger},
   input: {
     borderColor: t.border,
@@ -111,5 +111,5 @@ const useStyles = createThemedStyles((t) => ({
     backgroundColor: t.surface,
   },
   inputError: {borderColor: t.danger},
-  errorLine: {fontSize: 12, color: t.danger, marginTop: 4},
+  errorLine: {fontSize: 13, color: t.danger, marginTop: 4},
 }));

@@ -424,10 +424,10 @@ const useStyles = createThemedStyles((t) => ({
   },
   title: {fontSize: 22, fontWeight: '700', color: t.surface},
   body: {
-    fontSize: 14, color: t.textDisabled, textAlign: 'center', lineHeight: 20,
+    fontSize: 16, color: t.textDisabled, textAlign: 'center', lineHeight: 20,
   },
   recordingLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
     color: t.danger,
     textTransform: 'uppercase',
@@ -444,7 +444,7 @@ const useStyles = createThemedStyles((t) => ({
     fontSize: 16, color: t.divider, textAlign: 'center',
   },
   errorText: {
-    fontSize: 14, color: t.severity.critical.border, textAlign: 'center', lineHeight: 20,
+    fontSize: 16, color: t.severity.critical.border, textAlign: 'center', lineHeight: 20,
   },
   pulseRing: {
     width: 110,
@@ -490,6 +490,6 @@ const useStyles = createThemedStyles((t) => ({
     gap: 12,
   },
   permissionTitle: {fontSize: 18, fontWeight: '600', color: t.textPrimary},
-  permissionBody: {fontSize: 14, color: t.textSecondary, lineHeight: 20},
+  permissionBody: {fontSize: 16, color: t.textSecondary, lineHeight: 20},
   spacer: {height: 8},
 }));

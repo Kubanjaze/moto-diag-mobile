@@ -38,6 +38,7 @@ export function VehiclesScreen({navigation}: Props) {
     navigation.setOptions({
       headerRight: () => (
         <TouchableOpacity
+          accessibilityLabel="Add vehicle"
           onPress={() => navigation.navigate('NewVehicle')}
           style={styles.headerButton}
           accessibilityRole="button"
@@ -191,7 +192,7 @@ const useStyles = createThemedStyles((t) => ({
     justifyContent: 'space-between',
     gap: 8,
   },
-  errorText: {flex: 1, color: t.danger, fontSize: 14},
+  errorText: {flex: 1, color: t.danger, fontSize: 16},
   listContainer: {padding: 12},
   emptyContainer: {flexGrow: 1, padding: 24, justifyContent: 'center'},
   empty: {alignItems: 'stretch'},
@@ -202,7 +203,7 @@ const useStyles = createThemedStyles((t) => ({
     textAlign: 'center',
   },
   emptyHelp: {
-    fontSize: 14,
+    fontSize: 16,
     color: t.textSecondary,
     marginTop: 8,
     lineHeight: 20,
@@ -220,9 +221,9 @@ const useStyles = createThemedStyles((t) => ({
   },
   rowTitle: {fontSize: 18, fontWeight: '700', color: t.textPrimary},
   rowMetaRow: {flexDirection: 'row', marginTop: 6, gap: 10, flexWrap: 'wrap'},
-  rowMeta: {fontSize: 13, color: t.textMuted},
+  rowMeta: {fontSize: 14, color: t.textMuted},
   footer: {padding: 16, alignItems: 'center'},
-  footerText: {fontSize: 12, color: t.textMuted},
-  headerButton: {paddingHorizontal: 8, paddingVertical: 6, minHeight: 36},
+  footerText: {fontSize: 13, color: t.textMuted},
+  headerButton: {paddingHorizontal: 8, paddingVertical: 6, minHeight: 48},
   headerButtonText: {fontSize: 16, color: t.accent, fontWeight: '600'},
 }));

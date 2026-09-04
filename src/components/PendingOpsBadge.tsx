@@ -62,5 +62,5 @@ const useStyles = createThemedStyles((t) => ({
     paddingVertical: 8,
     marginBottom: 8,
   },
-  text: {fontSize: 12, color: t.warning, fontWeight: '600'},
+  text: {fontSize: 13, color: t.warning, fontWeight: '600'},
 }));

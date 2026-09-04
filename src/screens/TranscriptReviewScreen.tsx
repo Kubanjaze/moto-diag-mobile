@@ -311,13 +311,13 @@ const useStyles = createThemedStyles((t) => ({
     gap: 8,
   },
   headerLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
     color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  headerMeta: {fontSize: 12, color: t.textMuted},
+  headerMeta: {fontSize: 13, color: t.textMuted},
   previewBody: {
     fontSize: 15,
     color: t.textPrimary,
@@ -333,10 +333,10 @@ const useStyles = createThemedStyles((t) => ({
     borderRadius: 8,
     gap: 6,
   },
-  audioErrorTitle: {fontSize: 13, fontWeight: '700', color: t.danger},
-  audioErrorBody: {fontSize: 13, color: t.danger, lineHeight: 18},
+  audioErrorTitle: {fontSize: 14, fontWeight: '700', color: t.danger},
+  audioErrorBody: {fontSize: 14, color: t.danger, lineHeight: 18},
   sectionLabel: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
     color: t.textMuted,
     textTransform: 'uppercase',
@@ -350,7 +350,7 @@ const useStyles = createThemedStyles((t) => ({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: t.border,
   },
-  emptyText: {fontSize: 14, color: t.textMuted, fontStyle: 'italic'},
+  emptyText: {fontSize: 16, color: t.textMuted, fontStyle: 'italic'},
   chipList: {gap: 8},
   chip: {
     backgroundColor: t.surface,
@@ -366,15 +366,15 @@ const useStyles = createThemedStyles((t) => ({
     backgroundColor: t.severity.low.bg,
   },
   chipText: {fontSize: 15, color: t.textPrimary, fontWeight: '500'},
-  chipMeta: {fontSize: 12, color: t.textMuted},
+  chipMeta: {fontSize: 13, color: t.textMuted},
   chipConfirmedBadge: {
-    fontSize: 11,
+    fontSize: 13,
     color: t.severity.low.fg,
     fontWeight: '700',
     marginTop: 2,
   },
   helperText: {
-    fontSize: 12,
+    fontSize: 13,
     color: t.textMuted,
     fontStyle: 'italic',
     textAlign: 'center',
@@ -385,7 +385,7 @@ const useStyles = createThemedStyles((t) => ({
     fontSize: 18, fontWeight: '700', color: t.textPrimary, marginBottom: 4,
   },
   notFoundBody: {
-    fontSize: 14, color: t.textSecondary, textAlign: 'center', lineHeight: 20,
+    fontSize: 16, color: t.textSecondary, textAlign: 'center', lineHeight: 20,
   },
   spacer: {height: 12},
 }));

@@ -216,7 +216,7 @@ const useStyles = createThemedStyles((t) => ({
     justifyContent: 'space-between',
     gap: 8,
   },
-  errorText: {flex: 1, color: t.danger, fontSize: 14},
+  errorText: {flex: 1, color: t.danger, fontSize: 16},
   listContainer: {padding: 12},
   empty: {flex: 1, padding: 32, justifyContent: 'center', alignItems: 'center'},
   emptyTitle: {
@@ -226,7 +226,7 @@ const useStyles = createThemedStyles((t) => ({
     textAlign: 'center',
   },
   emptyHelp: {
-    fontSize: 14,
+    fontSize: 16,
     color: t.textMuted,
     marginTop: 12,
     lineHeight: 20,
@@ -239,9 +239,9 @@ const useStyles = createThemedStyles((t) => ({
     gap: 8,
     paddingVertical: 12,
   },
-  loadingText: {fontSize: 13, color: t.textMuted},
+  loadingText: {fontSize: 14, color: t.textMuted},
   footer: {padding: 16, alignItems: 'center'},
-  footerText: {fontSize: 12, color: t.textMuted, textAlign: 'center'},
+  footerText: {fontSize: 13, color: t.textMuted, textAlign: 'center'},
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -262,8 +262,8 @@ const useStyles = createThemedStyles((t) => ({
     fontFamily: 'monospace',
     letterSpacing: 0.5,
   },
-  rowDescription: {fontSize: 13, color: t.textSecondary, lineHeight: 18},
+  rowDescription: {fontSize: 14, color: t.textSecondary, lineHeight: 18},
   rowMeta: {flexDirection: 'row', alignItems: 'center', gap: 6},
-  rowSeverity: {fontSize: 12, color: t.textMuted, fontWeight: '600'},
+  rowSeverity: {fontSize: 13, color: t.textMuted, fontWeight: '600'},
   rowChevron: {fontSize: 22, color: t.textDisabled, fontWeight: '500'},
 }));

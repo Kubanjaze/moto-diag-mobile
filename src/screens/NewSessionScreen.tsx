@@ -373,7 +373,7 @@ const useStyles = createThemedStyles((t) => ({
   kav: {flex: 1},
   scroll: {padding: 16, paddingBottom: 40},
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     color: t.textMuted,
     textTransform: 'uppercase',
@@ -389,8 +389,8 @@ const useStyles = createThemedStyles((t) => ({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: t.border,
   },
-  pickerLabel: {fontSize: 13, fontWeight: '600', color: t.textSecondary, marginBottom: 8},
-  pickerHelp: {fontSize: 13, color: t.textMuted, lineHeight: 18},
+  pickerLabel: {fontSize: 14, fontWeight: '600', color: t.textSecondary, marginBottom: 8},
+  pickerHelp: {fontSize: 14, color: t.textMuted, lineHeight: 18},
   pickerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -412,8 +412,8 @@ const useStyles = createThemedStyles((t) => ({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  linkedText: {fontSize: 13, color: t.accentPressed, fontWeight: '600'},
-  linkedClear: {fontSize: 13, color: t.accent, fontWeight: '600'},
+  linkedText: {fontSize: 14, color: t.accentPressed, fontWeight: '600'},
+  linkedClear: {fontSize: 14, color: t.accent, fontWeight: '600'},
   spacer: {height: 20},
   gap: {height: 10},
 }));

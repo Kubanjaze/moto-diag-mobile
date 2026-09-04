@@ -597,14 +597,14 @@ const useStyles = createThemedStyles((t) => ({
     gap: 8,
   },
   photosCardTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   photosCardSubtitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: t.textSecondary,
     lineHeight: 18,
     marginBottom: 4,
@@ -616,7 +616,7 @@ const useStyles = createThemedStyles((t) => ({
     marginTop: 4,
     marginBottom: 4,
   },
-  subtitle: {fontSize: 12, color: t.textMuted, marginBottom: 16},
+  subtitle: {fontSize: 13, color: t.textMuted, marginBottom: 16},
   timerRunning: {
     fontSize: 32,
     fontWeight: '700',
@@ -634,7 +634,7 @@ const useStyles = createThemedStyles((t) => ({
     borderColor: t.border,
   },
   actionsTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     color: t.textMuted,
     textTransform: 'uppercase',
@@ -644,7 +644,7 @@ const useStyles = createThemedStyles((t) => ({
   buttonGap: {height: 10},
   errorPane: {flex: 1, padding: 24, justifyContent: 'center', alignItems: 'center'},
   errorTitle: {fontSize: 20, fontWeight: '700', color: t.danger, marginBottom: 8},
-  errorBody: {fontSize: 14, color: t.textSecondary, textAlign: 'center', lineHeight: 20},
+  errorBody: {fontSize: 16, color: t.textSecondary, textAlign: 'center', lineHeight: 20},
   errorSpacer: {height: 16},
   modalBackdrop: {
     flex: 1,
@@ -661,7 +661,7 @@ const useStyles = createThemedStyles((t) => ({
     maxWidth: 400,
   },
   modalTitle: {fontSize: 18, fontWeight: '700', color: t.textPrimary, marginBottom: 8},
-  modalSubtitle: {fontSize: 13, color: t.textMuted, marginBottom: 16, lineHeight: 18},
+  modalSubtitle: {fontSize: 14, color: t.textMuted, marginBottom: 16, lineHeight: 18},
   modalInput: {
     borderWidth: 1,
     borderColor: t.border,

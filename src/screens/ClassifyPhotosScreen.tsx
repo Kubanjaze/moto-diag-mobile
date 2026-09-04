@@ -258,9 +258,9 @@ const useStyles = createThemedStyles((t) => ({
   },
   scroll: {padding: 16, gap: 12, paddingBottom: 40},
   title: {fontSize: 18, fontWeight: '700', color: t.textPrimary},
-  body: {fontSize: 14, color: t.textSecondary, lineHeight: 20},
+  body: {fontSize: 16, color: t.textSecondary, lineHeight: 20},
   sectionLabel: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     color: t.textMuted,
     textTransform: 'uppercase',

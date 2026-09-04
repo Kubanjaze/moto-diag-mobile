@@ -19,7 +19,8 @@ export type ButtonVariant = 'primary' | 'secondary' | 'danger';
 interface Props extends Omit<TouchableOpacityProps, 'children'> {
   title: string;
   variant?: ButtonVariant;
-  /** Compact, 44dp tall instead of 48dp — use for inline secondary actions. */
+  /** Compact — narrower padding for inline secondary actions. Still
+   *  meets the 48dp touch floor (Phase 203 raised it from 44). */
   compact?: boolean;
   /** Full-width stretch. Default true (stack layouts). */
   block?: boolean;
@@ -27,6 +28,7 @@ interface Props extends Omit<TouchableOpacityProps, 'children'> {
 
 function ButtonImpl({
   title,
+  accessibilityLabel,
   variant = 'primary',
   compact = false,
   block = true,
@@ -38,6 +40,11 @@ function ButtonImpl({
   return (
     <TouchableOpacity
       accessibilityRole="button"
+      // Phase 203 — the visible title IS the label unless a caller
+      // overrides it. Doing this here covers most of the app's
+      // interactive controls in one place; before this, the whole
+      // codebase had exactly one accessibilityLabel.
+      accessibilityLabel={accessibilityLabel ?? title}
       activeOpacity={0.7}
       disabled={disabled}
       style={[
@@ -97,7 +104,7 @@ const useStyles = createThemedStyles((t) => ({
     borderWidth: 1,
   },
   full: {minHeight: 48, paddingVertical: 12},
-  compact: {minHeight: 44, paddingVertical: 10},
+  compact: {minHeight: 48, paddingVertical: 10},
   block: {alignSelf: 'stretch'},
   labelRow: {flexDirection: 'row', alignItems: 'center'},
   label: {fontSize: 16, fontWeight: '600'},

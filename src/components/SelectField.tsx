@@ -300,7 +300,7 @@ export function SelectField<T extends string>(props: Props<T>) {
 
 const useStyles = createThemedStyles((t) => ({
   wrap: {marginBottom: 12},
-  label: {fontSize: 13, fontWeight: '600', color: t.textSecondary, marginBottom: 6},
+  label: {fontSize: 14, fontWeight: '600', color: t.textSecondary, marginBottom: 6},
   requiredMark: {color: t.danger},
   trigger: {
     flexDirection: 'row',
@@ -315,7 +315,7 @@ const useStyles = createThemedStyles((t) => ({
     backgroundColor: t.surface,
   },
   triggerText: {fontSize: 16, color: t.textPrimary},
-  triggerChevron: {fontSize: 14, color: t.textMuted},
+  triggerChevron: {fontSize: 16, color: t.textMuted},
   backdrop: {
     flex: 1,
     backgroundColor: t.scrim,
@@ -324,7 +324,7 @@ const useStyles = createThemedStyles((t) => ({
   },
   sheet: {backgroundColor: t.surface, borderRadius: 12, padding: 16},
   sheetTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
     color: t.textMuted,
     textTransform: 'uppercase',

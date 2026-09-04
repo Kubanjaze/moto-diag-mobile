@@ -449,7 +449,7 @@ const useStyles = createThemedStyles((t) => ({
   },
   errorText: {
     color: t.severity.critical.border,
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
     paddingVertical: 12,
   },
@@ -461,6 +461,6 @@ const useStyles = createThemedStyles((t) => ({
     gap: 12,
   },
   permissionTitle: {fontSize: 18, fontWeight: '600', color: t.textPrimary},
-  permissionBody: {fontSize: 14, color: t.textSecondary, lineHeight: 20},
+  permissionBody: {fontSize: 16, color: t.textSecondary, lineHeight: 20},
   spacer: {height: 8},
 }));

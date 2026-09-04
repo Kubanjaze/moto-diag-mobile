@@ -251,17 +251,17 @@ const useStyles = createThemedStyles((t) => ({
     borderTopColor: t.textSecondary,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  metaTitle: {color: t.surface, fontSize: 14, fontWeight: '600'},
+  metaTitle: {color: t.surface, fontSize: 16, fontWeight: '600'},
   metaRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 16,
     marginTop: 6,
   },
-  metaItem: {color: t.textDisabled, fontSize: 13},
+  metaItem: {color: t.textDisabled, fontSize: 14},
   pausedBadge: {
     color: t.severity.medium.fg,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     marginTop: 8,
   },
@@ -278,6 +278,6 @@ const useStyles = createThemedStyles((t) => ({
     backgroundColor: t.background,
   },
   errorTitle: {fontSize: 22, fontWeight: '700', color: t.danger},
-  errorBody: {fontSize: 14, color: t.textSecondary, marginTop: 12, lineHeight: 20},
+  errorBody: {fontSize: 16, color: t.textSecondary, marginTop: 12, lineHeight: 20},
   spacer: {height: 16},
 }));

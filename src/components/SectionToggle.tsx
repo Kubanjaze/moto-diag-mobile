@@ -78,7 +78,7 @@ const useStyles = createThemedStyles((t) => ({
     borderBottomColor: t.border,
   },
   label: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
     color: t.textMuted,
     textTransform: 'uppercase',
@@ -106,7 +106,7 @@ const useStyles = createThemedStyles((t) => ({
     borderColor: t.textDisabled,
   },
   chipText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   chipTextActive: {color: t.surface},

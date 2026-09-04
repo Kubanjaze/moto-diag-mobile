@@ -43,6 +43,7 @@ export function SessionsListScreen({navigation}: Props) {
     navigation.setOptions({
       headerRight: () => (
         <TouchableOpacity
+          accessibilityLabel="New diagnostic session"
           onPress={() => navigation.navigate('NewSession')}
           style={styles.headerButton}
           accessibilityRole="button"
@@ -253,7 +254,7 @@ const useStyles = createThemedStyles((t) => ({
     justifyContent: 'space-between',
     gap: 8,
   },
-  errorText: {flex: 1, color: t.danger, fontSize: 14},
+  errorText: {flex: 1, color: t.danger, fontSize: 16},
   listContainer: {padding: 12},
   emptyContainer: {flexGrow: 1, padding: 24, justifyContent: 'center'},
   empty: {alignItems: 'stretch'},
@@ -264,7 +265,7 @@ const useStyles = createThemedStyles((t) => ({
     textAlign: 'center',
   },
   emptyHelp: {
-    fontSize: 14,
+    fontSize: 16,
     color: t.textSecondary,
     marginTop: 8,
     lineHeight: 20,
@@ -288,7 +289,7 @@ const useStyles = createThemedStyles((t) => ({
   },
   rowTitle: {fontSize: 17, fontWeight: '700', color: t.textPrimary, flex: 1},
   rowMetaRow: {flexDirection: 'row', marginTop: 6, gap: 12, flexWrap: 'wrap'},
-  rowMeta: {fontSize: 13, color: t.textMuted},
+  rowMeta: {fontSize: 14, color: t.textMuted},
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -297,9 +298,9 @@ const useStyles = createThemedStyles((t) => ({
   badgeOpen: {backgroundColor: t.controlSecondaryBg},
   badgeInProgress: {backgroundColor: t.severity.medium.bg},
   badgeClosed: {backgroundColor: t.divider},
-  badgeText: {fontSize: 11, fontWeight: '600', color: t.textSecondary},
+  badgeText: {fontSize: 13, fontWeight: '600', color: t.textSecondary},
   footer: {padding: 16, alignItems: 'center'},
-  footerText: {fontSize: 12, color: t.textMuted},
-  headerButton: {paddingHorizontal: 8, paddingVertical: 6, minHeight: 36},
+  footerText: {fontSize: 13, color: t.textMuted},
+  headerButton: {paddingHorizontal: 8, paddingVertical: 6, minHeight: 48},
   headerButtonText: {fontSize: 16, color: t.accent, fontWeight: '600'},
 }));
