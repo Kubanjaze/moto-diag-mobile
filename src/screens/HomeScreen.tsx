@@ -255,6 +255,24 @@ export function HomeScreen() {
           />
         </Section>
 
+        {/* Phase 203 — the app's first Settings entry point. Placed
+            above the diagnostic tools because appearance is something a
+            mechanic changes when the light changes, not something they
+            hunt for. */}
+        <Section title="Settings">
+          <Text style={styles.sectionHelp}>
+            Appearance and app preferences.
+          </Text>
+          <TouchableOpacity
+            style={styles.button}
+            accessibilityRole="button"
+            accessibilityLabel="Open settings"
+            onPress={() => navigation.navigate('Settings')}
+            testID="home-settings-button">
+            <Text style={styles.buttonText}>Settings</Text>
+          </TouchableOpacity>
+        </Section>
+
         <Section title="DTC lookup">
           <Text style={styles.sectionHelp}>
             Look up DTC codes in the catalog. Search by code or description.
