@@ -359,3 +359,49 @@ connect/handshake — needs a Bluetooth 4 adapter; a purchase, not a bug).
 - Left running at pause on the Mac: `motodiag serve --host 0.0.0.0` with
   the live APNs env, and Metro on 8081. Both are disposable; restart
   commands are in the Phase 199 and 200 ledger entries.
+
+---
+
+### 2026-09-04 — Phase 201 COMPLETE: parts ordering from mobile
+
+- **Step 0 inverted the phase.** "Browse · cart · order" reads as
+  greenfield; it was the reverse. Track G had shipped the entire parts
+  domain — 18 functions in `shop/parts_needs.py`, a CHECK-constrained
+  `open→ordered→received→installed` line lifecycle, requisition
+  snapshots, catalog search — and Phase 180 deferred exposing it to
+  "Phase 181+", which never happened. **Zero HTTP routes existed.** The
+  backend half became a composing router with no migrations.
+- **Project-level additions (mobile):** 8th `WorkOrderSection` variant
+  `parts`, `useWorkOrderParts`, `usePartsSearch`, `PartsBrowseScreen`,
+  and the Add parts / Order card on the WO detail.
+- **The cart is server state.** A work order's `open` lines ARE the
+  cart, so the app ships no cart store — which is what keeps ADR-003's
+  3-screen trigger untripped, and means a killed app or a second
+  mechanic on the same WO sees the same list. Worth citing as precedent
+  the next time "we need a store" comes up.
+- **The exhaustive-switch guard earned its keep**: adding the variant
+  broke `WorkOrderSectionCard`'s `never` assertion at compile time,
+  exactly the property Phase 193's smoke gate Step 9 was built for.
+- **Smoke split by an environment failure.** The `parts_arrived` push
+  was verified landing on the real phone through live APNs. The in-app
+  browse → add → Order journey was NOT: the Mac's tailnet stopped
+  routing mid-session (Tailscale reports Running, `tailscale serve`
+  shows the proxy, loopback answers, the tailnet IP times out) and the
+  app's `API_BASE_URL` is baked to that name.
+- **The smoke's real catch was F57, and it was not this phase's bug.**
+  Chasing a missing push log line exposed that the server had **never
+  emitted a single application log line** — `uvicorn.run(log_level=...)`
+  configures uvicorn's own loggers only, and `motodiag.*` inherits root
+  (WARNING, no handler). So **F52's "a successful push leaves a trace"
+  had been false in production since it shipped**, with a passing test,
+  because `caplog.at_level` forces the level the server never set.
+  Fixed in `af18aca` with 3 regression tests; the `--workers`/`--reload`
+  residual is filed as F57.
+- **Also fixed, in its own commit:** `eslint .` had been red since Phase
+  187 (`Buffer` undefined in a Node build script linted with the RN
+  config) while every commit passed, because `lint-staged` only lints
+  STAGED files. The repo's lint gate has never covered untouched files.
+- **Suite:** 73 suites / 896 tests green (+20); tsc clean; eslint 0
+  errors repo-wide. Backend regression green.
+- **Project docs:** `implementation.md` 0.2.3 → 0.2.4; ROADMAP 201 ✅;
+  **F57, F58, F59** filed. Ledger docs → `completed/`.

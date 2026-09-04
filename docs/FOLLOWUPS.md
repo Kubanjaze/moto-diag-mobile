@@ -527,6 +527,60 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
   condition-#2 running record, pass or fail. Then tick the `[~]` item in
   `196_implementation.md`.
 
+### F57 (NEW) — serve logging does not follow `--workers` / `--reload`
+
+- **Context:** the main bug is FIXED (moto-diag `af18aca`). The server
+  had never emitted a single application log line:
+  `uvicorn.run(log_level=...)` configures uvicorn's OWN loggers, and
+  every `motodiag.*` logger inherits root (WARNING, no handler), so
+  `logger.info(...)` was discarded while `logger.exception(...)` still
+  surfaced via logging's last-resort handler — which is why it looked
+  like logging worked.
+- **What it cost:** F52 shipped "a successful push leaves a trace" and
+  it was false in production from the day it landed, with a green test,
+  because `caplog.at_level` forces the level the server never set.
+  Found only by smoking Phase 201's `parts_arrived` push and asking why
+  the log line was missing.
+- **The residual:** the fix runs in the CLI process, so it covers the
+  default single-worker, no-reload deployment. Under `--workers N` or
+  `--reload`, uvicorn re-imports the app in subprocesses and those do
+  not inherit it. Proper fix is a `log_config` dict passed to
+  `uvicorn.run`, or configuring inside `create_app()` (the per-worker
+  factory) — the latter needs care not to duplicate handlers under
+  pytest's caplog.
+- **Pick up when:** anyone runs the API with more than one worker, which
+  is the first thing a real deployment does.
+
+### F58 (NEW) — dead OEM/aftermarket cost enrichment in the parts consolidation
+
+- **Surfaced:** Phase 201 Step 0 / build (2026-09-04), verified by
+  inspection. NOT fixed — it is Track G domain code, outside the phase's
+  scope, and changing the values could move things other tests pin.
+- **The bug:** `shop/parts_needs.list_parts_for_shop_open_wos` calls
+  `get_xrefs(pid, ...)` where `pid` is an integer `part_id`, but
+  `advanced/parts_repo.get_xrefs` takes an **OEM part number string**.
+  The consumer then reads `xr.get("role")` and `xr.get("part")`, keys
+  `get_xrefs` never returns (it returns flat rows). Both failures are
+  swallowed by a bare `except: pass`.
+- **Consequence:** `oem_cost_cents` and `aftermarket_cost_cents` on
+  every `ConsolidatedPartNeed` have always been `None` — so the
+  shopping list and every requisition snapshot has silently lacked the
+  OEM-vs-aftermarket price comparison the field exists to provide.
+- **When fixing:** pass the part's `oem_part_number`, map the real
+  return keys, and narrow the bare `except` so the next shape change is
+  loud. Requisitions are immutable snapshots, so historical rows stay
+  `None` — decide whether that needs backfilling or just documenting.
+
+### F59 (NEW) — `mark_part_installed` has no CLI
+
+- **Surfaced:** Phase 201 Step 0 (2026-09-04). `shop parts-needs` ships
+  `mark-ordered` and `mark-received` but not `mark-installed`, though
+  `mark_part_installed` exists and is the terminal step of the line
+  lifecycle. The mobile app can now reach it over HTTP; the CLI still
+  cannot.
+- **Small:** one Click command mirroring `mark-received`. Worth doing
+  next time anyone is in `cli/shop.py`, not on its own.
+
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
 - **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:
