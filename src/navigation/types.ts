@@ -115,6 +115,18 @@ export type ShopStackParamList = {
    *  not route param (sticky session picker per Section D). */
   WorkOrderList: undefined;
   WorkOrderDetail: {shopId: number; woId: number};
+  /** Phase 201 — parts catalog browse, entered from the WO detail
+   *  parts card. Pre-filters to the WO's bike when make/model are
+   *  known, so the first screen is already the right parts. Adding a
+   *  part creates an `open` line on the WO — which IS the cart, so
+   *  there is no separate cart route. */
+  PartsBrowse: {
+    shopId: number;
+    woId: number;
+    make?: string;
+    model?: string;
+    year?: number;
+  };
   /** Phase 194 — camera capture for WO photos. `issueId` is optional
    *  (mechanic can attach to a specific issue or just to the WO).
    *  `pairId` is optional (when capturing an after-photo from a

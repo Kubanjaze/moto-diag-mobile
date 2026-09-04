@@ -6,7 +6,24 @@
 
 import {buildWorkOrderSections} from '../../src/screens/buildWorkOrderSections';
 import type {WorkOrderListRow} from '../../src/hooks/useWorkOrders';
-import type {WorkOrderIssue} from '../../src/types/workOrder';
+import type {
+  WorkOrderIssue,
+  WorkOrderPartLine,
+} from '../../src/types/workOrder';
+
+function partLine(
+  over: Partial<WorkOrderPartLine> = {},
+): WorkOrderPartLine {
+  return {
+    id: 1, work_order_id: 1, part_id: 9, part_slug: 'brake-pad',
+    part_number: 'OEM-1', part_brand: 'Brembo',
+    part_description: 'Front brake pads', part_category: 'brakes',
+    quantity: 1, unit_cost_cents: 1250, unit_cost_source: 'catalog',
+    line_subtotal_cents: 1250, status: 'open',
+    ordered_at: null, received_at: null, installed_at: null, notes: null,
+    ...over,
+  };
+}
 
 const baseWO: WorkOrderListRow = {
   id: 1,
@@ -420,5 +437,40 @@ describe('buildWorkOrderSections — transcripts variant (Phase 195, Section E t
       s => s.kind === 'transcripts',
     );
     expect(transcriptsAfter).toBe(photosBefore + 1);
+  });
+});
+
+describe('buildWorkOrderSections — parts variant (Phase 201)', () => {
+  it('omits the section entirely when there are no lines', () => {
+    const kinds = buildWorkOrderSections(baseWO, []).map((s) => s.kind);
+    expect(kinds).not.toContain('parts');
+  });
+
+  it('counts only open lines as the cart and excludes cancelled from the total', () => {
+    const sections = buildWorkOrderSections(
+      baseWO, [], undefined, [], [],
+      [
+        partLine({id: 1, status: 'open', line_subtotal_cents: 1000}),
+        partLine({id: 2, status: 'open', line_subtotal_cents: 500}),
+        partLine({id: 3, status: 'ordered', line_subtotal_cents: 250}),
+        partLine({id: 4, status: 'cancelled', line_subtotal_cents: 9999}),
+      ],
+    );
+    const parts = sections.find((s) => s.kind === 'parts');
+    expect(parts).toBeDefined();
+    if (parts?.kind !== 'parts') throw new Error('wrong variant');
+    expect(parts.lines).toHaveLength(4);
+    // The cart is the OPEN lines, not every line.
+    expect(parts.open_count).toBe(2);
+    // A cancelled line must not inflate what the job appears to cost.
+    expect(parts.total_cents).toBe(1750);
+  });
+
+  it('sits between the documentation media and lifecycle', () => {
+    const kinds = buildWorkOrderSections(
+      baseWO, [], undefined, [], [], [partLine()],
+    ).map((s) => s.kind);
+    expect(kinds.indexOf('parts')).toBeLessThan(kinds.indexOf('lifecycle'));
+    expect(kinds[kinds.length - 1]).toBe('lifecycle');
   });
 });

@@ -16,6 +16,7 @@ import React from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
 import {ClassifyPhotosScreen} from '../screens/ClassifyPhotosScreen';
+import {PartsBrowseScreen} from '../screens/PartsBrowseScreen';
 import {PhotoCaptureScreen} from '../screens/PhotoCaptureScreen';
 import {ShopPickerScreen} from '../screens/ShopPickerScreen';
 import {TranscriptReviewScreen} from '../screens/TranscriptReviewScreen';
@@ -38,6 +39,11 @@ export function ShopStack() {
         name="WorkOrderDetail"
         component={WorkOrderDetailScreen}
         options={{title: 'Work order'}}
+      />
+      <Stack.Screen
+        name="PartsBrowse"
+        component={PartsBrowseScreen}
+        options={{title: 'Add parts'}}
       />
       <Stack.Screen
         name="PhotoCapture"

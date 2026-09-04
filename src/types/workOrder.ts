@@ -22,7 +22,8 @@ export type WorkOrderSection =
   | WorkOrderNotesSection
   | WorkOrderLifecycleSection
   | WorkOrderPhotosSection
-  | WorkOrderTranscriptsSection;
+  | WorkOrderTranscriptsSection
+  | WorkOrderPartsSection;
 
 /** Variant 1 — Vehicle. Make / model / year / VIN if known.
  *  Source-agnostic: 196 OBD-captured vehicle metadata slots in
@@ -165,6 +166,69 @@ export interface WorkOrderTranscriptsSection {
   transcripts: WorkOrderTranscript[];
 }
 
+/** Variant 8 (Phase 201 NEW) — Parts. The work order's part lines.
+ *  Its OPEN lines are the cart: Phase 201 deliberately has no
+ *  client-side cart store, so this section IS the cart UI, and the
+ *  server is the only place cart state lives. That is what keeps
+ *  ADR-003's 3-screen state-store trigger untripped. */
+export interface WorkOrderPartsSection {
+  kind: 'parts';
+  lines: WorkOrderPartLine[];
+  /** Lines still `open` — i.e. in the cart, not yet ordered. Drives
+   *  the Order affordance's enabled state and its count. */
+  open_count: number;
+  /** Sum of every non-cancelled line's subtotal, in cents. Display
+   *  only: the backend recomputes the WO's own cost columns. */
+  total_cents: number;
+}
+
+/** Per-line lifecycle. Mirrors the backend CHECK constraint on
+ *  `work_order_parts.status` exactly (F37 Literal discipline —
+ *  never widen this to `string`). */
+export type PartLineStatus =
+  | 'open'
+  | 'ordered'
+  | 'received'
+  | 'installed'
+  | 'cancelled';
+
+/** Where a line's unit cost came from. `zero` means the catalog had
+ *  no price and nobody overrode it — the UI should say "no price",
+ *  not render a confident $0.00. */
+export type PartCostSource = 'override' | 'catalog' | 'zero';
+
+/** Subset of backend `PartLineResponse` the mobile UI cares about. */
+export interface WorkOrderPartLine {
+  id: number;
+  work_order_id: number;
+  part_id: number;
+  part_slug: string;
+  part_number: string | null;
+  part_brand: string | null;
+  part_description: string | null;
+  part_category: string | null;
+  quantity: number;
+  unit_cost_cents: number;
+  unit_cost_source: PartCostSource;
+  line_subtotal_cents: number;
+  status: PartLineStatus;
+  ordered_at: string | null;
+  received_at: string | null;
+  installed_at: string | null;
+  notes: string | null;
+}
+
+/** A catalog row from the browse endpoint. */
+export interface CatalogPart {
+  id: number;
+  slug: string;
+  oem_part_number: string | null;
+  brand: string | null;
+  description: string | null;
+  category: string | null;
+  typical_cost_cents: number | null;
+}
+
 /** Subset of backend `VoiceTranscriptResponse`. Storage details
  *  (audio_path, sha256, audio_size_bytes) deliberately omitted —
  *  mobile resolves audio via the streaming endpoint or local cache.
@@ -271,6 +335,12 @@ export function isPhotosSection(
   s: WorkOrderSection,
 ): s is WorkOrderPhotosSection {
   return s.kind === 'photos';
+}
+
+export function isPartsSection(
+  s: WorkOrderSection,
+): s is WorkOrderPartsSection {
+  return s.kind === 'parts';
 }
 
 export function isTranscriptsSection(

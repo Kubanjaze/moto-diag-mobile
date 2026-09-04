@@ -23,6 +23,7 @@
 import type {WorkOrderListRow} from '../hooks/useWorkOrders';
 import type {
   WorkOrderIssue,
+  WorkOrderPartLine,
   WorkOrderPhoto,
   WorkOrderSection,
   WorkOrderTranscript,
@@ -75,6 +76,8 @@ export function buildWorkOrderSections(
    *  surface-as-architectural-finding territory for that phase, not
    *  preemptive refactor in 195. */
   transcripts: WorkOrderTranscript[] = [],
+  /** Phase 201 — the WO's part lines. Open lines are the cart. */
+  parts: WorkOrderPartLine[] = [],
 ): WorkOrderSection[] {
   const sections: WorkOrderSection[] = [];
 
@@ -128,6 +131,22 @@ export function buildWorkOrderSections(
     sections.push({
       kind: 'transcripts',
       transcripts,
+    });
+  }
+
+  // Parts — omit-when-empty, placed after the documentation media
+  // (photos + voice memos) and before Lifecycle, so the card order
+  // reads: what the bike is → what's wrong → what we recorded →
+  // what it needs → bookkeeping. Cancelled lines are filtered by the
+  // caller's fetch, not here.
+  if (parts.length > 0) {
+    sections.push({
+      kind: 'parts',
+      lines: parts,
+      open_count: parts.filter((l) => l.status === 'open').length,
+      total_cents: parts
+        .filter((l) => l.status !== 'cancelled')
+        .reduce((sum, l) => sum + l.line_subtotal_cents, 0),
     });
   }
 

@@ -1270,10 +1270,180 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shop/{shop_id}/parts/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Browse the parts catalog (free text, or by bike) */
+        get: operations["search_catalog_v1_shop__shop_id__parts_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/parts/needs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consolidated open part needs across the shop's active work orders */
+        get: operations["shop_part_needs_v1_shop__shop_id__parts_needs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/parts/requisitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List requisition snapshots, newest first */
+        get: operations["list_shop_requisitions_v1_shop__shop_id__parts_requisitions_get"];
+        put?: never;
+        /** Snapshot the consolidated shopping list as a requisition */
+        post: operations["create_shop_requisition_v1_shop__shop_id__parts_requisitions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/parts/requisitions/{req_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One requisition with its items */
+        get: operations["get_shop_requisition_v1_shop__shop_id__parts_requisitions__req_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/parts/{part_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Catalog part detail with ranked aftermarket alternatives */
+        get: operations["get_catalog_part_v1_shop__shop_id__parts__part_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/parts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Part lines on a work order (open lines are the cart) */
+        get: operations["list_wo_parts_v1_shop__shop_id__work_orders__wo_id__parts_get"];
+        put?: never;
+        /** Add a catalog part to the work order (open line = in the cart) */
+        post: operations["add_wo_part_v1_shop__shop_id__work_orders__wo_id__parts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/parts/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Order: move every open line on the work order to ordered */
+        post: operations["order_wo_parts_v1_shop__shop_id__work_orders__wo_id__parts_order_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/parts/{wop_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Take a line off the work order (delete if open, cancel otherwise) */
+        delete: operations["delete_wo_part_v1_shop__shop_id__work_orders__wo_id__parts__wop_id__delete"];
+        options?: never;
+        head?: never;
+        /** Change a line's quantity and/or unit-cost override */
+        patch: operations["update_wo_part_v1_shop__shop_id__work_orders__wo_id__parts__wop_id__patch"];
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/parts/{wop_id}/transition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Advance a line: ordered → received → installed, or cancel */
+        post: operations["transition_wo_part_v1_shop__shop_id__work_orders__wo_id__parts__wop_id__transition_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AddPartRequest */
+        AddPartRequest: {
+            /** Part Id */
+            part_id: number;
+            /**
+             * Quantity
+             * @default 1
+             */
+            quantity: number;
+            /** Unit Cost Cents Override */
+            unit_cost_cents_override?: number | null;
+            /** Notes */
+            notes?: string | null;
+        };
         /** Body_upload_video_v1_sessions__session_id__videos_post */
         Body_upload_video_v1_sessions__session_id__videos_post: {
             /** File */
@@ -1306,6 +1476,31 @@ export interface components {
             checkout_url: string;
             /** Session Id */
             session_id: string;
+        };
+        /** ConsolidatedPartNeed */
+        ConsolidatedPartNeed: {
+            /** Part Id */
+            part_id: number;
+            /** Part Slug */
+            part_slug: string;
+            /** Part Number */
+            part_number?: string | null;
+            /** Name */
+            name: string;
+            /** Brand */
+            brand?: string | null;
+            /** Category */
+            category?: string | null;
+            /** Total Quantity */
+            total_quantity: number;
+            /** Wo Ids */
+            wo_ids?: number[];
+            /** Estimated Cost Cents */
+            estimated_cost_cents: number;
+            /** Oem Cost Cents */
+            oem_cost_cents?: number | null;
+            /** Aftermarket Cost Cents */
+            aftermarket_cost_cents?: number | null;
         };
         /** CustomerCreateRequest */
         CustomerCreateRequest: {
@@ -1581,6 +1776,139 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** OrderAllResponse */
+        OrderAllResponse: {
+            /** Ordered */
+            ordered: number;
+            /** Lines */
+            lines: components["schemas"]["PartLineResponse"][];
+        };
+        /**
+         * PartDetail
+         * @description Catalog row + ranked aftermarket alternatives.
+         */
+        PartDetail: {
+            /** Id */
+            id: number;
+            /** Slug */
+            slug: string;
+            /** Oem Part Number */
+            oem_part_number?: string | null;
+            /** Brand */
+            brand?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Category */
+            category?: string | null;
+            /** Make */
+            make?: string | null;
+            /** Model Pattern */
+            model_pattern?: string | null;
+            /** Year Min */
+            year_min?: number | null;
+            /** Year Max */
+            year_max?: number | null;
+            /** Typical Cost Cents */
+            typical_cost_cents?: number | null;
+            /** Purchase Url */
+            purchase_url?: string | null;
+            /** Xrefs */
+            xrefs?: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * PartLineResponse
+         * @description A cart line. `merged` is True when an add landed on an existing
+         *     open line for the same part and bumped its quantity instead.
+         */
+        PartLineResponse: {
+            /** Id */
+            id: number;
+            /** Work Order Id */
+            work_order_id: number;
+            /** Part Id */
+            part_id: number;
+            /** Part Slug */
+            part_slug: string;
+            /** Part Number */
+            part_number?: string | null;
+            /** Part Brand */
+            part_brand?: string | null;
+            /** Part Description */
+            part_description?: string | null;
+            /** Part Category */
+            part_category?: string | null;
+            /** Quantity */
+            quantity: number;
+            /** Unit Cost Cents */
+            unit_cost_cents: number;
+            /**
+             * Unit Cost Source
+             * @enum {string}
+             */
+            unit_cost_source: "override" | "catalog" | "zero";
+            /** Line Subtotal Cents */
+            line_subtotal_cents: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "ordered" | "received" | "installed" | "cancelled";
+            /** Ordered At */
+            ordered_at?: string | null;
+            /** Received At */
+            received_at?: string | null;
+            /** Installed At */
+            installed_at?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Merged
+             * @default false
+             */
+            merged: boolean;
+        };
+        /**
+         * PartSummary
+         * @description Catalog row as the browse screen sees it.
+         */
+        PartSummary: {
+            /** Id */
+            id: number;
+            /** Slug */
+            slug: string;
+            /** Oem Part Number */
+            oem_part_number?: string | null;
+            /** Brand */
+            brand?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Category */
+            category?: string | null;
+            /** Make */
+            make?: string | null;
+            /** Model Pattern */
+            model_pattern?: string | null;
+            /** Year Min */
+            year_min?: number | null;
+            /** Year Max */
+            year_max?: number | null;
+            /** Typical Cost Cents */
+            typical_cost_cents?: number | null;
+            /** Purchase Url */
+            purchase_url?: string | null;
+        };
+        /** PartTransitionRequest */
+        PartTransitionRequest: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "ordered" | "received" | "installed" | "cancel";
+            /** Reason */
+            reason?: string | null;
+        };
         /**
          * PdfRenderRequest
          * @description Body for POST ``/v1/reports/session/{id}/pdf`` (Phase 192B).
@@ -1633,6 +1961,36 @@ export interface components {
         PushRegisterResponse: {
             /** Registered */
             registered: boolean;
+        };
+        /** Requisition */
+        Requisition: {
+            /** Id */
+            id: number;
+            /** Shop Id */
+            shop_id: number;
+            /** Generated At */
+            generated_at: string;
+            /** Generated By User Id */
+            generated_by_user_id: number;
+            /** Wo Id Scope */
+            wo_id_scope?: number[] | null;
+            /** Total Distinct Parts */
+            total_distinct_parts: number;
+            /** Total Quantity */
+            total_quantity: number;
+            /** Total Estimated Cost Cents */
+            total_estimated_cost_cents: number;
+            /** Items */
+            items?: components["schemas"]["ConsolidatedPartNeed"][];
+            /** Notes */
+            notes?: string | null;
+        };
+        /** RequisitionCreateRequest */
+        RequisitionCreateRequest: {
+            /** Wo Ids */
+            wo_ids?: number[] | null;
+            /** Notes */
+            notes?: string | null;
         };
         /** SessionCreateRequest */
         SessionCreateRequest: {
@@ -1861,6 +2219,18 @@ export interface components {
             }[];
             /** Total */
             total: number;
+        };
+        /**
+         * UpdatePartLineRequest
+         * @description Both fields optional; `unit_cost_cents_override` distinguishes
+         *     "not sent" from explicit `null` (clear the override) via
+         *     `model_fields_set` — a 0 here means "free", not "no override".
+         */
+        UpdatePartLineRequest: {
+            /** Quantity */
+            quantity?: number | null;
+            /** Unit Cost Cents Override */
+            unit_cost_cents_override?: number | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -5811,6 +6181,504 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+        };
+    };
+    search_catalog_v1_shop__shop_id__parts_search_get: {
+        parameters: {
+            query?: {
+                q?: string;
+                make?: string | null;
+                model?: string | null;
+                year?: number | null;
+                category?: string | null;
+                limit?: number;
+            };
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartSummary"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    shop_part_needs_v1_shop__shop_id__parts_needs_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsolidatedPartNeed"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    list_shop_requisitions_v1_shop__shop_id__parts_requisitions_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    create_shop_requisition_v1_shop__shop_id__parts_requisitions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequisitionCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Requisition"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_shop_requisition_v1_shop__shop_id__parts_requisitions__req_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                req_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Requisition"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_catalog_part_v1_shop__shop_id__parts__part_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                part_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    list_wo_parts_v1_shop__shop_id__work_orders__wo_id__parts_get: {
+        parameters: {
+            query?: {
+                include_cancelled?: boolean;
+            };
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartLineResponse"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    add_wo_part_v1_shop__shop_id__work_orders__wo_id__parts_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddPartRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartLineResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    order_wo_parts_v1_shop__shop_id__work_orders__wo_id__parts_order_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderAllResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    delete_wo_part_v1_shop__shop_id__work_orders__wo_id__parts__wop_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+                wop_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    update_wo_part_v1_shop__shop_id__work_orders__wo_id__parts__wop_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+                wop_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePartLineRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartLineResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    transition_wo_part_v1_shop__shop_id__work_orders__wo_id__parts__wop_id__transition_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+                wop_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartTransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartLineResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
         };
     };
 }

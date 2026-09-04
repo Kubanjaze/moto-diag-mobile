@@ -25,6 +25,9 @@ import {
   type WorkOrderPhoto,
   type WorkOrderSection,
   type WorkOrderTranscript,
+  isPartsSection,
+  WorkOrderPartsSection,
+  WorkOrderPartLine,
 } from '../types/workOrder';
 
 interface Props {
@@ -36,6 +39,9 @@ interface Props {
    *  photos. Optional; when undefined, photos render as static
    *  thumbnails. */
   onPhotoPress?: (photo: WorkOrderPhoto) => void;
+  /** Phase 201 — tap a part line. Optional; when undefined the rows
+   *  render inert (tests + the read-only case). */
+  onPartPress?: (line: WorkOrderPartLine) => void;
   /** Phase 194 — tap on the "X photos waiting to be classified"
    *  sticky banner. Mobile Commit 2 wires this to the classify-later
    *  surface. Optional; when undefined the banner is rendered but
@@ -80,6 +86,7 @@ function _heading(section: WorkOrderSection): string {
     case 'lifecycle': return 'Lifecycle';
     case 'photos': return 'Photos';
     case 'transcripts': return 'Voice memos';
+    case 'parts': return 'Parts';
   }
 }
 
@@ -93,6 +100,7 @@ function _renderBody(
     transcript: WorkOrderTranscript,
     symptom: ExtractedSymptom,
   ) => void,
+  onPartPress?: (line: WorkOrderPartLine) => void,
 ): React.ReactNode {
   if (isVehicleSection(section)) return _renderRows(section.rows, testID);
   if (isCustomerSection(section)) return _renderRows(section.rows, testID);
@@ -116,6 +124,9 @@ function _renderBody(
       onExtractedSymptomPress,
     );
   }
+  if (isPartsSection(section)) {
+    return _renderParts(section, testID, onPartPress);
+  }
 
   // Defensive fallback — unknown variant. Smoke-gate Step 9 pins
   // this branch. Cast to never to encode the exhaustive-switch
@@ -123,6 +134,95 @@ function _renderBody(
   const _exhaustive: never = section;
   void _exhaustive;
   return <Text style={styles.unknownVariant}>(Unknown section variant)</Text>;
+}
+
+/** Phase 201 — part lines. The section doubles as the cart: `open`
+ *  lines are in the cart, everything past that is history the mechanic
+ *  can still see. Status is shown as a word, not a colour alone —
+ *  shop lighting and gloved thumbs are the operating environment. */
+function _renderParts(
+  section: WorkOrderPartsSection,
+  testID?: string,
+  onPartPress?: (line: WorkOrderPartLine) => void,
+): React.ReactNode {
+  if (section.lines.length === 0) {
+    return (
+      <Text
+        style={styles.emptyText}
+        testID={testID !== undefined ? `${testID}-parts-empty` : undefined}
+      >
+        No parts on this work order yet.
+      </Text>
+    );
+  }
+  return (
+    <View testID={testID !== undefined ? `${testID}-parts` : undefined}>
+      {section.lines.map((line) => (
+        <Pressable
+          key={line.id}
+          onPress={onPartPress ? () => onPartPress(line) : undefined}
+          disabled={!onPartPress}
+          style={styles.partRow}
+          testID={
+            testID !== undefined ? `${testID}-part-${line.id}` : undefined
+          }
+        >
+          <View style={styles.partMain}>
+            <Text style={styles.partName} numberOfLines={2}>
+              {line.quantity > 1 ? `${line.quantity}× ` : ''}
+              {line.part_description ?? line.part_slug}
+            </Text>
+            <Text style={styles.partMeta} numberOfLines={1}>
+              {[line.part_brand, line.part_number]
+                .filter(Boolean)
+                .join(' · ') || '—'}
+            </Text>
+          </View>
+          <View style={styles.partTrailing}>
+            <Text style={styles.partStatus}>{_partStatusLabel(line)}</Text>
+            <Text style={styles.partCost}>{_formatCents(line)}</Text>
+          </View>
+        </Pressable>
+      ))}
+      <View style={styles.partTotalRow}>
+        <Text style={styles.partTotalLabel}>
+          {section.open_count > 0
+            ? `${section.open_count} to order`
+            : 'All ordered'}
+        </Text>
+        <Text
+          style={styles.partTotalValue}
+          testID={
+            testID !== undefined ? `${testID}-parts-total` : undefined
+          }
+        >
+          {_centsToDisplay(section.total_cents)}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function _partStatusLabel(line: WorkOrderPartLine): string {
+  switch (line.status) {
+    case 'open': return 'In cart';
+    case 'ordered': return 'Ordered';
+    case 'received': return 'Received';
+    case 'installed': return 'Installed';
+    case 'cancelled': return 'Cancelled';
+    default: return line.status;
+  }
+}
+
+/** A line whose cost resolved to `zero` has no known price. Rendering
+ *  "$0.00" there would read as free rather than unknown. */
+function _formatCents(line: WorkOrderPartLine): string {
+  if (line.unit_cost_source === 'zero') return 'No price';
+  return _centsToDisplay(line.line_subtotal_cents);
+}
+
+function _centsToDisplay(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
 }
 
 function _renderRows(
@@ -669,6 +769,26 @@ const styles = StyleSheet.create({
   severityTextHigh: {color: '#7a4400'},
   severityCritical: {backgroundColor: '#fee'},
   severityTextCritical: {color: '#a00000'},
+  partRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E3E6EB',
+  },
+  partMain: {flex: 1, paddingRight: 12},
+  partName: {fontSize: 15, color: '#16181D', fontWeight: '500'},
+  partMeta: {fontSize: 13, color: '#6B7280', marginTop: 2},
+  partTrailing: {alignItems: 'flex-end'},
+  partStatus: {fontSize: 13, color: '#4A5160', fontWeight: '600'},
+  partCost: {fontSize: 13, color: '#6B7280', marginTop: 2},
+  partTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+  },
+  partTotalLabel: {fontSize: 14, color: '#4A5160', fontWeight: '600'},
+  partTotalValue: {fontSize: 14, color: '#16181D', fontWeight: '700'},
   unknownVariant: {fontSize: 13, color: '#888', fontStyle: 'italic'},
   // Phase 194 photos variant
   undecidedBanner: {

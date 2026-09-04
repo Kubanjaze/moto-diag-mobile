@@ -43,6 +43,7 @@ import {
   type TransitionAction,
 } from '../hooks/useTransitionWorkOrder';
 import {useWorkOrder} from '../hooks/useWorkOrder';
+import {useWorkOrderParts} from '../hooks/useWorkOrderParts';
 import {useWorkOrderPhotos} from '../hooks/useWorkOrderPhotos';
 import {useWorkOrderTranscripts} from '../hooks/useWorkOrderTranscripts';
 import type {ShopStackParamList} from '../navigation/types';
@@ -64,6 +65,15 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
   // automatic via the hook's useEffect on shopId/woId.
   const {transcripts, refresh: refreshTranscripts} =
     useWorkOrderTranscripts(shopId, woId);
+  // Phase 201 — part lines. The open ones are the cart; there is no
+  // client-side cart store by design (ADR-003 stays untripped).
+  const {
+    lines: partLines,
+    openCount: openPartCount,
+    orderAll,
+    isMutating: isMutatingParts,
+    refresh: refreshParts,
+  } = useWorkOrderParts(shopId, woId);
   const {transition, isTransitioning} = useTransitionWorkOrder(shopId);
   const {reassign, isReassigning} = useReassignWorkOrder(shopId);
   const membersResult = useShopMembers(shopId);
@@ -81,7 +91,11 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
       void refetch();
       void refreshPhotos();
       void refreshTranscripts();
-    }, [refetch, refreshPhotos, refreshTranscripts]),
+      // Phase 201 — returning from PartsBrowse must show the lines the
+      // mechanic just added; without this the parts card is stale
+      // exactly when they look at it.
+      void refreshParts();
+    }, [refetch, refreshPhotos, refreshTranscripts, refreshParts]),
   );
 
   const handleTransition = useCallback(
@@ -229,6 +243,7 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
     },
     photos,
     transcripts,
+    partLines,
   );
 
   const status = workOrder.status;
@@ -322,6 +337,69 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
             }}
             testID="wo-detail-record-voice-button"
           />
+        </View>
+
+        {/* Phase 201 — parts entry point. Same card pattern as photos
+            and voice memos. "Add parts" opens the catalog pre-filtered
+            to this bike; "Order" moves every open line to ordered,
+            which is what "placing the order" means here — there is no
+            supplier integration behind it (Track O owns purchase
+            orders). */}
+        <View style={styles.photosCard}>
+          <Text style={styles.photosCardTitle}>Parts</Text>
+          <Text style={styles.photosCardSubtitle}>
+            Add what this job needs from the catalog. Parts stay on the
+            work order, so anyone in the shop sees the same list.
+          </Text>
+          <Button
+            title="Add parts"
+            variant="primary"
+            onPress={() => {
+              navigation.navigate('PartsBrowse', {
+                shopId,
+                woId,
+                make: (workOrder as Record<string, unknown>)
+                  .vehicle_make as string | undefined,
+                model: (workOrder as Record<string, unknown>)
+                  .vehicle_model as string | undefined,
+              });
+            }}
+            testID="wo-detail-add-parts-button"
+          />
+          {openPartCount > 0 ? (
+            <Button
+              title={
+                isMutatingParts
+                  ? 'Ordering…'
+                  : `Order ${openPartCount} part${
+                      openPartCount === 1 ? '' : 's'
+                    }`
+              }
+              variant="secondary"
+              disabled={isMutatingParts}
+              onPress={() => {
+                void orderAll()
+                  .then((count) => {
+                    Alert.alert(
+                      'Parts ordered',
+                      `${count} part${count === 1 ? '' : 's'} marked as `
+                        + 'ordered. Mark each one received when it turns '
+                        + 'up.',
+                      [{text: 'OK'}],
+                    );
+                  })
+                  .catch(() => {
+                    Alert.alert(
+                      "Couldn't order parts",
+                      'Something went wrong. Check your connection and '
+                        + 'try again.',
+                      [{text: 'Dismiss'}],
+                    );
+                  });
+              }}
+              testID="wo-detail-order-parts-button"
+            />
+          ) : null}
         </View>
 
         <View style={styles.actionsCard}>
