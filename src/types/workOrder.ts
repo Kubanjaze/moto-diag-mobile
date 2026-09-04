@@ -23,7 +23,8 @@ export type WorkOrderSection =
   | WorkOrderLifecycleSection
   | WorkOrderPhotosSection
   | WorkOrderTranscriptsSection
-  | WorkOrderPartsSection;
+  | WorkOrderPartsSection
+  | WorkOrderTimeSection;
 
 /** Variant 1 — Vehicle. Make / model / year / VIN if known.
  *  Source-agnostic: 196 OBD-captured vehicle metadata slots in
@@ -347,4 +348,43 @@ export function isTranscriptsSection(
   s: WorkOrderSection,
 ): s is WorkOrderTranscriptsSection {
   return s.kind === 'transcripts';
+}
+
+/** Variant 9 — Labor time (Phase 202). The per-mechanic ledger for
+ *  this job: who worked, for how long, and whether anything needs a
+ *  human look. `open_entry` is the one still running, if any — the
+ *  screen derives its ticking display from `open_entry.started_at`
+ *  rather than from an accumulating counter.
+ *
+ *  `total_seconds` counts CLOSED entries only, matching the backend:
+ *  a running timer has no defensible duration to bill, and including
+ *  it would make the total change on every render. */
+export interface WorkOrderTimeSection {
+  kind: 'time';
+  entries: WorkOrderTimeEntry[];
+  open_entry: WorkOrderTimeEntry | null;
+  total_seconds: number;
+  /** How many entries were auto-closed at the cap and still carry the
+   *  review flag — surfaced so a forgotten timer is visible rather
+   *  than silently billed. */
+  needs_review_count: number;
+}
+
+/** One labor interval. Mirrors the backend `TimeEntry` wire model. */
+export interface WorkOrderTimeEntry {
+  id: number;
+  work_order_id: number;
+  user_id: number;
+  started_at: string;
+  ended_at: string | null;
+  duration_seconds: number | null;
+  source: string;
+  needs_review: number;
+  note: string | null;
+}
+
+export function isTimeSection(
+  section: WorkOrderSection,
+): section is WorkOrderTimeSection {
+  return section.kind === 'time';
 }

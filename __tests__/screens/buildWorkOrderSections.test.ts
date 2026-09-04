@@ -474,3 +474,73 @@ describe('buildWorkOrderSections — parts variant (Phase 201)', () => {
     expect(kinds[kinds.length - 1]).toBe('lifecycle');
   });
 });
+
+// ---------------------------------------------------------------
+// Phase 202 — labor time variant
+// ---------------------------------------------------------------
+
+const timeEntry = (over: Record<string, unknown> = {}) => ({
+  id: 1,
+  work_order_id: 1,
+  user_id: 7,
+  started_at: '2026-09-04T09:00:00+00:00',
+  ended_at: '2026-09-04T11:00:00+00:00',
+  duration_seconds: 7200,
+  source: 'timer',
+  needs_review: 0,
+  note: null,
+  ...over,
+});
+
+describe('buildWorkOrderSections — time variant (Phase 202)', () => {
+  it('omits the section when there is no labor and no running timer', () => {
+    const sections = buildWorkOrderSections(baseWO, []);
+    expect(sections.map(s => s.kind)).not.toContain('time');
+  });
+
+  it('includes closed entries with the total', () => {
+    const sections = buildWorkOrderSections(
+      baseWO, [], {}, [], [], [],
+      {entries: [timeEntry()], openEntry: null, totalSeconds: 7200},
+    );
+    const time = sections.find(s => s.kind === 'time');
+    expect(time).toBeDefined();
+    expect(time).toMatchObject({total_seconds: 7200, needs_review_count: 0});
+  });
+
+  it('shows a RUNNING timer even with no closed entries', () => {
+    // The mechanic must be able to see the clock is going — and needs
+    // somewhere to stop it.
+    const open = timeEntry({ended_at: null, duration_seconds: null});
+    const sections = buildWorkOrderSections(
+      baseWO, [], {}, [], [], [],
+      {entries: [open], openEntry: open, totalSeconds: 0},
+    );
+    const time = sections.find(s => s.kind === 'time');
+    expect(time).toBeDefined();
+    expect(time).toMatchObject({total_seconds: 0});
+    expect((time as {open_entry: unknown}).open_entry).not.toBeNull();
+  });
+
+  it('counts entries still flagged for review', () => {
+    const sections = buildWorkOrderSections(
+      baseWO, [], {}, [], [], [],
+      {
+        entries: [timeEntry(), timeEntry({id: 2, needs_review: 1})],
+        openEntry: null,
+        totalSeconds: 14400,
+      },
+    );
+    const time = sections.find(s => s.kind === 'time');
+    expect(time).toMatchObject({needs_review_count: 1});
+  });
+
+  it('places time after lifecycle', () => {
+    const sections = buildWorkOrderSections(
+      baseWO, [], {}, [], [], [],
+      {entries: [timeEntry()], openEntry: null, totalSeconds: 7200},
+    );
+    const kinds = sections.map(s => s.kind);
+    expect(kinds.indexOf('time')).toBeGreaterThan(kinds.indexOf('lifecycle'));
+  });
+});

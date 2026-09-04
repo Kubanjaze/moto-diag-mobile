@@ -18,7 +18,7 @@
 // Reassign UI: tap "Reassign" → MemberPickerModal opens; tap a
 // row or "Unassign" → reassign hook fires + WO refreshes.
 
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useFocusEffect} from '@react-navigation/native';
 import {
@@ -44,6 +44,8 @@ import {
 } from '../hooks/useTransitionWorkOrder';
 import {useWorkOrder} from '../hooks/useWorkOrder';
 import {useWorkOrderParts} from '../hooks/useWorkOrderParts';
+import {useWorkOrderTimeEntries} from '../hooks/useWorkOrderTimeEntries';
+import {formatElapsed} from './formatDuration';
 import {useWorkOrderPhotos} from '../hooks/useWorkOrderPhotos';
 import {useWorkOrderTranscripts} from '../hooks/useWorkOrderTranscripts';
 import type {ShopStackParamList} from '../navigation/types';
@@ -75,12 +77,40 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
     refresh: refreshParts,
   } = useWorkOrderParts(shopId, woId);
   const {transition, isTransitioning} = useTransitionWorkOrder(shopId);
+  // Phase 202 — labor timer. `elapsedSeconds` is derived from the open
+  // entry's server timestamp on every tick and every foreground, so it
+  // is correct after a background or an app kill.
+  const {
+    entries: timeEntries,
+    openEntry: openTimeEntry,
+    totalSeconds: timeTotalSeconds,
+    elapsedSeconds,
+    lastAutoClosed,
+    isMutating: isClocking,
+    clockIn,
+    clockOut,
+    acknowledgeAutoClosed,
+    refresh: refreshTime,
+  } = useWorkOrderTimeEntries(shopId, woId);
   const {reassign, isReassigning} = useReassignWorkOrder(shopId);
   const membersResult = useShopMembers(shopId);
   const [pickerVisible, setPickerVisible] = useState<boolean>(false);
   const [pauseReasonVisible, setPauseReasonVisible] =
     useState<boolean>(false);
   const [pauseReason, setPauseReason] = useState<string>('');
+
+  // Phase 202 — clocking in here stops a timer running on another job.
+  // Saying so is not optional polish: a mechanic who never sees this
+  // cannot account for the missing time on the other work order.
+  useEffect(() => {
+    if (!lastAutoClosed) return;
+    Alert.alert(
+      'Stopped your other timer',
+      `You were clocked in on work order #${lastAutoClosed.work_order_id}. ` +
+        'That entry has been closed and its time logged there.',
+      [{text: 'OK', onPress: acknowledgeAutoClosed}],
+    );
+  }, [lastAutoClosed, acknowledgeAutoClosed]);
 
   // Refresh on focus — covers the "user comes back from another
   // tab" path. Phase 194: also refetch photos so the WO detail
@@ -95,7 +125,17 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
       // mechanic just added; without this the parts card is stale
       // exactly when they look at it.
       void refreshParts();
-    }, [refetch, refreshPhotos, refreshTranscripts, refreshParts]),
+      // Phase 202 — another mechanic may have logged time on this job,
+      // and the cap sweep runs server-side on read, so a stale screen
+      // can be showing a timer that has since been auto-closed.
+      void refreshTime();
+    }, [
+      refetch,
+      refreshPhotos,
+      refreshTranscripts,
+      refreshParts,
+      refreshTime,
+    ]),
   );
 
   const handleTransition = useCallback(
@@ -244,6 +284,11 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
     photos,
     transcripts,
     partLines,
+    {
+      entries: timeEntries,
+      openEntry: openTimeEntry,
+      totalSeconds: timeTotalSeconds,
+    },
   );
 
   const status = workOrder.status;
@@ -404,6 +449,34 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
 
         <View style={styles.actionsCard}>
           <Text style={styles.actionsTitle}>Actions</Text>
+          {/* Phase 202 — the clock. Placed first because on a shop
+              floor it is the most frequent action on this screen. */}
+          {openTimeEntry ? (
+            <>
+              <Text style={styles.timerRunning} testID="wo-detail-timer">
+                {formatElapsed(elapsedSeconds)}
+              </Text>
+              <Button
+                title={isClocking ? 'Stopping…' : 'Clock out'}
+                variant="secondary"
+                disabled={isClocking}
+                onPress={() => void clockOut()}
+                testID="wo-detail-clock-out"
+              />
+              <View style={styles.buttonGap} />
+            </>
+          ) : (
+            <>
+              <Button
+                title={isClocking ? 'Starting…' : 'Clock in'}
+                variant="primary"
+                disabled={isClocking}
+                onPress={() => void clockIn()}
+                testID="wo-detail-clock-in"
+              />
+              <View style={styles.buttonGap} />
+            </>
+          )}
           {canMarkInProgress ? (
             <>
               <Button
@@ -542,6 +615,14 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   subtitle: {fontSize: 12, color: '#888', marginBottom: 16},
+  timerRunning: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#1a7f37',
+    fontVariant: ['tabular-nums'],
+    textAlign: 'center',
+    marginBottom: 8,
+  },
   actionsCard: {
     backgroundColor: '#fff',
     borderRadius: 12,

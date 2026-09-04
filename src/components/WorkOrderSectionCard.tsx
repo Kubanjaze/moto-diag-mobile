@@ -11,6 +11,7 @@
 import React from 'react';
 import {Image, Pressable, StyleSheet, Text, View} from 'react-native';
 
+import {formatDuration} from '../screens/formatDuration';
 import {photoStorageCache} from '../services/photoStorageCache';
 import {
   isCustomerSection,
@@ -26,8 +27,11 @@ import {
   type WorkOrderSection,
   type WorkOrderTranscript,
   isPartsSection,
+  isTimeSection,
   WorkOrderPartsSection,
   WorkOrderPartLine,
+  type WorkOrderTimeEntry,
+  type WorkOrderTimeSection,
 } from '../types/workOrder';
 
 interface Props {
@@ -84,6 +88,7 @@ function _heading(section: WorkOrderSection): string {
     case 'issues': return 'Issues';
     case 'notes': return 'Notes';
     case 'lifecycle': return 'Lifecycle';
+    case 'time': return 'Labor time';
     case 'photos': return 'Photos';
     case 'transcripts': return 'Voice memos';
     case 'parts': return 'Parts';
@@ -127,6 +132,9 @@ function _renderBody(
   if (isPartsSection(section)) {
     return _renderParts(section, testID, onPartPress);
   }
+  if (isTimeSection(section)) {
+    return _renderTime(section, testID);
+  }
 
   // Defensive fallback — unknown variant. Smoke-gate Step 9 pins
   // this branch. Cast to never to encode the exhaustive-switch
@@ -140,6 +148,69 @@ function _renderBody(
  *  lines are in the cart, everything past that is history the mechanic
  *  can still see. Status is shown as a word, not a colour alone —
  *  shop lighting and gloved thumbs are the operating environment. */
+/** Phase 202 — the labor ledger. A running entry is shown FIRST and
+ *  labelled "Running", because the one thing a mechanic must be able to
+ *  see at a glance is whether the clock is going. Durations are words
+ *  ("2h 15m"), not bare decimals — a shop floor reads those faster and
+ *  cannot misplace a decimal point.
+ *
+ *  The live seconds are NOT rendered here: this component is pure and
+ *  gets a section object, so the ticking value lives in the screen that
+ *  owns the hook. Here a running entry shows its start time instead. */
+function _renderTime(
+  section: WorkOrderTimeSection,
+  testID?: string,
+): React.ReactNode {
+  const {entries, total_seconds, needs_review_count} = section;
+  return (
+    <View testID={testID ? `${testID}-time` : undefined}>
+      <View style={styles.timeTotalRow}>
+        <Text style={styles.timeTotalLabel}>Total logged</Text>
+        <Text style={styles.timeTotalValue}>
+          {formatDuration(total_seconds)}
+        </Text>
+      </View>
+      {needs_review_count > 0 ? (
+        <Text style={styles.timeReviewBanner}>
+          {needs_review_count === 1
+            ? '1 entry was auto-closed and needs review'
+            : `${needs_review_count} entries were auto-closed and need review`}
+        </Text>
+      ) : null}
+      {entries.length === 0 ? (
+        <Text style={styles.timeEmpty}>No labor logged yet.</Text>
+      ) : (
+        entries.map((entry: WorkOrderTimeEntry) => (
+          <View key={entry.id} style={styles.timeRow}>
+            <Text style={styles.timeRowMain}>
+              {entry.ended_at === null
+                ? 'Running'
+                : formatDuration(entry.duration_seconds)}
+              {entry.needs_review === 1 ? '  ·  needs review' : ''}
+            </Text>
+            <Text style={styles.timeRowMeta}>
+              {_shortStamp(entry.started_at)}
+              {entry.source === 'manual' ? '  ·  edited' : ''}
+            </Text>
+          </View>
+        ))
+      )}
+    </View>
+  );
+}
+
+/** "Sep 4, 09:12" — enough to place an entry in the day without a
+ *  full ISO string on a phone-width row. Falls back to the raw value
+ *  rather than rendering "Invalid Date". */
+function _shortStamp(iso: string): string {
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return iso;
+  return parsed.toLocaleString(undefined, {
+    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+}
+
+
 function _renderParts(
   section: WorkOrderPartsSection,
   testID?: string,
@@ -884,6 +955,31 @@ const styles = StyleSheet.create({
     color: '#888',
     fontStyle: 'italic',
   },
+  timeTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  timeTotalLabel: {fontSize: 13, color: '#666'},
+  timeTotalValue: {fontSize: 15, fontWeight: '700', color: '#222'},
+  timeReviewBanner: {
+    fontSize: 12,
+    color: '#8a6d00',
+    backgroundColor: '#fff8d0',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  timeEmpty: {fontSize: 13, color: '#888', fontStyle: 'italic'},
+  timeRow: {
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingVertical: 8,
+  },
+  timeRowMain: {fontSize: 14, fontWeight: '600', color: '#222'},
+  timeRowMeta: {fontSize: 12, color: '#888', marginTop: 2},
   transcriptNoSymptoms: {
     fontSize: 12,
     color: '#888',

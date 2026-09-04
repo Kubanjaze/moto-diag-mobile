@@ -1426,6 +1426,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/clock-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start the labor clock on a work order */
+        post: operations["clock_in_endpoint_v1_shop__shop_id__work_orders__wo_id__clock_in_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/clock-out": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop the labor clock on a work order */
+        post: operations["clock_out_endpoint_v1_shop__shop_id__work_orders__wo_id__clock_out_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/work-orders/{wo_id}/time-entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All labor entries on a work order */
+        get: operations["list_wo_time_entries_v1_shop__shop_id__work_orders__wo_id__time_entries_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/time-entries/mine/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's currently-running entry, if any */
+        get: operations["my_open_entry_v1_shop__shop_id__time_entries_mine_open_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/time-entries/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Correct an entry's times / note, or clear its review flag */
+        patch: operations["adjust_time_entry_v1_shop__shop_id__time_entries__entry_id__patch"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1476,6 +1561,11 @@ export interface components {
             checkout_url: string;
             /** Session Id */
             session_id: string;
+        };
+        /** ClockInResponse */
+        ClockInResponse: {
+            entry: components["schemas"]["TimeEntry"];
+            auto_closed?: components["schemas"]["TimeEntry"] | null;
         };
         /** ConsolidatedPartNeed */
         ConsolidatedPartNeed: {
@@ -1775,6 +1865,10 @@ export interface components {
             extra_context?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /** OpenEntryResponse */
+        OpenEntryResponse: {
+            entry?: components["schemas"]["TimeEntry"] | null;
         };
         /** OrderAllResponse */
         OrderAllResponse: {
@@ -2201,6 +2295,41 @@ export interface components {
             /** Related Systems */
             related_systems?: string[];
         };
+        /** TimeEntry */
+        TimeEntry: {
+            /** Id */
+            id: number;
+            /** Work Order Id */
+            work_order_id: number;
+            /** User Id */
+            user_id: number;
+            /** Started At */
+            started_at: string;
+            /** Ended At */
+            ended_at?: string | null;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
+            /** Source */
+            source: string;
+            /**
+             * Needs Review
+             * @default 0
+             */
+            needs_review: number;
+            /** Note */
+            note?: string | null;
+        };
+        /** TimeEntryAdjustRequest */
+        TimeEntryAdjustRequest: {
+            /** Started At */
+            started_at?: string | null;
+            /** Ended At */
+            ended_at?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Needs Review */
+            needs_review?: boolean | null;
+        };
         /** UnifiedSearchResponse */
         UnifiedSearchResponse: {
             /** Query */
@@ -2616,6 +2745,15 @@ export interface components {
             source: string | null;
             /** Created At */
             created_at: string;
+        };
+        /** WorkOrderTimeResponse */
+        WorkOrderTimeResponse: {
+            /** Entries */
+            entries: components["schemas"]["TimeEntry"][];
+            /** Total Seconds */
+            total_seconds: number;
+            /** Total Hours */
+            total_hours: number;
         };
         /** WorkOrderTransitionRequest */
         WorkOrderTransitionRequest: {
@@ -6664,6 +6802,204 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PartLineResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    clock_in_endpoint_v1_shop__shop_id__work_orders__wo_id__clock_in_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClockInResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    clock_out_endpoint_v1_shop__shop_id__work_orders__wo_id__clock_out_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimeEntry"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    list_wo_time_entries_v1_shop__shop_id__work_orders__wo_id__time_entries_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                wo_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkOrderTimeResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    my_open_entry_v1_shop__shop_id__time_entries_mine_open_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenEntryResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    adjust_time_entry_v1_shop__shop_id__time_entries__entry_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                entry_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TimeEntryAdjustRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimeEntry"];
                 };
             };
             401: components["responses"]["Unauthorized"];

@@ -26,6 +26,7 @@ import type {
   WorkOrderPartLine,
   WorkOrderPhoto,
   WorkOrderSection,
+  WorkOrderTimeEntry,
   WorkOrderTranscript,
 } from '../types/workOrder';
 
@@ -78,6 +79,25 @@ export function buildWorkOrderSections(
   transcripts: WorkOrderTranscript[] = [],
   /** Phase 201 — the WO's part lines. Open lines are the cart. */
   parts: WorkOrderPartLine[] = [],
+  /** Phase 202 — labor time. Passed as ONE object rather than three
+   *  more positional parameters.
+   *
+   *  Phase 195's note above predicted that positional params would
+   *  "start to feel proliferative" by the 6th variant and asked the
+   *  phase that crossed the line to surface it as an architectural
+   *  finding rather than refactor preemptively. This is that phase —
+   *  the 7th variant, and the first whose data is three values rather
+   *  than one array. Grouping them here keeps the arity at 7 instead
+   *  of 9 and makes the next addition an obvious object too, but it is
+   *  a stopgap: the real fix is a single named-options argument for
+   *  every variant. Filed as a follow-up rather than done inline,
+   *  because rewriting the signature touches every call site and every
+   *  builder test, which does not belong in a time-tracking phase. */
+  time: {
+    entries: WorkOrderTimeEntry[];
+    openEntry: WorkOrderTimeEntry | null;
+    totalSeconds: number;
+  } = {entries: [], openEntry: null, totalSeconds: 0},
 ): WorkOrderSection[] {
   const sections: WorkOrderSection[] = [];
 
@@ -155,6 +175,21 @@ export function buildWorkOrderSections(
     kind: 'lifecycle',
     rows: _lifecycleRows(wo),
   });
+
+  // Labor time (Phase 202) — omit-when-empty, but a RUNNING timer
+  // always shows even with no closed entries yet: the mechanic needs
+  // to see that the clock is going, and needs somewhere to stop it.
+  if (time.entries.length > 0 || time.openEntry) {
+    sections.push({
+      kind: 'time',
+      entries: time.entries,
+      open_entry: time.openEntry,
+      total_seconds: time.totalSeconds,
+      needs_review_count: time.entries.filter(
+        (e) => e.needs_review === 1,
+      ).length,
+    });
+  }
 
   return sections;
 }
