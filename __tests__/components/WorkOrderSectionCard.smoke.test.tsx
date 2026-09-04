@@ -38,6 +38,7 @@ import ReactTestRenderer from 'react-test-renderer';
 
 import {WorkOrderSectionCard} from '../../src/components/WorkOrderSectionCard';
 import type {WorkOrderSection} from '../../src/types/workOrder';
+import {withTheme} from '../withTheme';
 
 /** Helper: extract all visible text from the rendered tree. */
 function _allText(
@@ -120,7 +121,7 @@ describe('Smoke gate Step 9 — data-driven section rendering', () => {
       let renderer!: ReactTestRenderer.ReactTestRenderer;
       ReactTestRenderer.act(() => {
         renderer = ReactTestRenderer.create(
-          <WorkOrderSectionCard section={section} />,
+          withTheme(<WorkOrderSectionCard section={section} />),
         );
       });
       const texts = _allText(renderer);
@@ -144,7 +145,7 @@ describe('Smoke gate Step 9 — data-driven section rendering', () => {
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
-        <WorkOrderSectionCard section={futureVariant} />,
+        withTheme(<WorkOrderSectionCard section={futureVariant} />),
       );
     });
     const texts = _allText(renderer);
@@ -165,7 +166,7 @@ describe('Smoke gate Step 9 — data-driven section rendering', () => {
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
-        <WorkOrderSectionCard section={bareUnknown} />,
+        withTheme(<WorkOrderSectionCard section={bareUnknown} />),
       );
     });
     const texts = _allText(renderer);
@@ -190,7 +191,7 @@ describe('Smoke gate Step 9 — data-driven section rendering', () => {
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
-        <WorkOrderSectionCard section={photos} />,
+        withTheme(<WorkOrderSectionCard section={photos} />),
       );
     });
     const texts = _allText(renderer);
@@ -227,10 +228,10 @@ describe('Smoke gate Step 9 — data-driven section rendering', () => {
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
-        <WorkOrderSectionCard
+        withTheme(<WorkOrderSectionCard
           section={photos}
           onUndecidedBannerPress={() => {}}
-        />,
+        />),
       );
     });
     const texts = _allText(renderer);
@@ -285,7 +286,7 @@ describe('Smoke gate Step 9 — data-driven section rendering', () => {
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
-        <WorkOrderSectionCard section={transcripts} />,
+        withTheme(<WorkOrderSectionCard section={transcripts} />),
       );
     });
     const texts = _allText(renderer);
@@ -323,7 +324,7 @@ describe('Smoke gate Step 9 — data-driven section rendering', () => {
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
-        <WorkOrderSectionCard section={transcripts} />,
+        withTheme(<WorkOrderSectionCard section={transcripts} />),
       );
     });
     const texts = _allText(renderer);
@@ -341,7 +342,7 @@ describe('Smoke gate Step 9 — data-driven section rendering', () => {
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
-        <WorkOrderSectionCard section={transcripts} />,
+        withTheme(<WorkOrderSectionCard section={transcripts} />),
       );
     });
     const texts = _allText(renderer);
@@ -360,7 +361,7 @@ describe('Smoke gate Step 9 — data-driven section rendering', () => {
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
-        <WorkOrderSectionCard section={photos} />,
+        withTheme(<WorkOrderSectionCard section={photos} />),
       );
     });
     const texts = _allText(renderer);
@@ -381,7 +382,7 @@ describe('Smoke gate Step 9 — data-driven section rendering', () => {
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
-        <WorkOrderSectionCard section={unknown} />,
+        withTheme(<WorkOrderSectionCard section={unknown} />),
       );
     });
     const texts = _allText(renderer);

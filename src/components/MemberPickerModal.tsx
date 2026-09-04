@@ -30,6 +30,7 @@ import {
   type UseShopMembersResult,
 } from '../hooks/useShopMembers';
 import {shopAccessErrorCopy} from '../screens/shopAccessErrorCopy';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 interface Props {
   visible: boolean;
@@ -58,6 +59,7 @@ export function MemberPickerModal({
   onCancel,
   isReassigning = false,
 }: Props) {
+  const styles = useStyles();
   const [showAll, setShowAll] = useState<boolean>(false);
   const {members, isLoading, error} = membersResult;
 
@@ -167,68 +169,68 @@ export function MemberPickerModal({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f5f5f7'},
+const useStyles = createThemedStyles((t) => ({
+  container: {flex: 1, backgroundColor: t.background},
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ddd',
+    borderBottomColor: t.border,
   },
-  title: {fontSize: 17, fontWeight: '700', color: '#111'},
-  closeButton: {fontSize: 15, color: '#007aff', fontWeight: '500'},
+  title: {fontSize: 17, fontWeight: '700', color: t.textPrimary},
+  closeButton: {fontSize: 15, color: t.accent, fontWeight: '500'},
   loading: {flex: 1, justifyContent: 'center', alignItems: 'center'},
   errorPane: {
     padding: 24,
     alignItems: 'center',
   },
-  errorTitle: {fontSize: 17, fontWeight: '700', color: '#b00020', marginBottom: 8},
-  errorBody: {fontSize: 14, color: '#555', textAlign: 'center', lineHeight: 20},
+  errorTitle: {fontSize: 17, fontWeight: '700', color: t.danger, marginBottom: 8},
+  errorBody: {fontSize: 14, color: t.textSecondary, textAlign: 'center', lineHeight: 20},
   filterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ddd',
+    borderBottomColor: t.border,
   },
-  filterLabel: {fontSize: 13, color: '#666'},
-  filterToggleText: {fontSize: 14, color: '#007aff', fontWeight: '500'},
+  filterLabel: {fontSize: 13, color: t.textMuted},
+  filterToggleText: {fontSize: 14, color: t.accent, fontWeight: '500'},
   memberRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     minHeight: 48,
   },
-  memberRowCurrent: {backgroundColor: '#e3f0fb'},
+  memberRowCurrent: {backgroundColor: t.symptomSource.keyword.bg},
   memberRowLeft: {flex: 1},
-  memberName: {fontSize: 16, fontWeight: '500', color: '#111'},
-  memberRole: {fontSize: 12, color: '#888', marginTop: 2},
-  currentMark: {fontSize: 12, color: '#0d47a1', fontWeight: '700'},
+  memberName: {fontSize: 16, fontWeight: '500', color: t.textPrimary},
+  memberRole: {fontSize: 12, color: t.textMuted, marginTop: 2},
+  currentMark: {fontSize: 12, color: t.accentPressed, fontWeight: '700'},
   separator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#eee',
+    backgroundColor: t.divider,
   },
   emptyText: {
     fontSize: 14,
-    color: '#888',
+    color: t.textMuted,
     textAlign: 'center',
     padding: 32,
     fontStyle: 'italic',
   },
   footer: {
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#ddd',
+    borderTopColor: t.border,
   },
-});
+}));

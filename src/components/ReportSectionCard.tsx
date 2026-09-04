@@ -19,6 +19,7 @@
 
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
+import {createThemedStyles} from '../theme/createThemedStyles';
 
 import {
   isBodySection,
@@ -50,15 +51,17 @@ interface Props {
 }
 
 export function ReportSectionCard({section, now, testID}: Props) {
+  const styles = useStyles();
   return (
     <View style={styles.card} testID={testID}>
       <Text style={styles.cardTitle}>{section.heading}</Text>
-      {renderSectionBody(section, now, testID)}
+      {renderSectionBody(styles, section, now, testID)}
     </View>
   );
 }
 
 function renderSectionBody(
+  styles: ReturnType<typeof useStyles>,
   section: ReportSection,
   now: number,
   testID?: string,
@@ -146,7 +149,7 @@ function renderSectionBody(
   }
 
   if (isVideosSection(section)) {
-    return renderVideosBody(section.videos, now, testID);
+    return renderVideosBody(styles, section.videos, now, testID);
   }
 
   // Defensive: unknown section variant. Render heading-only (the
@@ -163,6 +166,7 @@ function renderSectionBody(
 // ---------------------------------------------------------------
 
 function renderVideosBody(
+  styles: ReturnType<typeof useStyles>,
   videos: readonly ReportVideoCard[],
   now: number,
   testID?: string,
@@ -207,6 +211,7 @@ interface VideoCardItemProps {
 }
 
 function VideoCardItem({card, now, testID}: VideoCardItemProps) {
+  const styles = useStyles();
   const state = card.analysis_state;
   let classification: StuckClassification | null = null;
   if (state === 'analyzing') {
@@ -227,9 +232,9 @@ function VideoCardItem({card, now, testID}: VideoCardItemProps) {
       <Text style={styles.videoMeta}>
         {formatVideoMetaLine(card)}
       </Text>
-      {isStuck ? renderStuckAdvisory(classification) : null}
+      {isStuck ? renderStuckAdvisory(styles, classification) : null}
       {'findings' in card && card.findings !== undefined
-        ? renderFindings(card.findings)
+        ? renderFindings(styles, card.findings)
         : null}
       {state === 'analysis_failed' ? (
         <Text style={styles.videoFailureNote}>
@@ -253,6 +258,7 @@ function StateChip({
   state: ReportVideoCard['analysis_state'];
   stuck: boolean;
 }) {
+  const styles = useStyles();
   let label: string;
   let chipStyle = styles.chipNeutral;
   let textStyle = styles.chipTextNeutral;
@@ -294,7 +300,8 @@ function StateChip({
   );
 }
 
-function renderStuckAdvisory(classification: StuckClassification | null) {
+function renderStuckAdvisory(
+  styles: ReturnType<typeof useStyles>,classification: StuckClassification | null) {
   // Stuck-pre-migration vs stuck-timeout differ in copy: timeout
   // could resolve on its own (worker may still complete); pre-
   // migration definitely won't (the row predates the column that
@@ -308,7 +315,8 @@ function renderStuckAdvisory(classification: StuckClassification | null) {
   return <Text style={styles.videoStuckAdvisory}>{message}</Text>;
 }
 
-function renderFindings(findings: NonNullable<ReportVideoCard['findings']>) {
+function renderFindings(
+  styles: ReturnType<typeof useStyles>,findings: NonNullable<ReportVideoCard['findings']>) {
   return (
     <View style={styles.findingsBlock}>
       <Text style={styles.findingsHeading}>Vision findings</Text>
@@ -319,7 +327,7 @@ function renderFindings(findings: NonNullable<ReportVideoCard['findings']>) {
             <View key={idx} style={styles.findingItem}>
               <View style={styles.findingHeaderRow}>
                 <Text style={styles.findingType}>{f.finding_type}</Text>
-                <Text style={[styles.findingSeverity, severityStyle(f.severity)]}>
+                <Text style={[styles.findingSeverity, severityStyle(styles, f.severity)]}>
                   {f.severity}
                 </Text>
               </View>
@@ -341,7 +349,8 @@ function renderFindings(findings: NonNullable<ReportVideoCard['findings']>) {
   );
 }
 
-function severityStyle(severity: string) {
+function severityStyle(
+  styles: ReturnType<typeof useStyles>,severity: string) {
   switch (severity) {
     case 'critical':
       return styles.severityCritical;
@@ -355,19 +364,19 @@ function severityStyle(severity: string) {
   }
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((t) => ({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
   },
   cardTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#888',
+    color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 8,
@@ -377,53 +386,53 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 8,
-    borderBottomColor: '#eee',
+    borderBottomColor: t.divider,
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 12,
   },
   rowLast: {borderBottomWidth: 0},
-  rowLabel: {fontSize: 14, color: '#555', flex: 1},
-  rowValue: {fontSize: 14, color: '#111', flex: 1, textAlign: 'right'},
+  rowLabel: {fontSize: 14, color: t.textSecondary, flex: 1},
+  rowValue: {fontSize: 14, color: t.textPrimary, flex: 1, textAlign: 'right'},
   // ---- bullets variant
   bulletRow: {
     flexDirection: 'row',
     paddingVertical: 4,
     gap: 8,
   },
-  bulletDot: {fontSize: 14, color: '#555', lineHeight: 20},
-  bulletText: {fontSize: 14, color: '#222', flex: 1, lineHeight: 20},
+  bulletDot: {fontSize: 14, color: t.textSecondary, lineHeight: 20},
+  bulletText: {fontSize: 14, color: t.textPrimary, flex: 1, lineHeight: 20},
   // ---- table variant
   tableRow: {
     flexDirection: 'row',
     paddingVertical: 8,
-    borderBottomColor: '#eee',
+    borderBottomColor: t.divider,
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 8,
   },
   tableRowLast: {borderBottomWidth: 0},
   tableHeader: {
-    borderBottomColor: '#ccc',
+    borderBottomColor: t.border,
     borderBottomWidth: 1,
   },
-  tableCell: {fontSize: 13, color: '#222', flex: 1},
-  tableHeaderCell: {fontWeight: '700', color: '#555'},
+  tableCell: {fontSize: 13, color: t.textPrimary, flex: 1},
+  tableHeaderCell: {fontWeight: '700', color: t.textSecondary},
   // ---- body variant
-  bodyText: {fontSize: 14, color: '#222', lineHeight: 20},
+  bodyText: {fontSize: 14, color: t.textPrimary, lineHeight: 20},
   bodyParaGap: {marginTop: 8},
   // ---- videos variant
   videosSummary: {
     fontSize: 12,
-    color: '#666',
+    color: t.textMuted,
     marginBottom: 10,
   },
-  videosSummaryAmber: {color: '#b35c00'},
+  videosSummaryAmber: {color: t.warning},
   videoCard: {
-    backgroundColor: '#fafafa',
+    backgroundColor: t.surface,
     borderRadius: 8,
     padding: 12,
     marginBottom: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e0e0e0',
+    borderColor: t.border,
   },
   videoCardHeader: {
     flexDirection: 'row',
@@ -431,12 +440,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  videoFilename: {fontSize: 14, fontWeight: '600', color: '#111', flex: 1},
-  videoMeta: {fontSize: 12, color: '#666', marginTop: 4},
+  videoFilename: {fontSize: 14, fontWeight: '600', color: t.textPrimary, flex: 1},
+  videoMeta: {fontSize: 12, color: t.textMuted, marginTop: 4},
   videoStuckAdvisory: {
     fontSize: 13,
-    color: '#7a4400',
-    backgroundColor: '#fff4e0',
+    color: t.severity.high.fg,
+    backgroundColor: t.severity.high.bg,
     padding: 8,
     borderRadius: 6,
     marginTop: 8,
@@ -444,8 +453,8 @@ const styles = StyleSheet.create({
   },
   videoFailureNote: {
     fontSize: 13,
-    color: '#a00000',
-    backgroundColor: '#fee',
+    color: t.severity.critical.fg,
+    backgroundColor: t.severity.critical.bg,
     padding: 8,
     borderRadius: 6,
     marginTop: 8,
@@ -460,46 +469,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   stateChipText: {fontSize: 11, fontWeight: '700'},
-  chipNeutral: {backgroundColor: '#eee'},
-  chipTextNeutral: {color: '#444'},
-  chipGreen: {backgroundColor: '#e3f5e3'},
-  chipTextGreen: {color: '#1b5e20'},
-  chipBlue: {backgroundColor: '#e3f0fb'},
-  chipTextBlue: {color: '#0d47a1'},
-  chipAmber: {backgroundColor: '#fff4e0'},
-  chipTextAmber: {color: '#7a4400'},
-  chipRed: {backgroundColor: '#fee'},
-  chipTextRed: {color: '#a00000'},
+  chipNeutral: {backgroundColor: t.divider},
+  chipTextNeutral: {color: t.textSecondary},
+  chipGreen: {backgroundColor: t.severity.low.bg},
+  chipTextGreen: {color: t.severity.low.fg},
+  chipBlue: {backgroundColor: t.symptomSource.keyword.bg},
+  chipTextBlue: {color: t.accentPressed},
+  chipAmber: {backgroundColor: t.severity.high.bg},
+  chipTextAmber: {color: t.severity.high.fg},
+  chipRed: {backgroundColor: t.severity.critical.bg},
+  chipTextRed: {color: t.severity.critical.fg},
   // findings sub-block
   findingsBlock: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#ddd',
+    borderTopColor: t.border,
   },
   findingsHeading: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#555',
+    color: t.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 6,
   },
-  findingsAssessment: {fontSize: 14, color: '#222', lineHeight: 20, marginBottom: 8},
+  findingsAssessment: {fontSize: 14, color: t.textPrimary, lineHeight: 20, marginBottom: 8},
   findingsList: {gap: 8, marginBottom: 8},
   findingItem: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     padding: 8,
     borderRadius: 6,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
   },
   findingHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  findingType: {fontSize: 13, fontWeight: '600', color: '#222'},
+  findingType: {fontSize: 13, fontWeight: '600', color: t.textPrimary},
   findingSeverity: {
     fontSize: 11,
     fontWeight: '700',
@@ -508,14 +517,14 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     overflow: 'hidden',
   },
-  severityLow: {backgroundColor: '#e3f5e3', color: '#1b5e20'},
-  severityMedium: {backgroundColor: '#fff8d0', color: '#7a5c00'},
-  severityHigh: {backgroundColor: '#fff4e0', color: '#7a4400'},
-  severityCritical: {backgroundColor: '#fee', color: '#a00000'},
-  findingDescription: {fontSize: 13, color: '#333', marginTop: 4, lineHeight: 18},
-  findingMeta: {fontSize: 11, color: '#888', marginTop: 4},
-  findingsFooter: {fontSize: 11, color: '#888', marginTop: 6},
-  findingsImageQuality: {fontSize: 11, color: '#888', fontStyle: 'italic', marginTop: 2},
+  severityLow: {backgroundColor: t.severity.low.bg, color: t.severity.low.fg},
+  severityMedium: {backgroundColor: t.severity.medium.bg, color: t.severity.medium.fg},
+  severityHigh: {backgroundColor: t.severity.high.bg, color: t.severity.high.fg},
+  severityCritical: {backgroundColor: t.severity.critical.bg, color: t.severity.critical.fg},
+  findingDescription: {fontSize: 13, color: t.textSecondary, marginTop: 4, lineHeight: 18},
+  findingMeta: {fontSize: 11, color: t.textMuted, marginTop: 4},
+  findingsFooter: {fontSize: 11, color: t.textMuted, marginTop: 6},
+  findingsImageQuality: {fontSize: 11, color: t.textMuted, fontStyle: 'italic', marginTop: 2},
   // unknown variant fallback
-  unknownVariant: {fontSize: 13, color: '#888', fontStyle: 'italic'},
-});
+  unknownVariant: {fontSize: 13, color: t.textMuted, fontStyle: 'italic'},
+}));

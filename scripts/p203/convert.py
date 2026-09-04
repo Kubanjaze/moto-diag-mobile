@@ -73,6 +73,9 @@ COLOR = {
     '#cae3f8': 't.symptomSource.keyword.border',
     '#f0e3fa': 't.symptomSource.claude.bg',
     '#dcc4f5': 't.symptomSource.claude.border',
+    # Phase 200/201 parts rows introduced a second grey cluster.
+    '#16181d': 't.textPrimary', '#4a5160': 't.textSecondary',
+    '#6b7280': 't.textMuted', '#e3e6eb': 't.border',
     # scrims
     'rgba(0,0,0,0.4)': 't.scrim', 'rgba(0,0,0,0.45)': 't.scrim',
     'rgba(0,0,0,0.5)': 't.scrim', 'rgba(0,0,0,0.6)': 't.scrim',
@@ -107,17 +110,18 @@ def convert(path: str, rel: str) -> tuple[bool, list[str]]:
     tail = body[close + 3:]
 
     # 4: colours, inside the sheet only.
-    def swap(match: re.Match) -> str:
-        raw = match.group(0)
-        key = raw.lower()
-        if key in COLOR:
-            return COLOR[key]
-        unmapped.append(raw)
-        return raw
+    def replace(mm: re.Match) -> str:
+        raw = mm.group(1)
+        token = COLOR.get(raw.lower())
+        if token is None:
+            unmapped.append(raw)
+            # Leave the literal EXACTLY as it was, quotes included. An
+            # earlier version returned the bare value here and silently
+            # produced unquoted hex in the source.
+            return mm.group(0)
+        return token
 
-    sheet = re.sub(r"'(#[0-9a-fA-F]{3,8}|rgba\([^)]*\))'",
-                   lambda mm: swap(re.match(r"#.*|rgba\(.*\)", mm.group(1))) or mm.group(0),
-                   sheet)
+    sheet = re.sub(r"'(#[0-9a-fA-F]{3,8}|rgba\([^)]*\))'", replace, sheet)
 
     out = (head + 'const useStyles = createThemedStyles((t) => ({'
            + sheet + '}));' + tail)

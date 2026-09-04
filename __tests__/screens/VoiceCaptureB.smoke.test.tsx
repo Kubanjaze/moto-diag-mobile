@@ -51,6 +51,7 @@ import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 
 import {WorkOrderSectionCard} from '../../src/components/WorkOrderSectionCard';
+import {withTheme} from '../withTheme';
 import {
   TRANSCRIPT_POLL_INTERVAL_MS,
 } from '../../src/hooks/useWorkOrderTranscripts';
@@ -134,7 +135,7 @@ function _render(section: WorkOrderTranscriptsSection) {
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   ReactTestRenderer.act(() => {
     renderer = ReactTestRenderer.create(
-      <WorkOrderSectionCard section={section} />,
+      withTheme(<WorkOrderSectionCard section={section} />),
     );
   });
   const texts = _allText(renderer);

@@ -13,6 +13,7 @@ import {Image, Pressable, StyleSheet, Text, View} from 'react-native';
 
 import {formatDuration} from '../screens/formatDuration';
 import {photoStorageCache} from '../services/photoStorageCache';
+import {createThemedStyles} from '../theme/createThemedStyles';
 import {
   isCustomerSection,
   isIssuesSection,
@@ -68,11 +69,12 @@ export function WorkOrderSectionCard({
   section, testID, onPhotoPress, onUndecidedBannerPress,
   onTranscriptPress, onExtractedSymptomPress,
 }: Props) {
+  const styles = useStyles();
   const heading = _heading(section);
   return (
     <View style={styles.card} testID={testID}>
       <Text style={styles.cardTitle}>{heading}</Text>
-      {_renderBody(
+      {_renderBody(styles, 
         section, testID,
         onPhotoPress, onUndecidedBannerPress,
         onTranscriptPress, onExtractedSymptomPress,
@@ -96,6 +98,7 @@ function _heading(section: WorkOrderSection): string {
 }
 
 function _renderBody(
+  styles: ReturnType<typeof useStyles>,
   section: WorkOrderSection,
   testID?: string,
   onPhotoPress?: (photo: WorkOrderPhoto) => void,
@@ -107,13 +110,13 @@ function _renderBody(
   ) => void,
   onPartPress?: (line: WorkOrderPartLine) => void,
 ): React.ReactNode {
-  if (isVehicleSection(section)) return _renderRows(section.rows, testID);
-  if (isCustomerSection(section)) return _renderRows(section.rows, testID);
-  if (isLifecycleSection(section)) return _renderRows(section.rows, testID);
-  if (isNotesSection(section)) return _renderNotes(section.body, testID);
-  if (isIssuesSection(section)) return _renderIssues(section.issues, testID);
+  if (isVehicleSection(section)) return _renderRows(styles, section.rows, testID);
+  if (isCustomerSection(section)) return _renderRows(styles, section.rows, testID);
+  if (isLifecycleSection(section)) return _renderRows(styles, section.rows, testID);
+  if (isNotesSection(section)) return _renderNotes(styles, section.body, testID);
+  if (isIssuesSection(section)) return _renderIssues(styles, section.issues, testID);
   if (isPhotosSection(section)) {
-    return _renderPhotos(
+    return _renderPhotos(styles, 
       section.photos,
       section.undecided_count,
       testID,
@@ -122,7 +125,7 @@ function _renderBody(
     );
   }
   if (isTranscriptsSection(section)) {
-    return _renderTranscripts(
+    return _renderTranscripts(styles, 
       section.transcripts,
       testID,
       onTranscriptPress,
@@ -130,10 +133,10 @@ function _renderBody(
     );
   }
   if (isPartsSection(section)) {
-    return _renderParts(section, testID, onPartPress);
+    return _renderParts(styles, section, testID, onPartPress);
   }
   if (isTimeSection(section)) {
-    return _renderTime(section, testID);
+    return _renderTime(styles, section, testID);
   }
 
   // Defensive fallback — unknown variant. Smoke-gate Step 9 pins
@@ -158,6 +161,7 @@ function _renderBody(
  *  gets a section object, so the ticking value lives in the screen that
  *  owns the hook. Here a running entry shows its start time instead. */
 function _renderTime(
+  styles: ReturnType<typeof useStyles>,
   section: WorkOrderTimeSection,
   testID?: string,
 ): React.ReactNode {
@@ -212,6 +216,7 @@ function _shortStamp(iso: string): string {
 
 
 function _renderParts(
+  styles: ReturnType<typeof useStyles>,
   section: WorkOrderPartsSection,
   testID?: string,
   onPartPress?: (line: WorkOrderPartLine) => void,
@@ -297,6 +302,7 @@ function _centsToDisplay(cents: number): string {
 }
 
 function _renderRows(
+  styles: ReturnType<typeof useStyles>,
   rows: ReadonlyArray<readonly [string, string]>,
   testID?: string,
 ): React.ReactNode {
@@ -321,6 +327,7 @@ function _renderRows(
 }
 
 function _renderNotes(
+  styles: ReturnType<typeof useStyles>,
   body: string,
   testID?: string,
 ): React.ReactNode {
@@ -342,6 +349,7 @@ function _renderNotes(
 }
 
 function _renderIssues(
+  styles: ReturnType<typeof useStyles>,
   issues: ReadonlyArray<WorkOrderIssue>,
   testID?: string,
 ): React.ReactNode {
@@ -366,13 +374,13 @@ function _renderIssues(
             <View
               style={[
                 styles.severityChip,
-                _severityChipStyle(issue.severity),
+                _severityChipStyle(styles, issue.severity),
               ]}
             >
               <Text
                 style={[
                   styles.severityChipText,
-                  _severityChipTextStyle(issue.severity),
+                  _severityChipTextStyle(styles, issue.severity),
                 ]}
               >
                 {issue.severity}
@@ -400,6 +408,7 @@ function _renderIssues(
 }
 
 function _renderPhotos(
+  styles: ReturnType<typeof useStyles>,
   photos: ReadonlyArray<WorkOrderPhoto>,
   undecidedCount: number,
   testID?: string,
@@ -467,8 +476,8 @@ function _renderPhotos(
               key={`pair-${pair.before.id}-${pair.after.id}`}
               style={styles.pairRow}
             >
-              {_renderPhotoSlot(pair.before, 'Before', testID, onPhotoPress)}
-              {_renderPhotoSlot(pair.after, 'After', testID, onPhotoPress)}
+              {_renderPhotoSlot(styles, pair.before, 'Before', testID, onPhotoPress)}
+              {_renderPhotoSlot(styles, pair.after, 'After', testID, onPhotoPress)}
             </View>
           ))}
         </View>
@@ -484,7 +493,7 @@ function _renderPhotos(
           }
         >
           {standalones.map((photo) =>
-            _renderPhotoSlot(photo, null, testID, onPhotoPress, photo.id),
+            _renderPhotoSlot(styles, photo, null, testID, onPhotoPress, photo.id),
           )}
         </View>
       ) : null}
@@ -524,6 +533,7 @@ function _collectPairs(
 }
 
 function _renderPhotoSlot(
+  styles: ReturnType<typeof useStyles>,
   photo: WorkOrderPhoto,
   label: string | null,
   testID?: string,
@@ -571,6 +581,7 @@ function _renderPhotoSlot(
 }
 
 function _renderTranscripts(
+  styles: ReturnType<typeof useStyles>,
   transcripts: ReadonlyArray<WorkOrderTranscript>,
   testID?: string,
   onTranscriptPress?: (transcript: WorkOrderTranscript) => void,
@@ -619,7 +630,7 @@ function _renderTranscripts(
             <Text style={styles.transcriptCapturedAt} numberOfLines={1}>
               {t.captured_at}
             </Text>
-            {_renderExtractionBadge(t.extraction_state)}
+            {_renderExtractionBadge(styles, t.extraction_state)}
           </View>
           {t.preview_text ? (
             <Text style={styles.transcriptBody} numberOfLines={4}>
@@ -652,13 +663,13 @@ function _renderTranscripts(
                   }
                   style={[
                     styles.symptomChip,
-                    _symptomChipStyle(s),
+                    _symptomChipStyle(styles, s),
                   ]}
                 >
                   <Text
                     style={[
                       styles.symptomChipText,
-                      _symptomChipTextStyle(s),
+                      _symptomChipTextStyle(styles, s),
                     ]}
                     numberOfLines={1}
                   >
@@ -691,6 +702,7 @@ function _formatDuration(durationMs: number): string {
  *  Default branch uses `never` cast for TS exhaustiveness — same
  *  discipline as Phase 192B shareErrorCopy + Phase 193 shopAccessErrorCopy. */
 function _renderExtractionBadge(
+  styles: ReturnType<typeof useStyles>,
   state: WorkOrderTranscript['extraction_state'],
 ): React.ReactNode {
   switch (state) {
@@ -720,7 +732,8 @@ function _renderExtractionBadge(
 /** Style chip background based on extraction_method. Phase 195 has
  *  keyword + manual_edit; Phase 195B will add claude. Exhaustive
  *  switch via never. */
-function _symptomChipStyle(symptom: ExtractedSymptom) {
+function _symptomChipStyle(
+  styles: ReturnType<typeof useStyles>,symptom: ExtractedSymptom) {
   switch (symptom.extraction_method) {
     case 'keyword':
       return symptom.confirmed_by_user_id !== null
@@ -740,7 +753,8 @@ function _symptomChipStyle(symptom: ExtractedSymptom) {
   }
 }
 
-function _symptomChipTextStyle(symptom: ExtractedSymptom) {
+function _symptomChipTextStyle(
+  styles: ReturnType<typeof useStyles>,symptom: ExtractedSymptom) {
   switch (symptom.extraction_method) {
     case 'keyword':
     case 'manual_edit':
@@ -756,6 +770,7 @@ function _symptomChipTextStyle(symptom: ExtractedSymptom) {
 }
 
 function _severityChipStyle(
+  styles: ReturnType<typeof useStyles>,
   severity: WorkOrderIssue['severity'],
 ) {
   switch (severity) {
@@ -768,6 +783,7 @@ function _severityChipStyle(
 }
 
 function _severityChipTextStyle(
+  styles: ReturnType<typeof useStyles>,
   severity: WorkOrderIssue['severity'],
 ) {
   switch (severity) {
@@ -779,19 +795,19 @@ function _severityChipTextStyle(
   }
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((t) => ({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#ddd',
+    borderColor: t.border,
   },
   cardTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#888',
+    color: t.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 8,
@@ -800,19 +816,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 8,
-    borderBottomColor: '#eee',
+    borderBottomColor: t.divider,
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 12,
   },
   rowLast: {borderBottomWidth: 0},
-  rowLabel: {fontSize: 14, color: '#555', flex: 1},
-  rowValue: {fontSize: 14, color: '#111', flex: 1, textAlign: 'right'},
-  bodyText: {fontSize: 14, color: '#222', lineHeight: 20},
+  rowLabel: {fontSize: 14, color: t.textSecondary, flex: 1},
+  rowValue: {fontSize: 14, color: t.textPrimary, flex: 1, textAlign: 'right'},
+  bodyText: {fontSize: 14, color: t.textPrimary, lineHeight: 20},
   bodyParaGap: {marginTop: 8},
-  emptyText: {fontSize: 13, color: '#888', fontStyle: 'italic'},
+  emptyText: {fontSize: 13, color: t.textMuted, fontStyle: 'italic'},
   issueRow: {
     paddingVertical: 8,
-    borderBottomColor: '#eee',
+    borderBottomColor: t.divider,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   issueHeader: {
@@ -821,9 +837,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  issueTitle: {fontSize: 14, fontWeight: '600', color: '#111', flex: 1},
-  issueDescription: {fontSize: 13, color: '#444', marginTop: 4, lineHeight: 18},
-  issueMeta: {fontSize: 11, color: '#888', marginTop: 4},
+  issueTitle: {fontSize: 14, fontWeight: '600', color: t.textPrimary, flex: 1},
+  issueDescription: {fontSize: 13, color: t.textSecondary, marginTop: 4, lineHeight: 18},
+  issueMeta: {fontSize: 11, color: t.textMuted, marginTop: 4},
   severityChip: {
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -832,47 +848,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   severityChipText: {fontSize: 11, fontWeight: '700'},
-  severityLow: {backgroundColor: '#e3f5e3'},
-  severityTextLow: {color: '#1b5e20'},
-  severityMedium: {backgroundColor: '#fff8d0'},
-  severityTextMedium: {color: '#7a5c00'},
-  severityHigh: {backgroundColor: '#fff4e0'},
-  severityTextHigh: {color: '#7a4400'},
-  severityCritical: {backgroundColor: '#fee'},
-  severityTextCritical: {color: '#a00000'},
+  severityLow: {backgroundColor: t.severity.low.bg},
+  severityTextLow: {color: t.severity.low.fg},
+  severityMedium: {backgroundColor: t.severity.medium.bg},
+  severityTextMedium: {color: t.severity.medium.fg},
+  severityHigh: {backgroundColor: t.severity.high.bg},
+  severityTextHigh: {color: t.severity.high.fg},
+  severityCritical: {backgroundColor: t.severity.critical.bg},
+  severityTextCritical: {color: t.severity.critical.fg},
   partRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E3E6EB',
+    borderBottomColor: t.border,
   },
   partMain: {flex: 1, paddingRight: 12},
-  partName: {fontSize: 15, color: '#16181D', fontWeight: '500'},
-  partMeta: {fontSize: 13, color: '#6B7280', marginTop: 2},
+  partName: {fontSize: 15, color: t.textPrimary, fontWeight: '500'},
+  partMeta: {fontSize: 13, color: t.textMuted, marginTop: 2},
   partTrailing: {alignItems: 'flex-end'},
-  partStatus: {fontSize: 13, color: '#4A5160', fontWeight: '600'},
-  partCost: {fontSize: 13, color: '#6B7280', marginTop: 2},
+  partStatus: {fontSize: 13, color: t.textSecondary, fontWeight: '600'},
+  partCost: {fontSize: 13, color: t.textMuted, marginTop: 2},
   partTotalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingTop: 12,
   },
-  partTotalLabel: {fontSize: 14, color: '#4A5160', fontWeight: '600'},
-  partTotalValue: {fontSize: 14, color: '#16181D', fontWeight: '700'},
-  unknownVariant: {fontSize: 13, color: '#888', fontStyle: 'italic'},
+  partTotalLabel: {fontSize: 14, color: t.textSecondary, fontWeight: '600'},
+  partTotalValue: {fontSize: 14, color: t.textPrimary, fontWeight: '700'},
+  unknownVariant: {fontSize: 13, color: t.textMuted, fontStyle: 'italic'},
   // Phase 194 photos variant
   undecidedBanner: {
-    backgroundColor: '#fff8d0',
+    backgroundColor: t.severity.medium.bg,
     borderRadius: 8,
     padding: 10,
     marginBottom: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e6cc66',
+    borderColor: t.severity.medium.border,
   },
   undecidedBannerText: {
     fontSize: 13,
-    color: '#7a5c00',
+    color: t.severity.medium.fg,
     fontWeight: '600',
   },
   pairsBlock: {
@@ -897,7 +913,7 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 1,
     borderRadius: 6,
-    backgroundColor: '#f1f1f1',
+    backgroundColor: t.surfaceSunken,
   },
   thumbnailPlaceholder: {
     alignItems: 'center',
@@ -905,7 +921,7 @@ const styles = StyleSheet.create({
   },
   thumbnailPlaceholderText: {
     fontSize: 10,
-    color: '#888',
+    color: t.textMuted,
     fontStyle: 'italic',
     textAlign: 'center',
     paddingHorizontal: 4,
@@ -913,7 +929,7 @@ const styles = StyleSheet.create({
   photoLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#555',
+    color: t.textSecondary,
     textAlign: 'center',
     marginTop: 4,
     textTransform: 'uppercase',
@@ -921,12 +937,12 @@ const styles = StyleSheet.create({
   },
   // Phase 195 transcripts variant
   transcriptCard: {
-    backgroundColor: '#f9f9fb',
+    backgroundColor: t.surface,
     borderRadius: 10,
     padding: 12,
     marginBottom: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#dde',
+    borderColor: t.border,
     gap: 8,
   },
   transcriptHeader: {
@@ -937,22 +953,22 @@ const styles = StyleSheet.create({
   transcriptDuration: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#444',
+    color: t.textSecondary,
     fontVariant: ['tabular-nums'],
   },
   transcriptCapturedAt: {
     fontSize: 12,
-    color: '#888',
+    color: t.textMuted,
     flex: 1,
   },
   transcriptBody: {
     fontSize: 14,
-    color: '#222',
+    color: t.textPrimary,
     lineHeight: 20,
     fontStyle: 'italic',
   },
   transcriptBodyEmpty: {
-    color: '#888',
+    color: t.textMuted,
     fontStyle: 'italic',
   },
   timeTotalRow: {
@@ -961,28 +977,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  timeTotalLabel: {fontSize: 13, color: '#666'},
-  timeTotalValue: {fontSize: 15, fontWeight: '700', color: '#222'},
+  timeTotalLabel: {fontSize: 13, color: t.textMuted},
+  timeTotalValue: {fontSize: 15, fontWeight: '700', color: t.textPrimary},
   timeReviewBanner: {
     fontSize: 12,
-    color: '#8a6d00',
-    backgroundColor: '#fff8d0',
+    color: t.warning,
+    backgroundColor: t.severity.medium.bg,
     paddingVertical: 6,
     paddingHorizontal: 8,
     borderRadius: 6,
     marginBottom: 8,
   },
-  timeEmpty: {fontSize: 13, color: '#888', fontStyle: 'italic'},
+  timeEmpty: {fontSize: 13, color: t.textMuted, fontStyle: 'italic'},
   timeRow: {
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: t.divider,
     paddingVertical: 8,
   },
-  timeRowMain: {fontSize: 14, fontWeight: '600', color: '#222'},
-  timeRowMeta: {fontSize: 12, color: '#888', marginTop: 2},
+  timeRowMain: {fontSize: 14, fontWeight: '600', color: t.textPrimary},
+  timeRowMeta: {fontSize: 12, color: t.textMuted, marginTop: 2},
   transcriptNoSymptoms: {
     fontSize: 12,
-    color: '#888',
+    color: t.textMuted,
     fontStyle: 'italic',
   },
   extractionBadge: {
@@ -990,12 +1006,12 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 8,
   },
-  extractionBadgeRefining: {backgroundColor: '#fff8d0'},
-  extractionBadgeFailed: {backgroundColor: '#fee'},
+  extractionBadgeRefining: {backgroundColor: t.severity.medium.bg},
+  extractionBadgeFailed: {backgroundColor: t.severity.critical.bg},
   extractionBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#7a4400',
+    color: t.severity.high.fg,
   },
   symptomChipRow: {
     flexDirection: 'row',
@@ -1009,23 +1025,23 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     minHeight: 24,
   },
-  symptomChipKeyword: {backgroundColor: '#e3f0fa'},
+  symptomChipKeyword: {backgroundColor: t.symptomSource.keyword.bg},
   symptomChipConfirmedKeyword: {
-    backgroundColor: '#cae3f8',
+    backgroundColor: t.symptomSource.keyword.border,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#5a8fc8',
+    borderColor: t.accent,
   },
   symptomChipManualEdit: {
-    backgroundColor: '#e3f5e3',
+    backgroundColor: t.severity.low.bg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#5a8f5a',
+    borderColor: t.success,
   },
-  symptomChipClaude: {backgroundColor: '#f0e3fa'},
+  symptomChipClaude: {backgroundColor: t.symptomSource.claude.bg},
   symptomChipConfirmedClaude: {
-    backgroundColor: '#dcc4f5',
+    backgroundColor: t.symptomSource.claude.border,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#7a5ac8',
+    borderColor: t.accent,
   },
   symptomChipText: {fontSize: 12, fontWeight: '600'},
-  symptomChipTextDark: {color: '#222'},
-});
+  symptomChipTextDark: {color: t.textPrimary},
+}));
