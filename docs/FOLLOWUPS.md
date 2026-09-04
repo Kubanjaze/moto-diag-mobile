@@ -581,6 +581,59 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
 - **Small:** one Click command mirroring `mark-received`. Worth doing
   next time anyone is in `cli/shop.py`, not on its own.
 
+### F60 (NEW) — `buildWorkOrderSections` positional-parameter proliferation
+
+- **Surfaced:** Phase 202 — and predicted by name. Phase 195's own
+  docstring in that file said positional params would "start to feel
+  proliferative" by the 6th variant and asked the phase that crossed the
+  line to **surface it as an architectural finding rather than refactor
+  preemptively**. Phase 202 added the 7th, and the first whose data is
+  three values rather than one array.
+- **Stopgap taken:** the time data is passed as ONE grouped object, so
+  the arity is 7 rather than 9 and the next addition is obviously an
+  object too. Documented in place.
+- **The real fix:** a single named-options argument covering every
+  variant — `buildWorkOrderSections(wo, {issues, joined, photos,
+  transcripts, parts, time})`. Deferred because it touches every call
+  site and every builder test, which does not belong in a time-tracking
+  phase.
+- **When picked up:** whichever phase next adds a section variant. Do
+  the signature change and the new variant in the same commit.
+
+### F61 (NEW) — No seat model: every mechanic needs their own paid shop subscription
+
+- **Surfaced:** Phase 202 Step 0 critic. `AuthedUser.tier` comes from
+  `get_active_subscription(api_key.user_id)`, `require_tier("shop")`
+  402s when it is absent or lower, and there is no seat, inheritance or
+  member-tier rule anywhere in `auth/` or `billing/`.
+- **Why it matters more now:** every phase up to 201 was usable by one
+  shop owner on one device. "Clock in/out **per mechanic**" is the first
+  feature whose entire point is several people using the app — and a
+  two-mechanic shop currently needs two paid shop subscriptions before
+  the second mechanic can clock in from their own phone.
+- **The test suite cannot feel this:** the 193/201/202 fixtures insert a
+  `tier='shop'` subscription for every user they create.
+- **This is a commercial decision, not a bug.** Either per-tech
+  subscriptions ARE the model — in which case the billing docs and
+  pricing copy should say so — or shop membership should inherit the
+  owner's tier. Needs a product answer before Gate 10's multi-user
+  story.
+
+### F62 (NEW) — Offline clock-in
+
+- **Surfaced:** Phase 202, deliberately out of scope.
+- The Phase 198 op queue could take a new kind additively, but a
+  clock-in replayed on reconnect would record the **replay** time, not
+  the work time. Correct offline behaviour needs client-supplied
+  timestamps plus a trust model for a device clock the server currently
+  refuses to believe — a design question, not a missing branch.
+- **Relevant because** a shop basement is exactly where a mechanic
+  clocks in and exactly where there is no signal.
+- **When picked up:** settle the trust model first (accept client
+  timestamps with a server-side sanity bound? queue the intent and
+  reconcile on arrival?), then add the op kind, the `ReplayApiLike`
+  method and the adapter together.
+
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
 - **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:

@@ -443,7 +443,7 @@ connect/handshake — needs a Bluetooth 4 adapter; a purchase, not a bug).
 - **Suite:** 75 suites / 931 tests green (+35); tsc clean; eslint 0
   errors repo-wide. Backend regression 4735 passed, 0 failed.
 - **Project docs:** `implementation.md` 0.2.4 → 0.2.5; ROADMAP 202 ✅;
-  **F59** (builder positional-param proliferation — Phase 195's own
-  docstring predicted this exact moment), **F60** (no seat model: every
-  mechanic needs their own paid shop subscription), **F61** (offline
+  **F60** (builder positional-param proliferation — Phase 195's own
+  docstring predicted this exact moment), **F61** (no seat model: every
+  mechanic needs their own paid shop subscription), **F62** (offline
   clock-in needs a client-clock trust model) filed.
