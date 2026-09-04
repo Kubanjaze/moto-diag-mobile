@@ -405,3 +405,45 @@ connect/handshake — needs a Bluetooth 4 adapter; a purchase, not a bug).
   errors repo-wide. Backend regression green.
 - **Project docs:** `implementation.md` 0.2.3 → 0.2.4; ROADMAP 201 ✅;
   **F57, F58, F59** filed. Ledger docs → `completed/`.
+
+---
+
+### 2026-09-04 — Phase 202 COMPLETE: mechanic time tracking shipped, server leg smoked
+
+- **Project-level additions:** the app's first live-updating display —
+  `src/screens/formatDuration.ts` (three pure functions),
+  `useWorkOrderTimeEntries`, a 9th `WorkOrderSection` variant, and clock
+  in/out in the WO Actions card. Backend gained a labor ledger, a cap
+  sweep and 5 routes.
+- **Step 0 ran as six parallel readers plus a completeness critic**, and
+  the critic earned its place: it caught that `tech` and `apprentice`
+  hold no `manage_shop` — so gating clock-in on the only permission mode
+  the shop routes use would have locked out the very people who clock in
+  — and that no FCM exists anywhere while 202 sits on the Android-only
+  shippable path, which forced the forgotten-timer answer to be
+  server-side rather than a push.
+- **Both hard parts were solved by making the wrong state
+  unrepresentable.** One open entry per mechanic is a partial unique
+  index, not a read-then-write check a double-tap can win. Elapsed time
+  is recomputed from the server's `started_at` on every tick and every
+  foreground, never accumulated, so it stays correct across a
+  background, an app kill or a reload — which matters because
+  `Info.plist` declares no `UIBackgroundModes` and Android cannot be
+  woken at all.
+- **Smoke (server leg):** clocking in on a second job closed the first
+  after 25s and named it; completing with nothing supplied auto-filled
+  from the ledger; **9h on the clock lost to a typed 2.0**; a **30h
+  forgotten timer capped at 12.0h and flagged `needs_review`**. All
+  server-witnessed in the log.
+- **Device UI leg NOT verified.** The tailnet HTTPS proxy is wedged
+  (nothing on 443 while the tunnel itself pings the phone in 59ms); the
+  LAN fallback was prepared and then the Mac moved networks and the
+  wireless device tunnel failed with `RemotePairingError 4`. The build
+  succeeds — only installation is blocked.
+- **Suite:** 75 suites / 931 tests green (+35); tsc clean; eslint 0
+  errors repo-wide. Backend regression 4735 passed, 0 failed.
+- **Project docs:** `implementation.md` 0.2.4 → 0.2.5; ROADMAP 202 ✅;
+  **F59** (builder positional-param proliferation — Phase 195's own
+  docstring predicted this exact moment), **F60** (no seat model: every
+  mechanic needs their own paid shop subscription), **F61** (offline
+  clock-in needs a client-clock trust model) filed.
