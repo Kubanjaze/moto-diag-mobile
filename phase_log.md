@@ -484,3 +484,39 @@ connect/handshake — needs a Bluetooth 4 adapter; a purchase, not a bug).
 - **Declined again:** the icon library `RootNavigator` defers "until a
   design pass earns it". This was the design pass; the answer is still
   no, and now it is on the record as a decision.
+
+---
+
+### 2026-09-07 — Phase 204 COMPLETE: Gate 10 passes; Track I closes
+
+- **The gate earned its keep.** Five bugs, every one surfaced by running
+  the product on hardware and none findable by reading code. Two had
+  lived in the tree for months behind entirely green suites.
+- **F46 is the lesson worth keeping.** Filed 2026-05-16 as "VisionCamera
+  fails to initialize", it was actually a permission deadlock in our own
+  screen: iOS reports `not-determined`, `combinedStatus` collapses that
+  to `'unknown'`, and the `'unknown'` branch rendered a bare spinner
+  while the only `request()` call sat in the unreachable `'denied'`
+  pane. **The confident, untested diagnosis is why it survived four
+  months** — it made the bug look like a dependency problem instead of
+  ten lines of ours.
+- **Logging, not cleverness, broke the logjam.** The upload 422's reason
+  existed only in a response body the client discards, and the route
+  raised it as an `HTTPException` the app-wide handler never saw. Four
+  blind device round-trips became one traceback the moment a single
+  WARNING line was added.
+- **Two of our own hypotheses were wrong and are recorded as such:** the
+  New-Architecture mismatch (RN 0.85 ignores the Podfile opt-out; that
+  line is vestigial) and the June stash's multipart-boundary diagnosis,
+  which was applied, disproven and reverted. Testing before adopting
+  kept a wrong fix out of the tree; the stash stays parked.
+- **Device evidence:** share link minted from the phone (201), sent over
+  Messages, opened in Safari — 4 credential-free 200s. Phase 199's
+  analysis-complete push fired, closing an item deferred since 199.
+- **Honest gaps:** 201 parts and 202 timer device legs did not run
+  (battery); 196 BLE still needs hardware; the 199 push banner was not
+  visually watched for. F63 (playback freeze) and **F64 (release
+  blocker — share links point at a LAN address)** filed.
+- **Suites:** backend 4743 passed / 0 failed; mobile 79 suites / 985
+  tests; tsc + eslint clean.
+- **Track I (185–204) is complete.**
