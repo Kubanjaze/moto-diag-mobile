@@ -214,8 +214,15 @@ export function VideoCaptureScreen({navigation, route}: Props) {
           sourceUri,
           startedAt: new Date(startedAt).toISOString(),
           durationMs: Math.round(video.duration * 1000),
-          width: video.width ?? 1280,
-          height: video.height ?? 720,
+          // Phase 204 gate — `??` is the wrong operator here. VisionCamera
+          // 4 returns width/height as a real 0 (not undefined) when it
+          // cannot read the track dimensions, and `??` only falls back on
+          // null/undefined — so 0 sailed through to the backend, whose
+          // VideoBase requires gt=0, and every upload from the app died
+          // with a 422 the client rendered as a bare "upload failed".
+          // Guard on the value being usable, not merely present.
+          width: video.width && video.width > 0 ? video.width : 1280,
+          height: video.height && video.height > 0 ? video.height : 720,
           format: 'mp4',
           codec: 'h264',
           interrupted: wasInterrupted,
