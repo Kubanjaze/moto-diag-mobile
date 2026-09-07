@@ -738,6 +738,31 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
 - **Cross-referenced in `docs/testflight.md`** so it is read at release
   time rather than only when someone greps the ticket list.
 
+- **Guard landed 2026-09-07 (backend `core/public_url.py`).** The
+  engineering half is done: production now REFUSES TO START when the
+  configured origin would be unreachable, and dev/test emit the same
+  findings as warnings so local work is unaffected. Catches empty
+  (falls back to the request Host), plain http, loopback, RFC1918,
+  link-local, `.local` mDNS names, and CGNAT 100.64/10.
+- **The Tailscale case is the one that justified the work.** A `.ts.net`
+  name resolves in PUBLIC DNS, so every string-level check passes — but
+  it routes only inside the tailnet, so a customer on cellular times out
+  while the shop sees nothing wrong. That is exactly the state the Phase
+  204 gate ran in. The guard names Funnel as the way out.
+- **The request-Host fallback now warns when it is used**, because prod
+  refuses to boot with an empty setting but dev and staging happily mint
+  host-derived links, and staging is where a silently wrong link would
+  otherwise reach a real person.
+- **STILL OPEN — and this is a hosting decision, not code.** No public
+  origin exists yet. Options weighed 2026-09-07: Tailscale Funnel
+  (real HTTPS in minutes, but exposes the dev Mac and dies when the
+  laptop sleeps), a tunnel service (good for TestFlight betas, but free
+  tiers rotate the hostname and invalidate previously sent links), or a
+  registered domain with an always-on deployment (the real answer, and a
+  phase of its own). **Deferred deliberately until the backend has a
+  home.** The guard means shipping without deciding is now impossible
+  rather than merely inadvisable.
+
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
 - **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:
