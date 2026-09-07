@@ -812,6 +812,22 @@ working, and this ticket only buys the former.
   home.** The guard means shipping without deciding is now impossible
   rather than merely inadvisable.
 
+- **Owner decision 2026-09-07: the host is a home desktop**, currently
+  in storage. F64 stays open deliberately until the application is
+  complete and that machine is set up — it is not waiting on a choice
+  any more, only on hardware being unpacked. The guard means shipping
+  before then is impossible rather than merely inadvisable, which is
+  exactly the state this ticket should sit in.
+- **Worth knowing before that day, so it is not a surprise:** a
+  residential host brings its own work beyond pointing DNS. Home IPs are
+  usually dynamic (so dynamic DNS or a static-IP plan), many ISPs block
+  inbound 443, and TLS needs a real certificate with automated renewal.
+  Uptime becomes the desktop's uptime — a customer opening a share link
+  while it is asleep gets the same silent timeout this ticket exists to
+  prevent. None of that blocks the decision; it is a checklist for the
+  day the machine comes out of storage, and it is why the startup guard
+  and its private-range detection stay valuable even after the move.
+
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
 - **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:
