@@ -22,11 +22,11 @@
 // to whoever pushed us (SessionDetail in production; HomeScreen
 // in the smoke flow).
 
-import React, {useCallback} from 'react';
-import {Alert, StyleSheet, Text, View} from 'react-native';
+import React, {useCallback, useMemo, useRef, useState} from 'react';
+import {Alert, Pressable, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
-import Video from 'react-native-video';
+import Video, {type VideoRef} from 'react-native-video';
 
 import {Button} from '../components/Button';
 import {useSessionVideos} from '../hooks/useSessionVideos';
@@ -40,6 +40,49 @@ export function VideoPlaybackScreen({navigation, route}: Props) {
   const styles = useStyles();
   const {videoId, sessionId} = route.params;
   const {videos, deleteVideo, isLoading, error} = useSessionVideos(sessionId);
+
+  // F63 — our own transport controls.
+  //
+  // `controls` (Apple's native AVPlayerViewController embedded in our
+  // view tree) WEDGES THE JS THREAD under the New Architecture: the
+  // process stays alive and native chrome keeps painting, but timers
+  // stop, the inspector drops, and no touch is ever handled — so the
+  // header and tab bar look fine and simply do not respond. Bisected on
+  // a physical iPhone 16 Pro: identical build with `controls` removed
+  // plays smoothly and navigation stays responsive. 6.19.2 is already
+  // the latest release, so there is no upgrade to wait for.
+  const videoRef = useRef<VideoRef>(null);
+  const [paused, setPaused] = useState<boolean>(false);
+  const [ended, setEnded] = useState<boolean>(false);
+  const [elapsedMs, setElapsedMs] = useState<number>(0);
+
+  const togglePlay = useCallback(() => {
+    if (ended) {
+      // Replaying: rewind first, or the player sits at the end frame.
+      videoRef.current?.seek(0);
+      setEnded(false);
+      setElapsedMs(0);
+      setPaused(false);
+      return;
+    }
+    setPaused((p) => !p);
+  }, [ended]);
+
+  // F63 — memoized so the source object's IDENTITY is stable across
+  // re-renders. An inline `{{uri: ...}}` literal is a fresh object every
+  // render, which can make the native player treat it as a NEW source
+  // and reload the file.
+  //
+  // Declared here, above every early return, because hooks must run in
+  // the same order on every render. Sitting it next to its use site
+  // (below the isLoading / error / !video / null-uri guards) would
+  // change the hook count between renders and crash the screen — which
+  // is the very class of failure this ticket is chasing.
+  const fileUri = videos.find(v => v.id === videoId)?.fileUri ?? null;
+  const videoSource = useMemo(
+    () => (fileUri === null ? null : {uri: fileUri}),
+    [fileUri],
+  );
 
   // Lookup the video by id from the loaded list. Phase 191B's swap
   // will load via backend GET; the same .find() lookup works.
@@ -153,13 +196,21 @@ export function VideoPlaybackScreen({navigation, route}: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
-      <View style={styles.videoContainer} testID="video-playback-player">
+      <Pressable
+        style={styles.videoContainer}
+        onPress={togglePlay}
+        testID="video-playback-player">
         <Video
-          source={{uri: playbackUri}}
+          ref={videoRef}
+          source={videoSource ?? {uri: playbackUri}}
           style={styles.video}
-          controls
           resizeMode="contain"
-          paused={false}
+          paused={paused}
+          onProgress={(p) => setElapsedMs(p.currentTime * 1000)}
+          onEnd={() => {
+            setEnded(true);
+            setPaused(true);
+          }}
           onError={err => {
             // react-native-video can fail on truncated files
             // (e.g., a phone-call interruption that didn't flush
@@ -180,8 +231,25 @@ export function VideoPlaybackScreen({navigation, route}: Props) {
             );
           }}
         />
-      </View>
-
+        <View style={styles.controlBar} pointerEvents="box-none">
+          <Pressable
+            onPress={togglePlay}
+            style={styles.playButton}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={
+              ended ? 'Replay video' : paused ? 'Play video' : 'Pause video'
+            }
+            testID="video-playback-playpause">
+            <Text style={styles.playGlyph}>
+              {ended ? '↻' : paused ? '▶' : '❙❙'}
+            </Text>
+          </Pressable>
+          <Text style={styles.elapsed} testID="video-playback-elapsed">
+            {formatElapsed(elapsedMs)} / {formatElapsed(video.durationMs)}
+          </Text>
+        </View>
+      </Pressable>
       <View style={styles.metaBand} testID="video-playback-meta">
         <Text style={styles.metaTitle}>Recorded {recordedAt}</Text>
         <View style={styles.metaRow}>
@@ -244,6 +312,27 @@ const useStyles = createThemedStyles((t) => ({
   statusText: {color: t.surface, fontSize: 16},
   videoContainer: {flex: 1, backgroundColor: t.textPrimary},
   video: {flex: 1},
+  // F63 — our own transport bar, replacing the native controls.
+  controlBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  playButton: {
+    minWidth: 48,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playGlyph: {color: t.surface, fontSize: 20, fontWeight: '700'},
+  elapsed: {color: t.surface, fontSize: 14, fontVariant: ['tabular-nums']},
   metaBand: {
     backgroundColor: t.textPrimary,
     paddingHorizontal: 16,

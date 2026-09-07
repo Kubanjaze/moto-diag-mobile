@@ -672,6 +672,34 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
   blocked" from "native crash". Then check whether the player is
   released on unmount.
 
+- **CLOSED 2026-09-07** — root-caused by bisection on the device and
+  fixed. **Cause: react-native-video's `controls` prop.** It embeds
+  Apple's `AVPlayerViewController` inside our view tree, and under the
+  New Architecture that wedges the JS thread. An identical build with
+  `controls` removed played smoothly with navigation fully responsive;
+  restoring it reproduced the freeze.
+- **The signature is worth remembering**, because it resembles neither a
+  crash nor an ordinary hang, and I misread it twice: the process stays
+  alive, native chrome (header, tab bar) keeps painting perfectly, but
+  JS timers stop, the debugger detaches, and no touch is ever handled.
+  Everything looks right and nothing responds. Two false readings along
+  the way — "a native fullscreen layer is covering the UI" (refuted by
+  screenshots plainly showing the chrome) and "the app crashed" (refuted
+  by the process still being alive). What settled it was measuring
+  whether JS timers still ran, not looking at the screen.
+- **Fix:** the screen now owns its transport controls — a translucent
+  bar with a 48dp play/pause button, an elapsed/total readout, and
+  tap-anywhere-to-toggle. Replay seeks to 0 first; without that the
+  player sits on the final frame and the tap reads as a no-op.
+  react-native-video 6.19.2 was already the latest release, so there was
+  no upstream fix to wait for.
+- **Verified on device:** playback smooth, controls working, navigation
+  responsive. 5 regression tests, including a source-level guard that
+  `controls` cannot quietly return.
+- **Follow-on worth knowing:** the layout oddities noted above (missing
+  meta band, white band under the header) were an artefact of the native
+  controller too and are gone with it.
+
 ### F64 (NEW) — 🚨 RELEASE BLOCKER: share links must point at a publicly reachable host
 
 - **Surfaced:** Phase 204 Gate 10, 2026-09-07, and flagged by Kerwyn as
