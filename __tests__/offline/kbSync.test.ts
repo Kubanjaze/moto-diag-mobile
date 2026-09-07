@@ -101,3 +101,57 @@ describe('syncKb', () => {
     expect(cache.ingests).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------
+// Phase 206 — conditional GET
+// ---------------------------------------------------------------
+
+describe('syncKb conditional revalidation', () => {
+  it('offers its stamp when the cache is healthy', async () => {
+    const cache = new FakeDtcCache();
+    cache.snapshot = snapshotFixture('v-1');
+    let sawVersion: string | undefined = 'NOT CALLED';
+    await syncKb(cache, async (knownVersion) => {
+      sawVersion = knownVersion;
+      return {ok: true, unchanged: true};
+    });
+    expect(sawVersion).toBe('v-1');
+  });
+
+  it('treats a 304 as unchanged without touching the cache', async () => {
+    const cache = new FakeDtcCache();
+    cache.snapshot = snapshotFixture('v-1');
+    const before = cache.ingests;
+    const outcome = await syncKb(cache, async () => ({
+      ok: true, unchanged: true,
+    }));
+    expect(outcome).toEqual({status: 'unchanged', kbVersion: 'v-1'});
+    expect(cache.ingests).toBe(before);
+  });
+
+  it('does NOT revalidate a wedged cache — stamp present, zero rows', async () => {
+    // The Phase 198 self-heal case. Sending If-None-Match here would
+    // earn a 304, skip the re-ingest, and leave the wedge in place
+    // permanently — so a wedged cache must ask for the full body.
+    const cache = new FakeDtcCache();
+    cache.wedgeStampWithoutRows('v-1');
+    let sawVersion: string | undefined = 'NOT CALLED';
+    await syncKb(cache, async (knownVersion) => {
+      sawVersion = knownVersion;
+      return {ok: true, snapshot: snapshotFixture('v-1')};
+    });
+    expect(sawVersion).toBeUndefined();
+    // ...and the self-heal still fires.
+    expect(cache.ingests).toBe(1);
+  });
+
+  it('does not revalidate on a first-ever sync', async () => {
+    const cache = new FakeDtcCache();
+    let sawVersion: string | undefined = 'NOT CALLED';
+    await syncKb(cache, async (knownVersion) => {
+      sawVersion = knownVersion;
+      return {ok: true, snapshot: snapshotFixture('v-1')};
+    });
+    expect(sawVersion).toBeUndefined();
+  });
+});
