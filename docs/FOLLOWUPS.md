@@ -859,6 +859,57 @@ flag. Degrading well is not the same as working.
   day the machine comes out of storage, and it is why the startup guard
   and its private-range detection stay valuable even after the move.
 
+### F65 (NEW) — No CLI for labour time; the desktop can only *claim* hours
+
+- **Surfaced:** Phase 205 / Gate 11, walking a shop owner's whole job
+  through the CLI. Pinned by
+  `tests/test_phase205_gate11.py::TestDesktopCannotFinishTheJob`, which
+  is designed to FAIL when this closes.
+- **The gap:** Phase 202's time-entry ledger (`motodiag.shop.time_entries`)
+  is reachable only from `api/routes/time_tracking.py`. There is no
+  `shop time` / `clock` group. On the desktop, `--actual-hours` on
+  `work-order complete` is a number a human types, not a measurement.
+- **Why it matters beyond convenience:** `actual_hours` feeds invoicing
+  and the labour-accuracy analytics that compare AI estimates against
+  reality. Hand-typed hours make that comparison measure the typist.
+- **Scope:** a `shop time` group with `clock-in` / `clock-out` /
+  `list`, over the same repo the API uses. Small — the domain layer is
+  built and tested; this is CLI surface only.
+
+### F66 (NEW) — No CLI renders a report or invoice PDF
+
+- **Surfaced:** Phase 205 / Gate 11. Pinned by the same class.
+- **The gap:** `motodiag.reporting` — builders, renderers, the whole
+  Phase 182/192/192B/200 stack — is reachable only from
+  `api/routes/reports.py`. `cli/shop.py` contains zero references to it.
+  A desktop-only shop cannot hand a customer anything printed.
+- **Note:** the renderer registry already has `pdf`, `text` and `html`
+  kinds behind `get_renderer`, so this is wiring a command to an
+  existing seam, not building a renderer.
+
+### F67 (NEW) — No CLI mints a customer share link
+
+- **Surfaced:** Phase 205 / Gate 11. Pinned by the same class.
+- **The gap:** Phase 200's share links are API-only
+  (`api/routes/share.py`). A desktop shop cannot send a customer the
+  report a phone-equipped one can.
+- **Interacts with F64:** whatever CLI lands here should surface the
+  same public-base-URL guard, or it will happily mint links nobody can
+  open — the exact failure F64 exists to prevent.
+
+### F68 (NEW) — CLI and API disagree on the work-order lifecycle vocabulary
+
+- **Surfaced:** Phase 205 / Gate 11, found by walking the lifecycle
+  rather than reading it.
+- **The gap:** the API's transition endpoint accepts an `open` action
+  (`api/routes/shop_mgmt.py`); the CLI's `shop work-order` group has no
+  `open` verb — a work order goes draft → in_progress via `start`.
+- **Harmless today, and filed anyway:** `start` covers the case, so
+  nothing is broken. But two surfaces describing one lifecycle with
+  different vocabularies is precisely how the F37 enum-contract-drift
+  family begins, and F37 is already at instance #3. Cheapest fix is
+  probably an alias plus a shared action enum both surfaces import.
+
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
 - **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:
