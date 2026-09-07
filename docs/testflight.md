@@ -38,6 +38,24 @@ xcodebuild -exportArchive \
 
 The `.ipa` lands in `ios/build/export/`.
 
+## 🚨 Release blockers — check BEFORE any public build
+
+**`MOTODIAG_PUBLIC_BASE_URL` must point at a publicly reachable HTTPS
+host.** It is currently a LAN address (`http://10.0.0.147:8000`), set
+during the Phase 204 gate because the Tailscale listener had wedged.
+
+That value is baked into every customer share link. Ship it as-is and
+every link works only on one home network — and the shop gets **no
+signal**, because minting succeeds and only the customer sees a
+timeout. Plain `http://` is also unsuitable: the page names a customer,
+their bike and its diagnosis, so it needs TLS, and iOS ATS blocks plain
+HTTP to non-private hosts regardless.
+
+Tracked in `docs/FOLLOWUPS.md` (share-link release blocker), which also
+lists what "done" looks like, including a startup guard against private
+ranges. Verify by opening a minted link from a device on a **different
+network**, not the shop wifi.
+
 ## What needs you
 
 None of this can be done from here, and none of it should be — it all

@@ -672,6 +672,44 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
   blocked" from "native crash". Then check whether the player is
   released on unmount.
 
+### F64 (NEW) — 🚨 RELEASE BLOCKER: share links must point at a publicly reachable host
+
+- **Surfaced:** Phase 204 Gate 10, 2026-09-07, and flagged by Kerwyn as
+  a must-fix before release.
+- **Current state:** `MOTODIAG_PUBLIC_BASE_URL` is set to
+  `http://10.0.0.147:8000` — a LAN address on the dev machine. It was
+  changed from the tailnet hostname during the gate because Tailscale's
+  HTTPS listener wedged after a VPN conflict, and the LAN was the only
+  path the phone could reach.
+- **Why this is a blocker, not a nicety:** that value is baked into
+  every customer share URL minted by
+  `POST /v1/reports/session/{id}/share` (`api/routes/share.py`
+  `_share_url`). A bike owner opening the link from anywhere other than
+  that one home network gets a connection timeout — and the failure is
+  **silent from the shop's side**: the mechanic sees a link generated
+  successfully and has no signal the customer could not open it. Phase
+  200's whole premise is a link you can text to someone.
+- **Also unsuitable:** plain `http://`. The page carries a customer
+  name, their bike, and its diagnosis. It needs TLS, and iOS ATS will
+  block plain HTTP to a non-private host from the app anyway.
+- **What "done" looks like:**
+  1. A real public hostname with a valid TLS certificate (the tailnet
+     `https://…ts.net` name works for tailnet-only testing but is NOT
+     reachable by customers).
+  2. `MOTODIAG_PUBLIC_BASE_URL` set to that origin in the deployment
+     environment, NOT in a developer's local `.env`.
+  3. A startup check that refuses to serve — or logs loudly — when the
+     value is empty or resolves to a private range
+     (10/8, 172.16/12, 192.168/16, 127/8) while not in dev mode. The
+     silent-failure mode above is exactly what a guard should catch.
+  4. Re-verify by opening a minted link from a device on a DIFFERENT
+     network (cellular, not the shop wifi).
+- **Related:** the fallback when the setting is empty is
+  `request.base_url`, which is equally wrong behind a proxy that
+  rewrites Host — the same class of bug with a different trigger.
+- **Cross-referenced in `docs/testflight.md`** so it is read at release
+  time rather than only when someone greps the ticket list.
+
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
 - **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:
