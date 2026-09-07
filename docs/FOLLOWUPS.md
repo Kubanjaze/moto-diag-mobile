@@ -910,6 +910,40 @@ flag. Degrading well is not the same as working.
   family begins, and F37 is already at instance #3. Cheapest fix is
   probably an alias plus a shared action enum both surfaces import.
 
+### F69 (NEW) — 🚨 LAUNCH ITEM: CORS origins are localhost dev values
+
+- **Surfaced:** Phase 207 security audit, 2026-09-07. Not a
+  vulnerability today — recorded so it cannot ship as one.
+- **Current state:** `api_cors_origins` resolves to
+  `['http://localhost:3000', 'http://localhost:5173']` with
+  `allow_credentials: true` (`api/app.py:66-67`). Correct for local
+  work; wrong the moment a real web origin exists.
+- **Two failure modes when that day comes:** left as-is, no legitimate
+  browser origin can call the API at all. Set carelessly to `*` WITH
+  credentials enabled, any site on the internet can make authenticated
+  requests using a visitor's stored credentials — the classic CORS
+  mistake, and `allow_credentials: true` is already on.
+- **When picked up:** set the real origin(s) in the deployment
+  environment, never a wildcard while credentials are allowed. Pairs
+  with F64 (share-link host) as the same class of "dev value that must
+  not reach production".
+
+### F70 (NEW) — LAUNCH ITEM: /docs and /openapi.json are unauthenticated
+
+- **Surfaced:** Phase 207 security audit, 2026-09-07. All three of
+  `/docs`, `/redoc` and `/openapi.json` return 200 with no API key.
+- **Severity: low, and deliberately not "fixed" in the audit.** Every
+  endpoint behind them is still auth-gated — this publishes the SHAPE
+  of the API (80 paths, parameter names, response models), not data.
+  Plenty of products expose their docs on purpose.
+- **Why it is still worth a decision:** it hands an attacker a complete
+  map for free, including routes a client would never discover, and
+  the public share route's existence. That is reconnaissance value, and
+  the choice should be deliberate rather than a default nobody revisited.
+- **When picked up:** either gate them behind an API key, or serve them
+  only when `env != prod`. The `Environment` enum already exists and
+  F64's guard established the precedent for env-conditional behaviour.
+
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
 - **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:

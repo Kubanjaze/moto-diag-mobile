@@ -40,6 +40,19 @@ The `.ipa` lands in `ios/build/export/`.
 
 ## 🚨 Release blockers — check BEFORE any public build
 
+**Two more from the Phase 207 security audit**, both configuration
+rather than code:
+
+- **CORS is set to localhost dev origins** with credentials allowed.
+  Left alone, no real browser origin can call the API; set to `*` with
+  credentials on, any site can make authenticated requests. Set the real
+  origin explicitly.
+- **`/docs`, `/redoc` and `/openapi.json` answer without a key.** The
+  endpoints behind them are still gated, so this publishes the API's
+  shape rather than its data — but it should be a deliberate choice, not
+  an unrevisited default.
+
+
 **`MOTODIAG_PUBLIC_BASE_URL` must point at a publicly reachable HTTPS
 host.** It is currently a LAN address (`http://10.0.0.147:8000`), set
 during the Phase 204 gate because the Tailscale listener had wedged.
