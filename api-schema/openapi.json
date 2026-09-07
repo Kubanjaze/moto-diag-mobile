@@ -8955,6 +8955,98 @@
         }
       }
     },
+    "/v1/diagnostics/obd-failure": {
+      "post": {
+        "tags": [
+          "diagnostics"
+        ],
+        "summary": "Report an OBD adapter connection failure from the field",
+        "operationId": "report_obd_failure_v1_diagnostics_obd_failure_post",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObdFailureRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObdFailureResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/v1/shop/{shop_id}/parts/search": {
       "get": {
         "tags": [
@@ -12026,6 +12118,122 @@
           "event"
         ],
         "title": "NotificationTriggerRequest"
+      },
+      "ObdFailureRequest": {
+        "properties": {
+          "error_kind": {
+            "type": "string",
+            "enum": [
+              "ble_powered_off",
+              "ble_unauthorized",
+              "ble_unsupported",
+              "device_not_found",
+              "connect_failed",
+              "handshake_failed",
+              "disconnected_unexpectedly"
+            ],
+            "title": "Error Kind"
+          },
+          "transport": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ble",
+                  "classic",
+                  "wifi"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transport"
+          },
+          "device_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Id"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "app_version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "App Version"
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform"
+          },
+          "os_version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Os Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error_kind"
+        ],
+        "title": "ObdFailureRequest"
+      },
+      "ObdFailureResponse": {
+        "properties": {
+          "recorded": {
+            "type": "boolean",
+            "title": "Recorded"
+          },
+          "alerted": {
+            "type": "boolean",
+            "title": "Alerted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recorded",
+          "alerted"
+        ],
+        "title": "ObdFailureResponse"
       },
       "OpenEntryResponse": {
         "properties": {
@@ -15157,6 +15365,10 @@
     {
       "name": "push",
       "description": "Phase 199 — mechanic-facing push notifications: device-token registration (POST /push/register, upsert/rebind by UNIQUE token) and deregistration (DELETE, sign-out hygiene). Delivery is APNs-direct behind a PushSender seam; triggers are WO transitions/assignment and video-analysis completion. Tokens prune on APNs 410."
+    },
+    {
+      "name": "diagnostics",
+      "description": "Field telemetry from the mobile app. Currently one route: `POST /diagnostics/obd-failure`, reporting that a mechanic could not connect an OBD adapter. Exists because the BLE transport ships unverified against real hardware — the first real-world failure is made loud rather than leaving a mechanic to conclude the app does not work with their dongle. Authed; repeat alerts are suppressed."
     },
     {
       "name": "share",

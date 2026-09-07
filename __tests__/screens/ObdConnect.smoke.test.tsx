@@ -15,6 +15,15 @@
 //
 // react-native-ble-plx is mocked so the import graph loads under Jest.
 
+// The screen reports connection failures as field telemetry, which
+// pulls in the API client (and thus react-native-config) transitively.
+// This smoke test is about the SCREEN, so stub the service rather than
+// dragging the whole network stack into it. Reporting behaviour has its
+// own tests in __tests__/services/obdFailureReport.test.ts.
+jest.mock('../../src/services/obdFailureReport', () => ({
+  reportObdFailure: jest.fn(async () => true),
+}));
+
 jest.mock('react-native-ble-plx', () => ({
   BleManager: jest.fn(),
   State: {

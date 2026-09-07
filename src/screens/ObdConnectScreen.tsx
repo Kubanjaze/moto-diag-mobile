@@ -15,7 +15,7 @@
 // `transport` badge) and reacts to the state machine. It has zero BLE
 // imports — a 196B classic-BT provider would surface here unchanged.
 
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   FlatList,
   ScrollView,
@@ -41,6 +41,7 @@ import {
 import type {ObdDevice, ObdTransport} from '../obd/ObdConnection';
 import type {ScannedDevice} from '../obd/obdConnectionMachine';
 import {describeObdError} from '../obd/obdErrors';
+import {reportObdFailure} from '../services/obdFailureReport';
 import type {HomeStackParamList} from '../navigation/types';
 import {createThemedStyles} from '../theme/createThemedStyles';
 
@@ -70,8 +71,30 @@ export function ObdConnectScreen({navigation}: Props) {
   const [transport, setTransport] = useState<ObdTransport>('ble');
   const provider = useMemo(() => providerForTransport(transport), [transport]);
 
+
   const {state, scan, stopScan, connect, disconnect, reset} =
     useObdConnection(provider);
+  // Field telemetry — tell the maintainer when a mechanic cannot
+  // connect. The BLE transport has never been exercised against real
+  // hardware, so this is the only way its first real failure reaches
+  // anyone who can fix it, instead of the mechanic concluding the app
+  // does not work with their dongle.
+  //
+  // Fires ONCE per distinct failure, not once per render: the failed
+  // state persists while the mechanic reads the error, and a re-render
+  // must not re-report. Best-effort throughout — reporting never
+  // surfaces a second error on top of the first.
+  const reportedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (state.kind !== 'failed') {
+      reportedRef.current = null;
+      return;
+    }
+    const signature = `${state.error.kind}:${transport}`;
+    if (reportedRef.current === signature) return;
+    reportedRef.current = signature;
+    void reportObdFailure({error: state.error, transport});
+  }, [state, transport]);
 
   // Phase 197 — publish the live connection to the cross-screen
   // holder while (and only while) the machine is `connected`, so the

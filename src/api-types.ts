@@ -1270,6 +1270,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/diagnostics/obd-failure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Report an OBD adapter connection failure from the field */
+        post: operations["report_obd_failure_v1_diagnostics_obd_failure_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shop/{shop_id}/parts/search": {
         parameters: {
             query?: never;
@@ -1865,6 +1882,33 @@ export interface components {
             extra_context?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /** ObdFailureRequest */
+        ObdFailureRequest: {
+            /**
+             * Error Kind
+             * @enum {string}
+             */
+            error_kind: "ble_powered_off" | "ble_unauthorized" | "ble_unsupported" | "device_not_found" | "connect_failed" | "handshake_failed" | "disconnected_unexpectedly";
+            /** Transport */
+            transport?: ("ble" | "classic" | "wifi") | null;
+            /** Device Id */
+            device_id?: string | null;
+            /** Message */
+            message?: string | null;
+            /** App Version */
+            app_version?: string | null;
+            /** Platform */
+            platform?: string | null;
+            /** Os Version */
+            os_version?: string | null;
+        };
+        /** ObdFailureResponse */
+        ObdFailureResponse: {
+            /** Recorded */
+            recorded: boolean;
+            /** Alerted */
+            alerted: boolean;
         };
         /** OpenEntryResponse */
         OpenEntryResponse: {
@@ -6319,6 +6363,45 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+        };
+    };
+    report_obd_failure_v1_diagnostics_obd_failure_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ObdFailureRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObdFailureResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
         };
     };
     search_catalog_v1_shop__shop_id__parts_search_get: {
