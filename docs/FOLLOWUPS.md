@@ -634,6 +634,44 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
   reconcile on arrival?), then add the op kind, the `ReplayApiLike`
   method and the adapter together.
 
+### F63 (NEW) — Video playback freezes the app, then the process dies
+
+- **Surfaced:** Phase 204 Gate 10 device session, 2026-09-07, physical
+  iPhone 16 Pro. Upload and first playback work; on **replay** the UI
+  stops responding entirely.
+- **Symptoms, from device screenshots:** the native stack header
+  ("< Session / Video") and the bottom tab bar (Home / Garage /
+  Sessions / Shop) both **render normally** but accept no taps. The
+  video area goes black. Shortly after, the process is gone
+  (`devicectl` reports 0 processes; Metro shows no inspector target).
+- **What the evidence rules OUT:** this is NOT a native fullscreen layer
+  covering the UI — the first hypothesis, refuted by the screenshots,
+  which plainly show the header and tab bar. Nor is it a missing back
+  affordance: `VideoPlayback` is registered with `{title: 'Video'}` and
+  the navigator does not hide its header, so the back arrow exists and
+  is simply unresponsive.
+- **Leading hypothesis:** the JS thread is blocked, or the app is dying.
+  Native chrome is painted by iOS and keeps rendering, but every tap
+  needs JS to handle it — which matches "everything looks right and
+  nothing responds", followed by process death. Memory pressure from
+  `react-native-video` 6.19.2 holding a large local file is a candidate.
+  No crash report was retrievable from the Mac.
+- **Layout oddities in the same screenshots, possibly related:** the
+  `metaBand` (duration / resolution / size) and the "Delete video"
+  button are **not visible at all**, and there is an unexplained white
+  band between the header and the video. `videoContainer` is `flex: 1`
+  and may be consuming the whole column, pushing its siblings off
+  screen. Worth checking whether that is cosmetic or a symptom.
+- **Not a Gate 10 blocker:** playback is not on the film → diagnose →
+  share path the gate actually claims. Filed rather than fixed so the
+  gate is not held open by a side path, and so this gets a real triage
+  session rather than a third consecutive guess.
+- **When picked up:** relaunch with the CDP console attached
+  (`~/Projects/p199_cdp_console.cjs`), replay a video, and capture the
+  last JS logs before the freeze — that trace alone separates "JS
+  blocked" from "native crash". Then check whether the player is
+  released on unmount.
+
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
 - **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:
