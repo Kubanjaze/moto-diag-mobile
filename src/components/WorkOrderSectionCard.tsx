@@ -67,7 +67,7 @@ interface Props {
 
 export function WorkOrderSectionCard({
   section, testID, onPhotoPress, onUndecidedBannerPress,
-  onTranscriptPress, onExtractedSymptomPress,
+  onTranscriptPress, onExtractedSymptomPress, onPartPress,
 }: Props) {
   const styles = useStyles();
   const heading = _heading(section);
@@ -78,6 +78,14 @@ export function WorkOrderSectionCard({
         section, testID,
         onPhotoPress, onUndecidedBannerPress,
         onTranscriptPress, onExtractedSymptomPress,
+        // `onPartPress` is the EIGHTH positional parameter, and this
+        // call passed only seven — so every part row rendered
+        // `disabled` no matter what the screen supplied. Nothing warns
+        // when you stop passing a trailing optional positional
+        // argument, which is exactly why this survived a code review,
+        // a test suite and a device leg. See F60 (positional-parameter
+        // proliferation) — this is that ticket's first real casualty.
+        onPartPress,
       )}
     </View>
   );

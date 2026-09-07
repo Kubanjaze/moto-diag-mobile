@@ -36,6 +36,34 @@ describe('the receive step is reachable from the app', () => {
   });
 });
 
+const CARD = path.join(
+  __dirname, '..', '..', 'src', 'components', 'WorkOrderSectionCard.tsx',
+);
+
+describe('the prop survives every layer between screen and row', () => {
+  // The first fix wired the SCREEN and the rows still would not respond,
+  // because WorkOrderSectionCard declared `onPartPress` in its Props,
+  // never destructured it, and called _renderBody with seven of its
+  // eight positional arguments. Nothing warns when you stop passing a
+  // trailing optional positional parameter — which is how this survived
+  // a review, a green suite, and a device leg.
+  it('WorkOrderSectionCard destructures onPartPress from its props', () => {
+    const src = fs.readFileSync(CARD, 'utf8');
+    const signature = src.match(
+      /export function WorkOrderSectionCard\(\{[^}]*\}/s,
+    );
+    expect(signature).not.toBeNull();
+    expect(signature![0]).toContain('onPartPress');
+  });
+
+  it('and forwards it into _renderBody', () => {
+    const src = fs.readFileSync(CARD, 'utf8');
+    const call = src.match(/_renderBody\(styles,[\s\S]*?\)\}/);
+    expect(call).not.toBeNull();
+    expect(call![0]).toContain('onPartPress');
+  });
+});
+
 // The status → next-action mapping, in the shape the screen uses.
 type Status = 'open' | 'ordered' | 'received' | 'installed' | 'cancelled';
 
