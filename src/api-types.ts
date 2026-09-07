@@ -1843,6 +1843,12 @@ export interface components {
             parts_needed?: string[];
             /** Estimated Hours */
             estimated_hours?: number | null;
+            /**
+             * Source
+             * @default unverified
+             * @enum {string}
+             */
+            source: "unverified" | "model-generated" | "forum" | "service-manual" | "mechanic-verified";
         };
         /** MemberAddRequest */
         MemberAddRequest: {
