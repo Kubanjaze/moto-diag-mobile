@@ -3,7 +3,7 @@
   "info": {
     "title": "MotoDiag API",
     "description": "Motorcycle diagnostic + shop management API. Exposes the Track G shop console + Track A-F diagnostic substrate over HTTP.",
-    "version": "0.1.0",
+    "version": "0.6.0",
     "contact": {
       "name": "MotoDiag Support",
       "email": "support@motodiag.dev",
@@ -11991,6 +11991,18 @@
               }
             ],
             "title": "Estimated Hours"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "unverified",
+              "model-generated",
+              "forum",
+              "service-manual",
+              "mechanic-verified"
+            ],
+            "title": "Source",
+            "default": "unverified"
           }
         },
         "type": "object",
