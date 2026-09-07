@@ -26,6 +26,19 @@ export const TRANSPORT_LABELS: Readonly<Record<ObdTransport, string>> = {
   'wifi': 'Wi-Fi',
 };
 
+/** One line naming adapters a mechanic will recognise.
+ *
+ * F56: the labels above are accurate and useless at the moment of
+ * choosing — someone holding a dongle does not know whether it is "BLE"
+ * or "Classic (MFi)", and picking wrong produces an empty scan that
+ * looks exactly like a broken app. Naming real hardware is what makes
+ * the choice answerable. */
+export const TRANSPORT_HINTS: Readonly<Record<ObdTransport, string>> = {
+  'ble': 'Newer adapters sold as "BLE" or "Bluetooth 4.0+" — OBDLink CX, Vgate iCar Pro BT4.0.',
+  'classic-bt': 'Older adapters sold as "Bluetooth 3.0" or "MFi" — OBDLink MX+. Pair in Settings first.',
+  'wifi': 'Adapters that create their own Wi-Fi network.',
+};
+
 /** Build the provider for a transport. Throws on transports without a
  *  shipped provider (196C's `wifi`) — the picker never offers them,
  *  so reaching the throw is a programming error worth failing loud. */

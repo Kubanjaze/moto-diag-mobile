@@ -158,3 +158,47 @@ export function describeObdError(error: ObdConnectionError): ObdErrorCopy {
     }
   }
 }
+
+
+/** A transport-aware hint for "nothing showed up".
+ *
+ * F56. `describeObdError` is transport-agnostic BY DESIGN (see the
+ * header) and must stay that way — the same kinds serve BLE, classic-BT
+ * and Wi-Fi providers. But the single most likely reason a scan finds
+ * nothing is that the mechanic is scanning the WRONG RADIO for the
+ * dongle in their hand, and the generic advice ("check it is plugged in,
+ * ignition on, in range") sends them chasing something that can never
+ * work: a classic Bluetooth adapter will NEVER appear in a BLE scan, by
+ * design, not by fault.
+ *
+ * That confusion is what produced F56 in the first place — the
+ * reference dongle is an OBDLink MX+, which is classic-BT + MFi, and it
+ * was invisible to the BLE provider. So the hint lives HERE, beside the
+ * copy, and takes the transport as an argument rather than the error
+ * module learning about radios.
+ *
+ * Returns null when there is nothing useful to add.
+ */
+export function transportHintFor(
+  kind: ObdConnectionError['kind'],
+  transport: 'ble' | 'classic-bt' | 'wifi',
+): string | null {
+  if (kind !== 'device_not_found') return null;
+  if (transport === 'ble') {
+    return (
+      'If your adapter is a classic Bluetooth model — an OBDLink MX+, '
+      + 'or anything sold as "Bluetooth 3.0" or "works with iPhone via '
+      + 'MFi" — it will never appear in this scan. Switch to Classic '
+      + 'Bluetooth and pair it in Settings › Bluetooth first.'
+    );
+  }
+  if (transport === 'classic-bt') {
+    return (
+      'Classic Bluetooth only lists adapters already paired to this '
+      + 'phone. Pair it in Settings › Bluetooth first. If your adapter '
+      + 'is a newer "BLE" or "Bluetooth 4.0+" model, switch to '
+      + 'Bluetooth LE instead.'
+    );
+  }
+  return null;
+}

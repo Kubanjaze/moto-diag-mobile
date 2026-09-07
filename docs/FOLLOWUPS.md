@@ -559,6 +559,37 @@ appended to ADR-002's condition-#2 running record, and the `[~]` item in
 of graceful degradation alone.** Degrading well is not the same as
 working, and this ticket only buys the former.
 
+**CLOSED 2026-09-07 — the re-scoped work is done.**
+
+- **Item 1 (error copy):** audited all seven kinds in
+  `describeObdError`. The copy was already specific and actionable —
+  no change needed, which is worth recording as an audit result rather
+  than assumed.
+- **Item 2 (the wrong-radio case) — the real gap, now fixed.** A scan
+  finding nothing told the mechanic to check the plug, the ignition and
+  the range. None of that can work when the cause is scanning the wrong
+  radio: a classic-BT adapter is invisible to a BLE scan **by design**,
+  which is exactly how F56 was born (the reference MX+ is classic +
+  MFi). `transportHintFor` now adds a transport-aware line saying so and
+  naming the fix. It lives beside the copy and takes the transport as an
+  argument, so `describeObdError` stays transport-agnostic as its header
+  promises.
+- **Item 3 (the picker):** "Bluetooth LE" vs "Classic Bluetooth (MFi)"
+  is accurate and useless while holding an unlabelled dongle.
+  `TRANSPORT_HINTS` now names real hardware (OBDLink CX / Vgate for BLE,
+  OBDLink MX+ for classic) and describes each by how adapters are SOLD —
+  "Bluetooth 4.0+" vs "Bluetooth 3.0 / MFi" — because a mechanic reads
+  the box, not the spec sheet.
+- 6 regression tests, including one asserting the hint stays SILENT for
+  failures the transport cannot explain: a handshake failure means the
+  adapter WAS found, so radio advice would be noise, and noise is how
+  real hints get ignored.
+
+**THE HARD GATE IS UNCHANGED.** This bought graceful degradation, not
+verification. Flipping `OBD_SUPPORT` on for release still requires a
+real BLE device smoke — the warning sits in `features.ts` beside the
+flag. Degrading well is not the same as working.
+
 ### F57 (NEW) — serve logging does not follow `--workers` / `--reload`
 
 - **Context:** the main bug is FIXED (moto-diag `af18aca`). The server

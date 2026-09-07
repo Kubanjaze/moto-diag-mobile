@@ -33,6 +33,7 @@ import {
   providerForTransport,
   SELECTABLE_TRANSPORTS,
   TRANSPORT_LABELS,
+  TRANSPORT_HINTS,
 } from '../obd/providerFactory';
 import {
   clearActiveObdConnection,
@@ -40,7 +41,7 @@ import {
 } from '../obd/activeObdConnection';
 import type {ObdDevice, ObdTransport} from '../obd/ObdConnection';
 import type {ScannedDevice} from '../obd/obdConnectionMachine';
-import {describeObdError} from '../obd/obdErrors';
+import {describeObdError, transportHintFor} from '../obd/obdErrors';
 import {reportObdFailure} from '../services/obdFailureReport';
 import type {HomeStackParamList} from '../navigation/types';
 import {createThemedStyles} from '../theme/createThemedStyles';
@@ -144,6 +145,11 @@ export function ObdConnectScreen({navigation}: Props) {
                 onPress={() => setTransport(option)}
                 testID={`obd-transport-${option}`}
               />
+              <Text
+                style={styles.transportHint}
+                testID={`obd-transport-hint-${option}`}>
+                {TRANSPORT_HINTS[option]}
+              </Text>
               <View style={styles.spacer} />
             </View>
           ))}
@@ -305,6 +311,10 @@ export function ObdConnectScreen({navigation}: Props) {
   // ---------------------------------------------------------------
   if (state.kind === 'failed') {
     const copy = describeObdError(state.error);
+    // F56 — the likeliest reason a scan finds nothing is the wrong radio
+    // for the dongle in hand, and the generic copy cannot say so without
+    // the transport-agnostic error module learning about radios.
+    const hint = transportHintFor(state.error.kind, transport);
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.pane}>
@@ -312,6 +322,11 @@ export function ObdConnectScreen({navigation}: Props) {
           <Text style={styles.errorBody} testID="obd-error-message">
             {copy.message}
           </Text>
+          {hint !== null ? (
+            <Text style={styles.errorHint} testID="obd-error-transport-hint">
+              {hint}
+            </Text>
+          ) : null}
         </View>
         <View style={styles.controls}>
           {copy.canRetry ? (
@@ -393,6 +408,19 @@ const useStyles = createThemedStyles((t) => ({
   errorTitle: {fontSize: 20, fontWeight: '700', color: t.danger},
   body: {fontSize: 16, color: t.textSecondary, lineHeight: 20},
   errorBody: {fontSize: 16, color: t.severity.critical.fg, lineHeight: 20},
+  transportHint: {
+    color: t.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 6,
+    marginHorizontal: 4,
+  },
+  errorHint: {
+    color: t.textMuted,
+    fontSize: 14,
+    marginTop: 12,
+    lineHeight: 20,
+  },
   deviceName: {fontSize: 16, fontWeight: '600', color: t.textPrimary, marginTop: 4},
   bannerText: {
     fontSize: 14,
