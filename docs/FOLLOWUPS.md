@@ -1030,6 +1030,60 @@ flag. Degrading well is not the same as working.
   injection point, and the safe pattern already exists three files
   over. Add the allowlist while it is cheap.
 
+### F76 (NEW) — 🚨 LAUNCH ITEM: the Docker image has never been built
+
+- **Surfaced:** Phase 209 packaging, 2026-09-07. `Dockerfile`,
+  `.dockerignore` and `docker-compose.yml` were written, reviewed and
+  committed, but Docker was not installed on the authoring machine, so
+  `docker build` has never run against them.
+- **What IS verified, outside a container:** the wheel installs with the
+  `api` extra into a clean venv, `motodiag serve` starts from it, and
+  `/healthz` and `/v1/version` both answer 200 — the same commands the
+  image runs. So the *contents* are exercised; the container mechanics
+  are not.
+- **Unverified specifically:** the multi-stage COPY between builder and
+  runtime, the non-root `USER` against the `/var/lib/motodiag` volume
+  mount, the `HEALTHCHECK` command, and whether `.dockerignore` actually
+  keeps `data/` and the phase docs out of the build context.
+- **Why filed rather than deferred silently:** `docs/guide/install.md`
+  offers Docker as the recommended path for running the API. It carries
+  a warning pointing here, but the honest state is "written, not run",
+  and the first person to type `docker compose up` should know that.
+- **When picked up:** on any machine with Docker. `docker build .`,
+  `docker compose up`, `curl localhost:8000/healthz`, then
+  `docker run --rm motodiag:latest ls /var/lib/motodiag` to confirm the
+  volume is writable as the non-root user. Remove the warnings from the
+  Dockerfile, the compose file and the install guide when it passes.
+
+### F77 (NEW) — Dependency floors are low enough to resolve untested versions
+
+- **Surfaced:** Phase 209 packaging, 2026-09-07. The dev venv runs
+  `fastapi 0.136.3` / `starlette 1.3.1`; a fresh `pip install
+  motodiag[api]` resolved `fastapi 0.141.1` / `starlette 1.6.0`,
+  because `pyproject.toml` declares only `fastapi>=0.110`.
+- **This is not hypothetical — it already bit.** FastAPI 0.141 stopped
+  flattening included routers into `app.routes` and stores an
+  `_IncludedRouter` per `include_router` call instead. A route count
+  taken from that attribute reads 109 on the pinned version and 21 on
+  the resolved one. The app is fine (`openapi()["paths"]` returns all
+  80 either way) and the Phase 209 test now asserts against the OpenAPI
+  contract rather than the internal list — but the discovery was
+  accidental, and the next behavioural change between those versions
+  will not be.
+- **The gap:** every one of the 4,900 tests runs against the pinned
+  versions. Nothing exercises what a user's `pip install` actually
+  resolves, so "our tests pass" says nothing about the version anyone
+  else gets. `pydantic>=2.0` has the same shape and a much larger
+  surface.
+- **Also:** Phase 207 noted that low floors permit installs with known
+  CVEs. No dependency scan has ever been run on this project.
+- **When picked up:** raise the floors to versions actually exercised,
+  add upper bounds on the frameworks whose internals we touch
+  (`fastapi`, `starlette`, `pydantic`), and add a scheduled job that
+  installs with fully resolved latest deps and runs the suite — the
+  only thing that turns this from a surprise into a signal. Pair with
+  a `pip-audit` run.
+
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
 - **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:
