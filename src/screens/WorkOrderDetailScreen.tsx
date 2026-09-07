@@ -43,7 +43,10 @@ import {
   type TransitionAction,
 } from '../hooks/useTransitionWorkOrder';
 import {useWorkOrder} from '../hooks/useWorkOrder';
-import {useWorkOrderParts} from '../hooks/useWorkOrderParts';
+import {
+  useWorkOrderParts,
+  type PartTransitionAction,
+} from '../hooks/useWorkOrderParts';
 import {useWorkOrderTimeEntries} from '../hooks/useWorkOrderTimeEntries';
 import {formatElapsed} from './formatDuration';
 import {useWorkOrderPhotos} from '../hooks/useWorkOrderPhotos';
@@ -51,7 +54,10 @@ import {useWorkOrderTranscripts} from '../hooks/useWorkOrderTranscripts';
 import type {ShopStackParamList} from '../navigation/types';
 import {buildWorkOrderSections} from './buildWorkOrderSections';
 import {shopAccessErrorCopy} from './shopAccessErrorCopy';
-import type {WorkOrderIssue} from '../types/workOrder';
+import type {
+  WorkOrderIssue,
+  WorkOrderPartLine,
+} from '../types/workOrder';
 import {createThemedStyles} from '../theme/createThemedStyles';
 
 type Props = NativeStackScreenProps<ShopStackParamList, 'WorkOrderDetail'>;
@@ -75,9 +81,84 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
     lines: partLines,
     openCount: openPartCount,
     orderAll,
+    transitionLine,
     isMutating: isMutatingParts,
     refresh: refreshParts,
   } = useWorkOrderParts(shopId, woId);
+  // Phase 201 follow-up — advance a part line's lifecycle by tapping it.
+  //
+  // The Order button's own alert told the mechanic to "mark each one
+  // received when it turns up", and there was NO WAY TO DO THAT in the
+  // app: `transitionLine` existed and was tested, but no screen ever
+  // called it, and the section card's `onPartPress` was never passed so
+  // every row rendered `disabled`. Function present, wiring absent —
+  // the F9 integration gap, found by Phase 201's device leg finally
+  // running at the Gate 10 sweep.
+  //
+  // It also matters beyond tidiness: marking a part received is what
+  // fires the `parts_arrived` customer notification, the producer Phase
+  // 201 was written to supply for Phase 199's dangling event.
+  // Unreachable from the app, that notification could never fire.
+  const handlePartPress = useCallback(
+    (line: WorkOrderPartLine) => {
+      const next: PartTransitionAction | null =
+        line.status === 'ordered'
+          ? 'received'
+          : line.status === 'received'
+          ? 'installed'
+          : null;
+      if (next === null) {
+        // 'open' lines are the cart — the Order button owns that step.
+        // 'installed' and 'cancelled' are terminal.
+        Alert.alert(
+          _partStatusTitle(line.status),
+          _partStatusExplanation(line.status),
+          [{text: 'OK'}],
+        );
+        return;
+      }
+      const verb = next === 'received' ? 'received' : 'installed';
+      Alert.alert(
+        `Mark ${verb}?`,
+        `${line.part_description ?? line.part_slug} will be marked `
+          + `${verb}.`
+          + (next === 'received'
+            ? ' The customer is notified that parts have arrived.'
+            : ''),
+        [
+          {text: 'Cancel', style: 'cancel'},
+          {
+            text: `Mark ${verb}`,
+            onPress: () => {
+              void transitionLine(line.id, next)
+                .then(() => refreshParts())
+                .catch((err: unknown) => {
+                  // A 409 means someone else already moved it — refresh
+                  // rather than leaving a stale row on screen.
+                  const kind =
+                    err && typeof err === 'object' && 'kind' in err
+                      ? (err as {kind: string}).kind
+                      : null;
+                  Alert.alert(
+                    kind === 'invalid_transition'
+                      ? 'Already moved on'
+                      : `Couldn't mark ${verb}`,
+                    kind === 'invalid_transition'
+                      ? 'This part has already been updated, possibly by '
+                        + 'someone else at the shop. Refreshing.'
+                      : 'Check your connection and try again.',
+                    [{text: 'OK'}],
+                  );
+                  void refreshParts();
+                });
+            },
+          },
+        ],
+      );
+    },
+    [transitionLine, refreshParts],
+  );
+
   const {transition, isTransitioning} = useTransitionWorkOrder(shopId);
   // Phase 202 — labor timer. `elapsedSeconds` is derived from the open
   // entry's server timestamp on every tick and every foreground, so it
@@ -322,6 +403,9 @@ export function WorkOrderDetailScreen({navigation, route}: Props) {
                 ? () =>
                     navigation.navigate('ClassifyPhotos', {shopId, woId})
                 : undefined
+            }
+            onPartPress={
+              section.kind === 'parts' ? handlePartPress : undefined
             }
             onTranscriptPress={
               section.kind === 'transcripts'
@@ -674,3 +758,28 @@ const useStyles = createThemedStyles((t) => ({
   },
   modalButtons: {flexDirection: 'column'},
 }));
+
+
+/** Title for a tap on a line that cannot advance. */
+function _partStatusTitle(status: string): string {
+  if (status === 'open') return 'Not ordered yet';
+  if (status === 'installed') return 'Already installed';
+  if (status === 'cancelled') return 'Cancelled';
+  return 'No change available';
+}
+
+/** Why a tap did nothing — silence would read as a broken button, which
+ *  is how the missing receive step was reported in the first place. */
+function _partStatusExplanation(status: string): string {
+  if (status === 'open') {
+    return 'Open parts are the order list. Use the Order button to send '
+      + 'them, then tap a part again once it turns up.';
+  }
+  if (status === 'installed') {
+    return 'This part is fitted. There is nothing further to record.';
+  }
+  if (status === 'cancelled') {
+    return 'This part was cancelled and is kept for the record only.';
+  }
+  return 'This part cannot be advanced from here.';
+}
