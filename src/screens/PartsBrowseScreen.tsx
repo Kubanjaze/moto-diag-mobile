@@ -129,10 +129,20 @@ export function PartsBrowseScreen({navigation, route}: Props) {
           testID="parts-browse-list"
           ListEmptyComponent={
             <Text style={styles.empty} testID="parts-browse-empty">
-              {hasSearched
-                ? 'No catalog match. Try a looser search — a brand, or '
-                  + 'part of the number.'
-                : 'Searching the catalog…'}
+              {!hasSearched
+                ? 'Searching the catalog…'
+                : make && model
+                ? // Say WHY it is empty. Results are scoped to the work
+                  // order's bike, so "try a looser search" is advice that
+                  // cannot work when the catalog simply has nothing for
+                  // this make — which is exactly how a correct empty
+                  // result got reported as "I can't add parts".
+                  `No catalog parts listed for this ${make} ${model}. `
+                  + 'Results are limited to parts that fit the bike on '
+                  + 'this work order, so a wider search will not help — '
+                  + 'the part needs adding to the catalog first.'
+                : 'No catalog match. Try a looser search — a brand, or '
+                  + 'part of the number.'}
             </Text>
           }
         />
