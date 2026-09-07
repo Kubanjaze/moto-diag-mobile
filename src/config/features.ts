@@ -24,3 +24,17 @@
  * builds, false in production bundles.
  */
 export const OBD_SUPPORT: boolean = __DEV__;
+
+// ⚠️ BEFORE FLIPPING THIS TO `true` FOR RELEASE — read F56.
+//
+// The BLE transport's connect + handshake has NEVER run against real
+// BLE hardware. Only the classic-Bluetooth sibling is device-verified
+// (Phase 196B, OBDLink MX+, "ELM327 v1.4b"). F56 was re-scoped on
+// 2026-09-07 to make a BLE failure LEGIBLE rather than to verify it
+// works — a deliberate trade, made because OBD ships dark so no user
+// can reach this path today.
+//
+// Degrading well is not the same as working. Flipping this flag turns
+// the first mechanic with a BLE dongle into the tester of an unverified
+// code path, in release, with no fallback prompt. Do a real device
+// smoke first: scan → connect → handshaking → connected.

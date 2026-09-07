@@ -505,27 +505,59 @@ Done. `transcripts.py` upgraded to use `ExtractionState`, `ExtractionMethod`, `A
   renders "Prepared for <name>", HTML-only by design (adding it to the
   PDF would move bytes that 192B's deterministic tests pin).
 
-### F56 (NEW) — BLE connect + handshake needs a BLE-class adapter
+### F56 (RE-SCOPED 2026-09-07) — make the first BLE user self-diagnosing
 
-- **Surfaced:** Phase 196 close-out (2026-09-02). The phase's provider,
-  seam contract and 54 unit tests are done, and BLE **scan** passed on
-  device (2026-08-23). Connect and handshake were never exercised
-  because the only dongle available is an OBDLink MX+ (MX201) — classic
-  Bluetooth 3.0 + MFi, undiscoverable by `react-native-ble-plx` **by
-  design**, not by fault.
-- **This is a purchase, not a bug.** Candidates named in the Phase 196
-  ledger: OBDLink CX, or a Vgate iCar Pro BT4.0-class adapter. Anything
-  advertising BLE / Bluetooth 4.0+ rather than "Bluetooth 3.0" or "works
-  with iPhone via MFi".
-- **Not blocking anything.** Phase 196B's `ClassicBtObdProvider`
-  device-smoked PASS against the MX+ ("ELM327 v1.4b", 2026-08-25), so
-  the app talks to the real dongle today through the same
-  `ObdConnection` seam.
-- **When picked up:** run the original 196 gate — dongle appears in
-  scan → connect → `idle → scanning → connecting → handshaking →
-  connected` with the banner — and append the result to ADR-002's
-  condition-#2 running record, pass or fail. Then tick the `[~]` item in
-  `196_implementation.md`.
+**Was:** "BLE connect + handshake needs a BLE-class adapter" — i.e. buy
+hardware and run the Phase 196 gate. Re-scoped after review, because the
+original framing blocked on a purchase to verify a code path **no user
+can currently reach**.
+
+**Why the re-scope is justified, not a dodge:**
+
+- **`OBD_SUPPORT` is `__DEV__`** (`src/config/features.ts:26`). OBD ships
+  DARK — it is absent from release builds entirely. F56 as written gated
+  a disabled feature.
+- **The transport that real mechanics actually use is already verified.**
+  The reference dongle is an OBDLink MX+ (classic Bluetooth 3.0 + MFi),
+  and Phase 196B's `ClassicBtObdProvider` device-smoked PASS against it
+  ("ELM327 v1.4b", 2026-08-25).
+- **The two transports are siblings behind one seam**
+  (`src/obd/providerFactory.ts` returns `BleObdProvider` or
+  `ClassicBtObdProvider` per `ObdTransport`), so a BLE fault cannot break
+  the classic path.
+- **Owner's judgement (2026-09-07):** the mechanic in mind barely uses
+  BLE adapters; onboarding them per-device as real shops appear is the
+  proportionate path.
+
+**The real risk is not "BLE is broken" — it is "BLE is broken and the
+mechanic cannot tell you why."** Whoever first plugs in a BLE dongle
+becomes the tester, which is acceptable for a dark feature with a working
+alternative, and only acceptable if the failure is legible.
+
+**New scope — no purchase required:**
+
+1. `src/obd/obdErrors.ts` already defines seven BLE failure kinds:
+   `ble_powered_off`, `ble_unauthorized`, `ble_unsupported`,
+   `device_not_found`, `connect_failed`, `handshake_failed`,
+   `disconnected_unexpectedly`. **That path has never run on a real
+   device.** Verify each kind renders copy a mechanic can act on AND
+   report — naming the transport, the device id where known, and a next
+   step. Pin the copy register with tests, in the shape of
+   `screens/shopAccessErrorCopy.ts`.
+2. Confirm an unreachable/absent BLE dongle degrades to a typed error
+   rather than a hang or crash — the `ObdConnectScreen` should return to
+   a usable idle state.
+3. Make sure the transport picker states plainly which transport a dongle
+   needs, so a classic-BT user does not sit in a BLE scan finding nothing
+   (the exact confusion that produced this ticket).
+
+**HARD GATE, unchanged:** flipping `OBD_SUPPORT` on for release still
+requires a real BLE device smoke — scan → connect →
+`idle → scanning → connecting → handshaking → connected` with the banner,
+appended to ADR-002's condition-#2 running record, and the `[~]` item in
+`196_implementation.md` ticked. **Do not flip that flag on the strength
+of graceful degradation alone.** Degrading well is not the same as
+working, and this ticket only buys the former.
 
 ### F57 (NEW) — serve logging does not follow `--workers` / `--reload`
 
