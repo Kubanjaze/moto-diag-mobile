@@ -109,6 +109,31 @@ export function VideoCaptureScreen({navigation, route}: Props) {
   const permissions = useCameraPermissions();
   const device = useCameraDevice('back');
 
+  // F46 fix (Phase 204 gate) — auto-request on first entry.
+  //
+  // iOS reports `not-determined` until the app actually asks, and
+  // `combinedStatus` collapses that into 'unknown'. The render gate
+  // below returns a bare spinner for 'unknown' with no button and no
+  // effect, so on a fresh install this screen could NEVER reach
+  // `request()` — the only call site is the 'denied' pane. The result
+  // was an endless spinner and no permission prompt, which is exactly
+  // what F46 recorded and misattributed to VisionCamera failing to
+  // initialise. Nothing native was broken.
+  //
+  // Requesting automatically is right here: the user tapped "Record
+  // video", which IS the intent. PhotoCaptureScreen (Phase 194) avoids
+  // the deadlock by rendering a "Grant access" button instead; this
+  // screen predates it. The ref guard keeps a denial from re-prompting
+  // in a loop, since `request()` re-derives status and would otherwise
+  // re-trigger this effect.
+  const autoRequestedRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (permissions.status === 'unknown' && !autoRequestedRef.current) {
+      autoRequestedRef.current = true;
+      void permissions.request();
+    }
+  }, [permissions]);
+
   // -----------------------------------------------------------
   // useSessionVideos drives upload + at-cap state. Phase 191B's
   // hook hits the backend; the same shape as Phase 191 means this
@@ -371,9 +396,22 @@ export function VideoCaptureScreen({navigation, route}: Props) {
 
   // Permission gate
   if (permissions.status === 'unknown') {
+    // The spinner is now genuinely transient — the effect above fires
+    // the request on mount. The button is the belt-and-braces path for
+    // the case where the OS declines to present a prompt at all, so a
+    // stuck state is still recoverable by hand rather than terminal.
     return (
       <SafeAreaView style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" />
+        <View style={styles.spacer} />
+        <Button
+          title="Grant permissions"
+          variant="secondary"
+          onPress={() => {
+            void permissions.request();
+          }}
+          testID="video-capture-unknown-grant-button"
+        />
       </SafeAreaView>
     );
   }
