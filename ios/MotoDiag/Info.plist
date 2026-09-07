@@ -46,8 +46,6 @@
 	<string>MotoDiag connects to your Bluetooth OBD-II adapter to read live diagnostic data from the motorcycle's ECU.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>MotoDiag uses the camera to capture video of vehicle symptoms (engine startup, idle behavior, visible defects) for diagnostic records.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>MotoDiag may use your location to tag diagnostic work orders with the bay or facility location where work is performed.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>MotoDiag uses the microphone to capture voice descriptions of vehicle symptoms during diagnostic work orders.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
