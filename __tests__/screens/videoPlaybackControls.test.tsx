@@ -13,8 +13,20 @@
 // 6.19.2 was already the latest release, so there was no upstream fix to
 // wait for; the screen owns its transport controls now.
 
-import fs from 'fs';
-import path from 'path';
+// `export {}` makes this file a MODULE. Without it TypeScript treats a
+// test with no imports as a global script, and its `fs` / `path` consts
+// collide with the identically-named ones in
+// __tests__/theme/noHardcodedColors.test.ts.
+export {};
+
+// `tsconfig.json` restricts `types` to ["jest"], so the Node globals are
+// not declared project-wide. Requiring them here (rather than adding
+// @types/node to every file's scope) keeps that restriction intact —
+// this is the only test that needs to read source.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const fs = require('fs') as {readFileSync: (p: string, e: string) => string};
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const path = require('path') as {join: (...parts: string[]) => string};
 
 const SCREEN = path.join(
   __dirname, '..', '..', 'src', 'screens', 'VideoPlaybackScreen.tsx',

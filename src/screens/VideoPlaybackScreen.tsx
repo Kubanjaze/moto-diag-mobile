@@ -323,7 +323,7 @@ const useStyles = createThemedStyles((t) => ({
     gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: t.scrim,
   },
   playButton: {
     minWidth: 48,
