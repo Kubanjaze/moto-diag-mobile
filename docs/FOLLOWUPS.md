@@ -632,6 +632,23 @@ working, and this ticket only buys the former.
 - **When picked up:** whichever phase next adds a section variant. Do
   the signature change and the new variant in the same commit.
 
+- **FIRST REAL CASUALTY, 12:14 on 2026-09-07.** This stopped being
+  theoretical. `WorkOrderSectionCard` declared `onPartPress` in its
+  Props, never destructured it, and called `_renderBody` with SEVEN of
+  its EIGHT positional arguments — so every part row rendered
+  `disabled` no matter what the screen passed, and a mechanic could
+  order parts but never mark them received. Nothing warns when you stop
+  passing a trailing optional positional argument, which is why it
+  survived review, a green suite, and a device leg. Found only when the
+  Gate 10 sweep put a human in front of it, and even then the first fix
+  (wiring the screen) looked correct and changed nothing, because the
+  prop was dropped one layer further down.
+- **This is the argument for the options object.** Eight positional
+  parameters where the last four are optional callbacks cannot be
+  called wrongly in a way any tool will flag. Two regression tests now
+  pin `onPartPress` through both layers, but that is a patch on the
+  symptom — the shape is the defect.
+
 ### F61 (NEW) — No seat model: every mechanic needs their own paid shop subscription
 
 - **Surfaced:** Phase 202 Step 0 critic. `AuthedUser.tier` comes from

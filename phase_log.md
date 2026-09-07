@@ -520,3 +520,39 @@ connect/handshake — needs a Bluetooth 4 adapter; a purchase, not a bug).
 - **Suites:** backend 4743 passed / 0 failed; mobile 79 suites / 985
   tests; tsc + eslint clean.
 - **Track I (185–204) is complete.**
+
+---
+
+### 2026-09-07 — Phase 201 + 202 device legs run; three findings
+
+The two device legs Gate 10 could not reach (battery) were completed.
+Both phases now have hardware evidence rather than unverified claims.
+
+- **202 (timer): PASS.** Clock-in `201`, clock-out `200`, a 20-second
+  entry recorded against work order 1 with `source='timer'`.
+- **201 (parts): PASS on add + order**, and it surfaced a real gap. The
+  Order button's own alert told the mechanic to "mark each one received
+  when it turns up", and **the app made that impossible**:
+  `transitionLine` existed and was tested, but no screen called it and
+  the section card rendered every row `disabled`.
+- **The fix took two attempts, and the second one is the lesson.**
+  Wiring the screen looked right and changed nothing on device.
+  `WorkOrderSectionCard` declared `onPartPress`, never destructured it,
+  and passed seven of `_renderBody`'s eight positional arguments — the
+  prop existed at every layer except the one that forwards it. **F60's
+  first real casualty.** Checking the SERVED BUNDLE rather than assuming
+  the rebuild carried the change is what pointed one layer down instead
+  of at the build.
+- **`parts_arrived` fired for the first time ever.** That event has sat
+  in the notification enum since Phase 170 with no producer; Phase 201
+  was written to supply it. Three notifications queued for the customer
+  when the part was marked received from the phone.
+- **Third finding, same family:** the parts browser told a mechanic on a
+  Suzuki work order to "try a looser search" when the catalog holds only
+  Harley parts — advice that cannot work, because the filter is the
+  vehicle. It now names the bike and says so.
+- **Suites:** 83 / 1006 green; tsc + eslint clean.
+- **The pattern across all three:** correct behaviour presented as
+  breakage. An inert row, a bare "upload failed", and futile search
+  advice were each reported as "it's broken" — and each time the code
+  was doing something defensible while telling the user nothing useful.
