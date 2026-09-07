@@ -1891,7 +1891,7 @@ export interface components {
              */
             error_kind: "ble_powered_off" | "ble_unauthorized" | "ble_unsupported" | "device_not_found" | "connect_failed" | "handshake_failed" | "disconnected_unexpectedly";
             /** Transport */
-            transport?: ("ble" | "classic" | "wifi") | null;
+            transport?: ("ble" | "classic-bt" | "wifi") | null;
             /** Device Id */
             device_id?: string | null;
             /** Message */

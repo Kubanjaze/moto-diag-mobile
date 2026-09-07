@@ -910,6 +910,126 @@ flag. Degrading well is not the same as working.
   family begins, and F37 is already at instance #3. Cheapest fix is
   probably an alias plus a shared action enum both surfaces import.
 
+### F69 (NEW) — 🚨 LAUNCH ITEM: CORS origins are localhost dev values
+
+- **Surfaced:** Phase 207 security audit, 2026-09-07. Not a
+  vulnerability today — recorded so it cannot ship as one.
+- **Current state:** `api_cors_origins` resolves to
+  `['http://localhost:3000', 'http://localhost:5173']` with
+  `allow_credentials: true` (`api/app.py:66-67`). Correct for local
+  work; wrong the moment a real web origin exists.
+- **Two failure modes when that day comes:** left as-is, no legitimate
+  browser origin can call the API at all. Set carelessly to `*` WITH
+  credentials enabled, any site on the internet can make authenticated
+  requests using a visitor's stored credentials — the classic CORS
+  mistake, and `allow_credentials: true` is already on.
+- **When picked up:** set the real origin(s) in the deployment
+  environment, never a wildcard while credentials are allowed. Pairs
+  with F64 (share-link host) as the same class of "dev value that must
+  not reach production".
+
+### F70 (NEW) — LAUNCH ITEM: /docs and /openapi.json are unauthenticated
+
+- **Surfaced:** Phase 207 security audit, 2026-09-07. All three of
+  `/docs`, `/redoc` and `/openapi.json` return 200 with no API key.
+- **Severity: low, and deliberately not "fixed" in the audit.** Every
+  endpoint behind them is still auth-gated — this publishes the SHAPE
+  of the API (80 paths, parameter names, response models), not data.
+  Plenty of products expose their docs on purpose.
+- **Why it is still worth a decision:** it hands an attacker a complete
+  map for free, including routes a client would never discover, and
+  the public share route's existence. That is reconnaissance value, and
+  the choice should be deliberate rather than a default nobody revisited.
+- **When picked up:** either gate them behind an API key, or serve them
+  only when `env != prod`. The `Environment` enum already exists and
+  F64's guard established the precedent for env-conditional behaviour.
+
+### F71 (NEW) — 🚨 LAUNCH ITEM: anonymous rate limiting collapses to one bucket behind a proxy
+
+- **Surfaced:** Phase 207 security audit, 2026-09-07. The limiter keys
+  anonymous callers on `request.client.host`
+  (`src/motodiag/api/middleware.py:144`). Nothing in `src/` reads
+  `X-Forwarded-For`, and `src/motodiag/cli/serve.py` calls
+  `uvicorn.run` without `proxy_headers` / `forwarded_allow_ips`.
+- **Consequence:** behind any load balancer or reverse proxy, every
+  anonymous caller shares the single key `ip:<proxy>`. The anonymous
+  cap is 100/day (`config.py:169`), so one client burns the shared
+  budget and **every customer share link 429s platform-wide** for the
+  rest of the day. This directly undercuts the protection the public
+  share route is documented to rely on (`share.py:18-21`).
+- **Why filed rather than fixed in 207:** the correct value for
+  `forwarded_allow_ips` depends on the deployment topology, which is
+  not decided yet — and trusting `X-Forwarded-For` from an untrusted
+  source is *worse* than the current behaviour, because then anyone
+  can forge a fresh bucket per request and the limit means nothing.
+  This has to be configured against the real proxy, not guessed.
+- **When picked up:** together with F64 (the host decision). Set
+  `forwarded_allow_ips` to the proxy's address only, then key the
+  limiter on the client address uvicorn resolves. Pairs with F72.
+- **Blocks:** the share feature specifically. Not the whole launch, but
+  customer links are unreliable on day one without it.
+
+### F72 (NEW) — Rate-limiter state is per-process, so limits multiply by worker count
+
+- **Surfaced:** Phase 207 security audit, 2026-09-07. Buckets live in a
+  module-level dict (`src/motodiag/core/rate_limiter.py:63`) while
+  `serve.py:193` passes `workers=workers`.
+- **Consequence:** with N workers the effective limit is N× the
+  configured one, and which limit a caller hits depends on which worker
+  the proxy routed them to. The configured number stops being the real
+  number.
+- **When picked up:** with F71 — same deployment conversation. Needs
+  shared state (Redis, or SQLite with a bucket table) once more than
+  one worker actually runs. Single-worker deploys are unaffected, so
+  this is not urgent until the host is chosen.
+
+### F73 (NEW) — API keys travel in the query string on the WebSocket route
+
+- **Surfaced:** Phase 207 security audit, 2026-09-07.
+  `src/motodiag/api/routes/live.py:28,258` accepts the key as a query
+  parameter, because browsers cannot set custom headers on a WebSocket
+  handshake.
+- **Not in our access log** — `middleware.py:58` logs `request.url.path`
+  and not the query string, which was checked. The exposure is
+  everything *else* that logs URLs: reverse proxies, browser history,
+  `Referer` headers.
+- **When picked up:** issue a short-lived single-use ticket from an
+  authenticated POST and pass that in the query instead of the durable
+  key. Note `/v1/live` is also rate-limit exempt
+  (`middleware.py:77`), so the ticket endpoint should carry the limit.
+
+### F74 (NEW) — API-key prefix collisions are ~18 bits, not the 96 the docstring claims
+
+- **Surfaced:** Phase 207 security audit, 2026-09-07.
+  `src/motodiag/auth/api_key_repo.py:210` reasons that prefix
+  collisions are "vanishingly rare at 96 bits". The prefix is 12
+  characters of which only 3 are actually secret
+  (`api_key_repo.py:68`), so it is closer to 18 bits — collisions are
+  realistic at a few hundred keys.
+- **Severity: correctness, not auth.** The prefix is used only by
+  `cli/apikey.py:146` for display and lookup, never for
+  authentication; the auth path is a sha256 hash lookup. A collision
+  means the CLI shows an ambiguous match, not an access grant.
+- **When picked up:** widen the prefix or make CLI lookup handle
+  multiple matches explicitly. Fix the docstring either way — the
+  wrong number is the more dangerous half, because it invites someone
+  to lean on the prefix later.
+
+### F75 (NEW) — Column allowlists missing on two dynamic UPDATE builders
+
+- **Surfaced:** Phase 207 security audit, 2026-09-07.
+  `src/motodiag/accounting/invoice_repo.py:85` and
+  `src/motodiag/scheduling/appointment_repo.py:98` build their SET
+  clause from caller-supplied dict keys with no allowlist, unlike
+  `customer_repo.update_customer`, which filters against an `allowed`
+  set.
+- **Not currently reachable:** the keys are Python kwargs from internal
+  callers, and no route splats a request body into either function.
+  Verified at audit time.
+- **Why file it anyway:** it is one careless route away from being an
+  injection point, and the safe pattern already exists three files
+  over. Add the allowlist while it is cheap.
+
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
 - **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:
