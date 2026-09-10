@@ -1001,6 +1001,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/sessions/{session_id}/videos/{video_id}/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask a question about a recorded machine
+         * @description Answer a technician's question using a recorded video as evidence.
+         *
+         *     Phase 244J. Phase 244B built the guidance path — a contract that cannot
+         *     express a diagnosis, and grounding labels that force the model to say what
+         *     it is reasoning from — and nothing called it. A technician could not ask the
+         *     product a question because the only way in was a Python import. The fourth
+         *     integration gap this session found, and the only one it created itself.
+         *
+         *     **Synchronous, unlike the upload's queued sweep.** The sweep is queued
+         *     because nobody is waiting for it. A question has someone waiting, and an
+         *     answer delivered to nowhere is not an answer. The cost is a request that
+         *     runs as long as the model takes — typically tens of seconds, since frames
+         *     are extracted and a vision call is made inline.
+         *
+         *     Returns guidance, never a verdict: candidates with what would discriminate
+         *     between them, each labelled with what it rests on.
+         */
+        post: operations["ask_about_video_v1_sessions__session_id__videos__video_id__ask_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shop/{shop_id}/work-orders/{wo_id}/photos": {
         parameters: {
             query?: never;
@@ -1546,6 +1581,21 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /**
+         * AskRequest
+         * @description A technician's question about a recorded machine.
+         *
+         *     Phase 244J. Deliberately one field: this is one question about one video,
+         *     not a conversation. Multi-turn memory was scoped out at Phase 244B and
+         *     stays out.
+         */
+        AskRequest: {
+            /**
+             * Question
+             * @description What the technician actually wants to know.
+             */
+            question: string;
+        };
         /** Body_upload_video_v1_sessions__session_id__videos_post */
         Body_upload_video_v1_sessions__session_id__videos_post: {
             /** File */
@@ -1700,6 +1750,99 @@ export interface components {
             /** Code */
             code: string;
         };
+        /**
+         * Grounding
+         * @description What a guidance candidate rests on.
+         *
+         *     The corpus has carried per-entry provenance since Track K. This is the same
+         *     discipline applied to generated reasoning: a technician reading "check the
+         *     countershaft seal first" must be able to tell whether that came from a
+         *     corpus entry for THEIR machine, from a cross-platform entry, or from
+         *     general mechanical reasoning with nothing behind it.
+         * @enum {string}
+         */
+        Grounding: "machine_specific" | "cross_platform" | "general_reasoning" | "not_established";
+        /**
+         * GuidanceCandidate
+         * @description One candidate origin, with how to tell it from the others.
+         *
+         *     Deliberately NOT a diagnosis. There is no root-cause field, no repair
+         *     steps, no parts and no cost — a guidance answer that carries those has
+         *     stopped guiding and started concluding, which is the drift this phase
+         *     exists to fix.
+         */
+        GuidanceCandidate: {
+            /**
+             * Candidate
+             * @description The candidate origin or explanation
+             */
+            candidate: string;
+            /**
+             * Why Plausible
+             * @description Why this fits what was observed and asked
+             */
+            why_plausible: string;
+            /**
+             * How To Discriminate
+             * @description The observation or check that distinguishes this candidate from the others — the actual value of a guidance answer
+             */
+            how_to_discriminate: string;
+            /** @description What this candidate rests on */
+            grounding: components["schemas"]["Grounding"];
+            /**
+             * Grounding Detail
+             * @description For machine_specific or cross_platform, the corpus entry title. For general_reasoning, say plainly that no corpus entry supports it.
+             * @default
+             */
+            grounding_detail: string;
+            /**
+             * Check Order Rationale
+             * @description Why check this before or after the others — cost, access, or elimination value
+             * @default
+             */
+            check_order_rationale: string;
+        };
+        /**
+         * GuidanceResponse
+         * @description An answer to the question the technician actually asked.
+         *
+         *     Note what is absent by design: no `diagnosis`, no `severity` roll-up, no
+         *     repair steps. The technician remains the diagnostician.
+         */
+        GuidanceResponse: {
+            /**
+             * Question Understood As
+             * @description Restate the question being answered. If the question could not be understood, say so here rather than answering a different one.
+             */
+            question_understood_as: string;
+            /**
+             * Answers The Question
+             * @description False if the available evidence does not let you address what was asked. False with an honest gap beats a confident sweep.
+             */
+            answers_the_question: boolean;
+            /**
+             * Candidates
+             * @description Candidate origins, ordered by what to check first
+             */
+            candidates?: components["schemas"]["GuidanceCandidate"][];
+            /**
+             * What Would Narrow It
+             * @description Observations or tests that would most reduce the candidate set
+             */
+            what_would_narrow_it?: string[];
+            /**
+             * Not Established
+             * @description What could not be established for this machine. A real answer, not a failure — state it rather than inventing a candidate to fill the list.
+             * @default
+             */
+            not_established: string;
+            /**
+             * Observation Basis
+             * @description What in the supplied media this answer actually rests on
+             * @default
+             */
+            observation_basis: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1848,7 +1991,7 @@ export interface components {
              * @default unverified
              * @enum {string}
              */
-            source: "unverified" | "model-generated" | "forum" | "service-manual" | "mechanic-verified";
+            source: "unverified" | "model-generated" | "forum" | "service-manual" | "mechanic-verified" | "regulation";
         };
         /** MemberAddRequest */
         MemberAddRequest: {
@@ -5607,6 +5750,49 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                     "video/mp4": unknown;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    ask_about_video_v1_sessions__session_id__videos__video_id__ask_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                session_id: number;
+                video_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AskRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuidanceResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
