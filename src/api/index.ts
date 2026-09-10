@@ -13,3 +13,6 @@ export {
   isProblemDetail,
 } from './errors';
 export type {ProblemDetail} from './errors';
+
+export {ASK_TIMEOUT_MS, requestTimeout, withTimeout} from './timeout';
+export type {RequestTimeout} from './timeout';
