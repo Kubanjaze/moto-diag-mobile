@@ -271,6 +271,19 @@ export function VideoPlaybackScreen({navigation, route}: Props) {
       </View>
 
       <View style={styles.actions}>
+        {/* Phase 244J — the question a technician has while looking at
+            the clip. Above Delete deliberately: the destructive action
+            stays last. */}
+        <Button
+          title="Ask about this video"
+          onPress={() =>
+            navigation.navigate('AskAboutVideo', {
+              sessionId,
+              videoId: Number(videoId),
+            })
+          }
+          testID="video-playback-ask-button"
+        />
         <Button
           title="Delete video"
           variant="danger"

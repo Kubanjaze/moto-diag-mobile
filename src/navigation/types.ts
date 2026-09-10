@@ -91,6 +91,10 @@ export type SessionsStackParamList = {
    *  navigator-side screen registration + the SessionDetailScreen
    *  cross-link land in commit 4. */
   ReportViewer: {sessionId: number};
+  /** Phase 244J call site — ask a question about a recorded machine.
+   *  Same params as VideoPlayback, and reached from it: you are looking
+   *  at the clip when the question occurs to you. */
+  AskAboutVideo: {sessionId: number; videoId: number};
 };
 
 /** Phase 193 commit 1 — Shop tab native-stack param list.

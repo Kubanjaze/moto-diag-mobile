@@ -14,6 +14,7 @@ import {ReportViewerScreen} from '../screens/ReportViewerScreen';
 import {SessionDetailScreen} from '../screens/SessionDetailScreen';
 import {SessionsListScreen} from '../screens/SessionsListScreen';
 import {VideoCaptureScreen} from '../screens/VideoCaptureScreen';
+import {AskAboutVideoScreen} from '../screens/AskAboutVideoScreen';
 import {VideoPlaybackScreen} from '../screens/VideoPlaybackScreen';
 import type {SessionsStackParamList} from './types';
 
@@ -59,6 +60,14 @@ export function SessionsStack() {
         name="VideoPlayback"
         component={VideoPlaybackScreen}
         options={{title: 'Video'}}
+      />
+      {/* Phase 244J — reached from VideoPlayback's "Ask about this
+          video" button. SessionsStack only: a question is always
+          rooted at a specific recording in a specific session. */}
+      <Stack.Screen
+        name="AskAboutVideo"
+        component={AskAboutVideoScreen}
+        options={{title: 'Ask about this video'}}
       />
       {/* Phase 192 commit 4 — ReportViewer registered for
           tap-from-SessionDetail "View report" button. Lives in
