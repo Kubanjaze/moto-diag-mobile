@@ -27,6 +27,22 @@ export function useSession(sessionId: number): UseSessionResult {
 
   const fetchOnce = useCallback(
     async (alive: {current: boolean}): Promise<void> => {
+      // On failure, keep what is already on screen -- but only if it IS this
+      // session. Every failure path used to call setSession(null), and
+      // SessionDetailScreen swaps its whole tree for a spinner or an error
+      // pane whenever `!session`. So a focus-triggered refetch that hit a
+      // network blip unmounted the screen, including an open diagnosis
+      // editor, and a mechanic's typed correction was discarded with no
+      // error shown. The screen's gates are written `&& !session` precisely
+      // so a background refresh never replaces loaded content; this broke
+      // the contract they rely on.
+      //
+      // The id check matters: navigate('SessionDetail', {sessionId}) can
+      // update params on a mounted screen, and keeping a DIFFERENT session's
+      // data on failure would show session 7 labelled as session 8.
+      const keepIfSameSession = (prev: SessionResponse | null) =>
+        prev !== null && prev.id === sessionId ? prev : null;
+
       setIsLoading(true);
       setError(null);
       try {
@@ -37,19 +53,19 @@ export function useSession(sessionId: number): UseSessionResult {
         if (!alive.current) return;
         if (apiError) {
           setError(describeError(apiError));
-          setSession(null);
+          setSession(keepIfSameSession);
           return;
         }
         if (!data) {
           setError('Empty response body');
-          setSession(null);
+          setSession(keepIfSameSession);
           return;
         }
         setSession(data as SessionResponse);
       } catch (err) {
         if (!alive.current) return;
         setError(describeError(err));
-        setSession(null);
+        setSession(keepIfSameSession);
       } finally {
         if (alive.current) setIsLoading(false);
       }

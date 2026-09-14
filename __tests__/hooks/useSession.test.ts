@@ -176,6 +176,119 @@ describe('useSession', () => {
     expect(result.current.session?.status).toBe('closed');
   });
 
+  // A refetch that fails AFTER a successful load must not discard the data
+  // that was already on screen. It used to: every failure path in fetchOnce
+  // called setSession(null), and SessionDetailScreen renders a spinner or an
+  // error pane whenever `!session` -- so a focus-triggered refetch that hit a
+  // network blip unmounted the whole screen, including an open diagnosis
+  // editor, and a mechanic's typed correction vanished with no error shown.
+  // The screen's gates were already written `&& !session` precisely so a
+  // background refresh would never replace loaded content; the hook broke
+  // the contract they rely on.
+  it('keeps the loaded session when a refetch returns an API error', async () => {
+    getMock.mockImplementation(() => okResponse(sampleSession));
+    const {result} = renderHook<UseSessionResult>(() => useSession(7));
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+    expect(result.current.session?.id).toBe(7);
+
+    getMock.mockImplementation(() =>
+      errResponse({title: 'Service unavailable', status: 503}),
+    );
+    await act(async () => {
+      await result.current.refetch();
+    });
+
+    expect(result.current.session?.id).toBe(7);
+    expect(result.current.error).toBe('Service unavailable');
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('keeps the loaded session when a refetch throws (network down)', async () => {
+    getMock.mockImplementation(() => okResponse(sampleSession));
+    const {result} = renderHook<UseSessionResult>(() => useSession(7));
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    getMock.mockImplementation(() =>
+      Promise.reject(new Error('Network request failed')),
+    );
+    await act(async () => {
+      await result.current.refetch();
+    });
+
+    expect(result.current.session?.id).toBe(7);
+    expect(result.current.error).toBe('Network request failed');
+  });
+
+  it('keeps the loaded session when a refetch returns an empty body', async () => {
+    getMock.mockImplementation(() => okResponse(sampleSession));
+    const {result} = renderHook<UseSessionResult>(() => useSession(7));
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    getMock.mockImplementation(() => okResponse(undefined));
+    await act(async () => {
+      await result.current.refetch();
+    });
+
+    expect(result.current.session?.id).toBe(7);
+    expect(result.current.error).toBe('Empty response body');
+  });
+
+  it('clears the error once a later refetch succeeds', async () => {
+    getMock.mockImplementation(() => okResponse(sampleSession));
+    const {result} = renderHook<UseSessionResult>(() => useSession(7));
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+    getMock.mockImplementation(() => errResponse({title: 'Blip', status: 503}));
+    await act(async () => {
+      await result.current.refetch();
+    });
+    expect(result.current.error).toBe('Blip');
+
+    getMock.mockImplementation(() =>
+      okResponse({...sampleSession, status: 'closed'}),
+    );
+    await act(async () => {
+      await result.current.refetch();
+    });
+    expect(result.current.error).toBeNull();
+    expect(result.current.session?.status).toBe('closed');
+  });
+
+  // The guard on the fix above. `navigate('SessionDetail', {sessionId})` can
+  // update params on a screen that is already mounted, so one hook instance
+  // can be asked for a different session. "Keep the data on error" would then
+  // leave session 7 on screen labelled as session 8, indefinitely. Prior data
+  // survives a failure only when it belongs to the session being requested.
+  it('does NOT keep a different session when the id changes and the fetch fails', async () => {
+    getMock.mockImplementation(() => okResponse(sampleSession));
+    let id = 7;
+    const {result, rerender} = renderHook<UseSessionResult>(() =>
+      useSession(id),
+    );
+    await waitFor(() => {
+      expect(result.current.session?.id).toBe(7);
+    });
+
+    getMock.mockImplementation(() =>
+      errResponse({title: 'Session not found', status: 404}),
+    );
+    id = 8;
+    rerender();
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.session).toBeNull();
+    expect(result.current.error).toBe('Session not found');
+  });
+
   it('refetch is referentially stable across renders', async () => {
     getMock.mockImplementation(() => okResponse(sampleSession));
     const {result, rerender} = renderHook<UseSessionResult>(() =>
