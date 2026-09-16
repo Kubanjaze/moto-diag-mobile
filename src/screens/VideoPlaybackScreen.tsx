@@ -180,8 +180,26 @@ export function VideoPlaybackScreen({navigation, route}: Props) {
           <Text style={styles.errorTitle}>Video not cached locally</Text>
           <Text style={styles.errorBody}>
             This recording is stored on the server. Streaming playback for
-            backend-only videos lands in a future update.
+            backend-only videos lands in a future update — but you can still
+            ask about it, because the analysis reads the server's copy.
           </Text>
+          <View style={styles.spacer} />
+          {/* Asking does NOT need the local file: the backend extracts frames
+              from its own copy. This pane is a PLAYBACK fallback from Phase
+              191B, written before Ask existed at 244J, and Ask was added below
+              the early return -- so a device with no cached copy (a fresh
+              install, a second phone, a clip a colleague recorded) could not
+              ask a question the server was perfectly able to answer. */}
+          <Button
+            title="Ask about this video"
+            onPress={() =>
+              navigation.navigate('AskAboutVideo', {
+                sessionId,
+                videoId: Number(videoId),
+              })
+            }
+            testID="video-playback-ask-button-uncached"
+          />
           <View style={styles.spacer} />
           <Button
             title="Back"
