@@ -1297,6 +1297,40 @@ flag. Degrading well is not the same as working.
   about width, height, duration and codec. Deleting `validate_video` is fine;
   pretending that gap doesn't exist is not.
 
+### F84 (NEW) — The app should say which shop a session belongs to
+
+- **Surfaced:** moto-diag Phase 209D, as a deviation from its own plan.
+- **Why it isn't done:** the backend stamps a session with the caller's shop
+  when they have exactly **one** active membership, which covers every user
+  today (both have one). Two memberships leave the session — and its AI
+  spend — unattributed, because guessing would put one shop's spend on
+  another's ledger.
+- **Why not in 209D:** adding `shop_id` to the create-session request changes
+  the OpenAPI contract, which Gate 11 pins against the app's committed
+  snapshot. That means a snapshot refresh and regenerated types for a field
+  the app does not send yet. Not worth it before a technician is in two
+  shops.
+- **When picked up:** send the app's active shop (`activeShopStorage`) on
+  `POST /v1/sessions`; the backend must check membership and refuse a shop
+  the caller doesn't belong to (403). Refresh `api-schema/openapi.json` and
+  regenerate types in the same commit.
+
+### F85 (NEW) — Two 244N erasure tests fail in some file orders
+
+- **Surfaced:** moto-diag Phase 209D, while checking whether a failure was
+  mine. It is not: it reproduces on `master` with master's own source.
+- **Symptom:** `TestErasureCoversTheNewStreams::test_forget_erases_guidance_interactions`
+  and `::test_the_dry_run_counts_what_the_delete_removes` pass alone and fail
+  when `tests/test_phase209D_whose_spend.py` is not involved at all — e.g.
+  run together with `test_phase244J_guidance_surface.py` and
+  `test_phase244B_guidance.py`.
+- **Why it hides:** the full regression runs the files in an order where they
+  pass, so 6,600+ green tests say nothing about it. Almost certainly leaked
+  state between files (settings cache or `MOTODIAG_DB_PATH`), which is the
+  same family as the fixtures that reset settings around each test.
+- **Why it matters:** a test that depends on what ran before it is a test
+  that can start passing for the wrong reason. Low urgency, real signal.
+
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
 - **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:
