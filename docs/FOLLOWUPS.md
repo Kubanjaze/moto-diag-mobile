@@ -859,6 +859,24 @@ flag. Degrading well is not the same as working.
   day the machine comes out of storage, and it is why the startup guard
   and its private-range detection stay valuable even after the move.
 
+- **Owner decision 2026-09-17 — the host is Fly.io; this is now the deploy
+  ticket.** It supersedes the home-desktop decision above. The API runs at
+  `api.<domain>` on **SQLite on a Fly persistent volume, replicated
+  continuously by Litestream to object storage from day one**. The site and
+  waitlist go on Vercel at the bare domain. Vercel is not the backend host
+  (serverless timeouts, cold starts, no persistent process). **Domain: TBD**
+  — being bought this week.
+- **"Done" for the deploy** adds to the list above: a Fly app with a
+  persistent volume mounted at the database path; Litestream replicating to
+  object storage, with a **tested restore**; `MOTODIAG_PUBLIC_BASE_URL`,
+  `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` set as Fly secrets; the image
+  built from the repo Dockerfile. Fly's remote builder means local Docker
+  isn't required, and that build is also the first real test of F76. Then a
+  share link opened on cellular.
+- **Postgres was considered and deferred** — this backend is SQLite-only.
+  See F81. Full record: moto-diag `docs/phases/completed/209B_implementation.md`
+  → *Decisions §2*.
+
 ### F65 (NEW) — No CLI for labour time; the desktop can only *claim* hours
 
 - **Surfaced:** Phase 205 / Gate 11, walking a shop owner's whole job
@@ -1083,6 +1101,159 @@ flag. Degrading well is not the same as working.
   installs with fully resolved latest deps and runs the suite — the
   only thing that turns this from a surprise into a signal. Pair with
   a `pip-audit` run.
+
+### F78 (NEW) — Spending cap: $25/month per shop, enforced via `shop_cost_this_month`
+
+- **Decided:** 2026-09-17, by the operator (moto-diag 209B → *Decisions §5*).
+  **The number is $25/month per shop.** Not a launch blocker.
+- **Current state:** `cost_cap_monthly_usd_cents` exists and nothing reads it
+  (a Phase 244L non-goal). `shop_cost_this_month` (backend
+  `shop/cost_repo.py`) computes the monthly figure and **has no caller** —
+  Phase 209B's orphan #28. This ticket is the caller it never had.
+- **🚨 Precondition found while filing this: spend is not recorded per shop.**
+  All four real `cost_events` rows have `shop_id = NULL`. The vision
+  recorder accepts a `shop_id`, but its callers never pass one, and
+  `record_diagnosis_cost` doesn't take one at all. **As things stand, a cap
+  enforced through `shop_cost_this_month` would read $0 for every shop and
+  never trigger** — a silent no-op that looks like a working safeguard.
+  Every AI call site has to record `shop_id` first.
+- **Known per-call costs** (real ledger rows, 2026-09): about **1¢** per text
+  diagnosis (haiku), **13¢** per video question (sonnet), **5¢** per
+  automatic sweep (sonnet). As a rough guide, $25 is about 190 questions or
+  500 sweeps a month.
+- **Still open — needs a product call:** what happens at the cap. Block AI
+  calls with a clear error? Fall back to a cheaper model? Warn only? And
+  what about a job that is already in progress?
+- **When picked up:**
+  1. Record `shop_id` at every AI call site: text diagnosis, vision sweep,
+     `/ask`, Whisper, Claude extraction.
+  2. Check the cap before each call.
+  3. Test through the real API route (CLAUDE.md gate item 6) that a shop
+     over $25 is actually stopped, using **recorded** rows, not seeded ones.
+     Seeded rows would hide exactly the NULL-`shop_id` gap above.
+
+### F79 (NEW) — Recompile per-machine memory on session close
+
+- **Decided:** 2026-09-17, by the operator (moto-diag 209B → *Decisions §6*).
+  **Cadence: on session close.** Not a launch blocker.
+- **Current state:** per-machine memory (Phase 244M) compiles only when
+  someone runs `motodiag memory compile`, and nothing runs it automatically
+  (209B S0-7). On a live server, the history that feeds the vision prompt
+  goes stale.
+- **When picked up:** call `compile_vehicle(vehicle_id)` from every
+  session-close path: `POST /v1/sessions/{id}/close` and the CLI close.
+  - **Best-effort:** a compile failure must never fail the close.
+  - Skip sessions with no `vehicle_id`.
+  - The compile is idempotent (a second pass inserts nothing), so repeated
+    closes are safe.
+  - Test through the close route, not the function (gate item 6).
+  - Note the provenance rule from 2026-09-17: an AI-written diagnosis
+    compiles as `model-generated` even if it was edited, so closing a
+    session never promotes the model's text into trusted history.
+
+### F80 (NEW) — Privacy policy must reflect collected data before store submission — owner: Kerwyn
+
+- **Decided:** 2026-09-17, by the operator (moto-diag 209B → *Decisions §7*).
+  **Owner: Kerwyn.** Blocks store submission (launch checklist steps 3 and
+  6).
+- **What the policy has to cover now** (none of it existed when the draft
+  answers were written):
+  - technicians' questions and the answers (`guidance_interactions`)
+  - corrections to AI diagnoses, and **who made them**
+    (`session_overrides.overridden_by_user_id`)
+  - per-machine memory compiled from sessions, work orders and feedback
+    (`memory_facts`)
+  - photos, video and voice
+  - **video frames and questions sent to Anthropic**
+  - **voice audio sent to OpenAI (Whisper)**
+- **Re-check the App Privacy questionnaire** draft in
+  `docs/app-store-listing.md`. It says "Data Not Collected" throughout and
+  predates both third-party data flows. Check it against the backend, not
+  just the binary.
+- **Related, and never researched:** technician-monitoring law — consent,
+  works councils, two-party recording consent — flagged in moto-diag 244M's
+  research. The corrections table records who corrected what.
+
+### F81 (NEW) — Postgres port — revisit when concurrent shops > 1
+
+- **Decided:** 2026-09-17, by the operator (moto-diag 209B → *Decisions §2*).
+  **Not a launch task.** Launch runs SQLite on a Fly volume with Litestream
+  (F64).
+- **Why this is a port, not a setting:** the backend is SQLite-only.
+  - 81 direct `sqlite3` uses
+  - 58 migrations written as SQLite DDL, including table-rebuild patterns
+    (`PRAGMA foreign_keys`, create-copy-rename)
+  - 89 `AUTOINCREMENT`, 60 `INSERT OR …`, 20 `datetime('now')`
+  - no Postgres driver, no ORM
+- **Trigger:** more than one shop using the same backend concurrently.
+  Leave it until then.
+
+### F82 (NEW) — media / pricing / workflow islands — wire or delete, decide per phase
+
+- **Surfaced:** moto-diag Phase 209B's reachability audit. **Decided
+  2026-09-17** (209B → *Decisions §8*): build nothing now.
+- **What these are:** 22 capabilities that no CLI command or API route can
+  reach. All were built on 2026-04-15/16, before any user-facing surface
+  existed (Phases 97–107 landed as a single 9,552-line commit). Their
+  checklists' only proof was "N tests pass", and no later phase came back to
+  wire them.
+
+  | # | Feature | Backend file |
+  |---|---|---|
+  | 1 | Engine-sound spectrogram | `media/spectrogram.py` |
+  | 2 | Audio anomaly detection | `media/anomaly_detection.py` |
+  | 3 | Audio capture / preprocessing | `media/audio_capture.py` |
+  | 4 | Audio-capture coaching | `media/coaching.py` |
+  | 5 | Before/after audio comparison | `media/comparative.py` |
+  | 6 | Multimodal evidence fusion | `media/fusion.py` |
+  | 7 | Real-time audio monitor | `media/realtime.py` |
+  | 8 | Media-enhanced reports | `media/reports.py` |
+  | 9 | Engine sound-signature database | `media/sound_signatures.py` |
+  | 10 | Video annotation | `media/annotation.py` |
+  | 11 | Structured logging + audit trail | `core/logging.py` |
+  | 12–15 | Guided no-start / charging / overheating workflows + step engine | `engine/workflows.py` |
+  | 16–19 | Pricing package, estimates, labor rates, repair plans | `pricing/*` |
+  | 20–22 | Pricing models | `core/models.py` |
+
+- **Rule:** decide each item in the phase that would actually use it. Either
+  wire it through a real entry point, with a test that exercises it there
+  (CLAUDE.md phase-completion item 6), or delete it along with its tests.
+- **Progress is tracked automatically.** Every item is listed in
+  `tests/support/integration_gaps_allowlist.py`, and the gate fails once an
+  entry goes stale, so wiring or deleting one forces its entry to be removed
+  in the same change.
+- **Worth deciding before launch:** #11. The served app never sets up its
+  own structured logging.
+
+### F83 (NEW) — Dead repo methods — delete unless a caller is planned
+
+- **Surfaced:** moto-diag Phase 209B. **Decided 2026-09-17** (209B →
+  *Decisions §8*).
+- **What these are:** 10 methods whose features *are* live. Each phase's
+  "Commit 0" or CRUD layer provided more than the feature ever called.
+
+  | # | Method | Backend file | Planned caller |
+  |---|---|---|---|
+  | 23 | `validate_video` | `media/ffmpeg.py` | — |
+  | 24 | `extract_audio` | `media/ffmpeg.py` | — (serves the F82 audio layer) |
+  | 25 | `heif_available` | `media/photo_pipeline.py` | — |
+  | 26 | `list_issue_photos` | `shop/wo_photo_repo.py` | — |
+  | 27 | `whisper_available` | `media/whisper_client.py` | — |
+  | 28 | `shop_cost_this_month` | `shop/cost_repo.py` | **F78** — keep |
+  | 29 | `soft_delete_extracted_symptom` | `shop/extracted_symptom_repo.py` | — |
+  | 31 | `reactivate_shop` | `shop/shop_repo.py` | — |
+  | 32 | `set_bike_role` | `advanced/fleet_repo.py` | — |
+  | 33 | `update_fleet_description` | `advanced/fleet_repo.py` | — |
+
+- **Numbering** follows the original triage. #30 (`create_extracted_symptom`)
+  was removed from the list: it was wired in once, then replaced, so it's
+  superseded, not dead code nobody reaches.
+- **Rule:** delete each method, with its unit test and allowlist entry,
+  **unless a caller is planned**. #28 has one (F78).
+- **Before deleting #23:** the upload route checks size, quota and schema but
+  never probes the file itself, so the server trusts the client's claims
+  about width, height, duration and codec. Deleting `validate_video` is fine;
+  pretending that gap doesn't exist is not.
 
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
