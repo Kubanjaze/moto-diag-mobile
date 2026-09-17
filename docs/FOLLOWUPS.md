@@ -1145,7 +1145,7 @@ flag. Degrading well is not the same as working.
      over $25 is actually stopped, using **recorded** rows, not seeded ones.
      Seeded rows would hide exactly the NULL-`shop_id` gap above.
 
-### F79 (NEW) — Recompile per-machine memory on session close
+### F79 — Recompile per-machine memory on session close — RESOLVED 2026-09-17 (moto-diag Phase 209C, `f94ffd1`)
 
 - **Decided:** 2026-09-17, by the operator (moto-diag 209B → *Decisions §6*).
   **Cadence: on session close.** Not a launch blocker.
@@ -1163,6 +1163,24 @@ flag. Degrading well is not the same as working.
   - Note the provenance rule from 2026-09-17: an AI-written diagnosis
     compiles as `model-generated` even if it was edited, so closing a
     session never promotes the model's text into trusted history.
+
+- **Resolved by Phase 209C** (moto-diag `f94ffd1`). Every close goes through
+  `close_session()` — the API's close route, a `PATCH status=closed`, and the
+  CLI's `diagnose` flows — and that function refreshes the machine's memory
+  best-effort, at two guard layers, in 4–6 ms. Tested through the routes and
+  the CLI, 15/15 mutations caught.
+- **Two things the ticket didn't know**, both found in Step 0 and fixed in
+  the same phase:
+  - **Nothing had ever set `memory_facts.superseded_at`.** A fact is keyed on
+    its text, so an edited diagnosis would have joined the old one in recall
+    rather than replacing it. Compile now supersedes what a record no longer
+    says, and revives a reverted edit.
+  - **`PATCH /v1/sessions/{id}` with `status: "closed"` bypassed
+    `close_session`** and never set `closed_at`. It now goes through it.
+- **Still lagging, by design** (the decided cadence is session close):
+  feedback, video analyses that finish after the close, and completed work
+  orders reach memory at the machine's next close, or a manual
+  `motodiag memory compile`.
 
 ### F80 (NEW) — Privacy policy must reflect collected data before store submission — owner: Kerwyn
 
