@@ -1349,6 +1349,46 @@ flag. Degrading well is not the same as working.
 - **Why it matters:** a test that depends on what ran before it is a test
   that can start passing for the wrong reason. Low urgency, real signal.
 
+### F86 (NEW) 🚨 — 30 safety recalls exist and nothing ever loads them
+
+- **Surfaced:** moto-diag Phase 244R's Step 0 sweep for the same defect family
+  (data that exists, in a column or table nothing populates).
+- **What it is:** `src/motodiag/advanced/data/recalls.json` holds **30 real
+  NHTSA recall entries** — Harley touring brake calipers, and 29 more.
+  `advanced/recall_repo.load_recalls_from_json` loads them, is idempotent on
+  `nhtsa_id`, and has its own test suite (`tests/test_phase155_recall.py`).
+  **Its only callers are those tests.** `motodiag db init` seeds the DTC codes,
+  the knowledge base and the TSBs, and never the recalls.
+- **Consequence:** the `recalls` table has 0 rows in the operator's database.
+  `motodiag recall list` and `recall check-vin` answer "no recalls" for every
+  bike, and `advanced/predictor.py`'s recall check (`list_open_for_bike`)
+  contributes nothing to any prediction. A safety lookup that is always
+  negative is worse than one that is missing: it reads as an all-clear.
+- **Why it is probably small:** mirror the existing TSB seed call in
+  `cli/main.py::db_init`. The loader, the schema and the tests already exist.
+- **When picked up:** seed on `db init`, then a test through
+  `motodiag recall list` — not through the loader function, which is the seam
+  that hid this. Check whether the 30 entries are current before trusting them.
+
+### F87 (NEW) — The DTC category filter means two different things
+
+- **Surfaced:** moto-diag Phase 244R, and deliberately left out of its scope.
+- **What it is:** `motodiag code --category X` narrows on `dtc_category` (the
+  20-value taxonomy), while `GET /v1/kb/dtc?category=X` narrows on the legacy
+  `category` column (6 symptom values). Same flag name, different column.
+  `DTCResponse` has no `dtc_category` field at all, so the app is served 20
+  categories by `/v1/kb/dtc/categories` and `/v1/kb/export` while every DTC it
+  holds carries a value from the other vocabulary — client-side grouping cannot
+  work.
+- **Why 244R stopped short:** converging them changes the OpenAPI contract that
+  Gate 11 pins against the app's committed snapshot, and the `/kb/export`
+  content hash that tells clients to refetch. That deserves its own phase with
+  the app's regenerated types in the same commit.
+- **When picked up:** decide the vocabulary per surface, add `dtc_category` to
+  `DTCResponse`, refresh `api-schema/openapi.json` and the generated types, and
+  check whether any build passes `category=electrical` or `category=idle` —
+  neither exists in the new taxonomy.
+
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
 - **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:
