@@ -1349,7 +1349,7 @@ flag. Degrading well is not the same as working.
 - **Why it matters:** a test that depends on what ran before it is a test
   that can start passing for the wrong reason. Low urgency, real signal.
 
-### F86 (NEW) 🚨 — 30 safety recalls exist and nothing ever loads them
+### F86 — RESOLVED 2026-09-17 (moto-diag `46b29fd`) — but NOT as filed: the recalls are fabricated, and the fix was the opposite
 
 - **Surfaced:** moto-diag Phase 244R's Step 0 sweep for the same defect family
   (data that exists, in a column or table nothing populates).
@@ -1369,6 +1369,34 @@ flag. Degrading well is not the same as working.
 - **When picked up:** seed on `db init`, then a test through
   `motodiag recall list` — not through the loader function, which is the seam
   that hid this. Check whether the 30 entries are current before trusting them.
+
+- **🚨 CORRECTION, 2026-09-17 — do NOT seed them.** Checking the entries before
+  trusting them, as the line above says to, is what changed the answer. **The
+  30 recalls are not real.** Every `nhtsa_id` sits on a synthetic
+  {19,20,21,22}V x {012,123,…,901} x {000,500} grid, traced to one commit and
+  never touched — this project's own audit established that in
+  `docs/phases/completed/TRACK_K_AUDIT_VERIFIER_NOTES.md:508` and recommended
+  labelling the fixture honestly, which nobody applied. Phase 155's doc called
+  them "real NHTSA campaigns" regardless. Seeding fabricated federal campaign
+  numbers is worse than an empty table: they print with authority, and a
+  `critical` row floors a prediction's severity.
+- **What was actually fixed** (moto-diag `46b29fd`): the commands stopped
+  lying when the corpus is empty. `recall check-vin` and `recall lookup` used
+  to print a green "Clear ✓" panel whether the bike was clear or the product
+  had no data — same border, icon and words. They now say the lookup could not
+  be performed and where to go instead, while a genuinely clear bike still
+  gets the green panel. Separately, `mark-resolved --recall-id` against an id
+  that does not exist wrote nothing and reported the recall **already
+  resolved**; it now fails and says so.
+- **Also corrected in the same pass:** my original claim that the parts,
+  parts-xref and service-interval datasets "never load" was **wrong**. All
+  three are reachable from shipped commands — `motodiag advanced parts seed
+  --yes` loads parts and cross-references, and `motodiag advanced schedule
+  init --bike X` loads the interval templates on demand. They have 0 rows
+  because nobody has run those commands, which is not a defect.
+- **Still open:** real recall data. Roadmap row 281 (NHTSA ingestion) is
+  unstarted, and until it lands this product cannot answer a recall question.
+  The commands now say that rather than implying a clean bike.
 
 ### F87 (NEW) — The DTC category filter means two different things
 
