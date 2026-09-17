@@ -1121,9 +1121,22 @@ flag. Degrading well is not the same as working.
   diagnosis (haiku), **13¢** per video question (sonnet), **5¢** per
   automatic sweep (sonnet). As a rough guide, $25 is about 190 questions or
   500 sweeps a month.
-- **Still open — needs a product call:** what happens at the cap. Block AI
-  calls with a clear error? Fall back to a cheaper model? Warn only? And
-  what about a job that is already in progress?
+- **~~Still open — needs a product call:~~ decided 2026-09-17 by the
+  operator — two answers:**
+  - **At the cap: block new AI calls.** A new AI request gets a clear
+    "monthly AI limit reached" error until the month resets. A call already
+    running finishes, and everything that isn't AI keeps working. Rejected:
+    warn only; falling back to a cheaper model.
+  - **Who pays for a session: the session carries its shop.** A diagnostic
+    session has no shop and no link to a work order (checked 2026-09-17), so
+    text-diagnosis and vision spend can't be attributed today. Voice spend
+    already is: the transcript pipeline passes `shop_id`. Add `shop_id` to
+    `diagnostic_sessions` (a migration), set it from the app's active shop
+    when a session is created, and record it on every AI event for that
+    session. Sessions created before this, or from the CLI, stay
+    unattributed. Rejected: looking up the user's shop at call time
+    (ambiguous for multi-shop users); a server-wide cap (wrong once a
+    server hosts two shops, as F81 anticipates).
 - **When picked up:**
   1. Record `shop_id` at every AI call site: text diagnosis, vision sweep,
      `/ask`, Whisper, Claude extraction.
