@@ -8,12 +8,24 @@
 // It lives in HomeStack, not ShopStack: appearance is app-level, and
 // ShopStack sits behind the shop picker, so a mechanic with no shop
 // membership would not be able to reach their own display settings.
+//
+// Phase 209B item 1 — the Server section. The same reasoning applies
+// with more force: the server has to be settable before anything else
+// in the app can work, including with no API key stored.
 
-import React, {useCallback} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {ScrollView, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
+import {
+  clearServerUrl,
+  getServerUrlInfo,
+  setServerUrl,
+  validateServerUrl,
+  type ServerUrlInfo,
+} from '../api/serverUrl';
 import {Button} from '../components/Button';
+import {Field} from '../components/Field';
 import {createThemedStyles} from '../theme/createThemedStyles';
 import {type ThemePreference} from '../theme/ThemeProvider';
 import {useTheme} from '../theme/useTheme';
@@ -59,6 +71,8 @@ export function SettingsScreen() {
         testID="settings-scroll">
         <Text style={styles.title}>Settings</Text>
 
+        <ServerSection />
+
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Appearance</Text>
           <Text style={styles.sectionHint}>
@@ -87,6 +101,138 @@ export function SettingsScreen() {
   );
 }
 
+type SaveState =
+  | {kind: 'idle'}
+  | {kind: 'checking'}
+  | {kind: 'failed'; message: string}
+  | {kind: 'saved'; message: string};
+
+function describeSource(info: ServerUrlInfo): string {
+  if (info.current === null) {
+    return 'No server set. Enter the address your shop uses.';
+  }
+  return info.source === 'settings'
+    ? `Using ${info.current} (set here).`
+    : `Using ${info.current} (the app's default).`;
+}
+
+function ServerSection() {
+  const styles = useStyles();
+  const [info, setInfo] = useState<ServerUrlInfo | null>(null);
+  const [draft, setDraft] = useState('');
+  const [save, setSave] = useState<SaveState>({kind: 'idle'});
+
+  const reload = useCallback(async () => {
+    const next = await getServerUrlInfo();
+    setInfo(next);
+    return next;
+  }, []);
+
+  useEffect(() => {
+    reload()
+      .then((next) => setDraft(next.source === 'settings' ? next.current ?? '' : ''))
+      .catch(() => setSave({kind: 'failed', message: "Couldn't read the saved server."}));
+  }, [reload]);
+
+  const checking = save.kind === 'checking';
+
+  const onSave = useCallback(async () => {
+    setSave({kind: 'checking'});
+    const result = await validateServerUrl(draft);
+    if (!result.ok) {
+      setSave({kind: 'failed', message: result.reason});
+      return;
+    }
+    try {
+      await setServerUrl(result.url);
+      await reload();
+    } catch {
+      setSave({kind: 'failed', message: "The server answered, but the address couldn't be saved."});
+      return;
+    }
+    setDraft(result.url);
+    setSave({
+      kind: 'saved',
+      message: `Connected — schema v${result.schemaVersion}. The app now uses this server.`,
+    });
+  }, [draft, reload]);
+
+  const onReset = useCallback(async () => {
+    try {
+      await clearServerUrl();
+      const next = await reload();
+      setDraft('');
+      setSave({
+        kind: 'saved',
+        message:
+          next.current === null
+            ? 'Cleared. This build has no default server.'
+            : 'Back to the default server.',
+      });
+    } catch {
+      setSave({kind: 'failed', message: "Couldn't clear the saved server."});
+    }
+  }, [reload]);
+
+  return (
+    <View style={[styles.card, styles.cardSpacing]} testID="settings-server">
+      <Text style={styles.sectionTitle}>Server</Text>
+      <Text style={styles.sectionHint} testID="settings-server-current">
+        {info === null ? 'Loading…' : describeSource(info)}
+      </Text>
+      <Field
+        label="Server address"
+        value={draft}
+        onChangeText={(text) => {
+          setDraft(text);
+          if (save.kind !== 'checking') {
+            setSave({kind: 'idle'});
+          }
+        }}
+        placeholder={info?.buildDefault ?? 'https://api.example.com'}
+        keyboardType="url"
+        textContentType="URL"
+        returnKeyType="done"
+        onSubmitEditing={checking ? undefined : onSave}
+        editable={!checking}
+        error={save.kind === 'failed' ? save.message : null}
+        testID="settings-server-input"
+        accessibilityLabel="Server address"
+      />
+      {save.kind === 'saved' ? (
+        <Text style={styles.savedLine} testID="settings-server-saved">
+          ✓ {save.message}
+        </Text>
+      ) : null}
+      <View style={styles.option}>
+        <Button
+          title={checking ? 'Checking…' : 'Save'}
+          onPress={onSave}
+          disabled={checking || draft.trim() === ''}
+          testID="settings-server-save"
+          accessibilityLabel="Check and save server address"
+        />
+      </View>
+      {info?.source === 'settings' ? (
+        <View style={styles.option}>
+          <Button
+            title="Reset to default"
+            variant="secondary"
+            onPress={onReset}
+            disabled={checking}
+            testID="settings-server-reset"
+            accessibilityLabel="Reset server address to the app's default"
+          />
+        </View>
+      ) : null}
+      <Text style={styles.optionHint}>
+        Saving checks that the server answers first. Your API key isn't sent
+        until the address is saved.
+      </Text>
+    </View>
+  );
+}
+
 const useStyles = createThemedStyles((t) => ({
   safe: {flex: 1, backgroundColor: t.background},
   scroll: {padding: 16, paddingBottom: 48},
@@ -102,6 +248,12 @@ const useStyles = createThemedStyles((t) => ({
     borderWidth: 1,
     borderColor: t.border,
     padding: 16,
+  },
+  cardSpacing: {marginBottom: 16},
+  savedLine: {
+    fontSize: type.meta,
+    color: t.success,
+    marginBottom: 12,
   },
   sectionTitle: {
     fontSize: type.bodyStrong,

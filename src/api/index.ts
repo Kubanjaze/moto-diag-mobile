@@ -2,7 +2,7 @@
 // Callers should import from '../api' (or 'src/api'), not the
 // individual files, so internal restructuring stays invisible.
 
-export {api, DEFAULT_BASE_URL, makeClient} from './client';
+export {api, makeClient} from './client';
 export type {ApiClientOptions, MotoDiagApi} from './client';
 
 export {applyAuth, clearApiKey, getApiKey, setApiKey} from './auth';
@@ -13,6 +13,23 @@ export {
   isProblemDetail,
 } from './errors';
 export type {ProblemDetail} from './errors';
+
+export {
+  checkServerUrlFormat,
+  clearServerUrl,
+  DEV_HTTP_HOSTS,
+  getServerUrl,
+  getServerUrlInfo,
+  NO_SERVER_MESSAGE,
+  NoServerSetError,
+  setServerUrl,
+  validateServerUrl,
+} from './serverUrl';
+export type {
+  ServerUrlCheck,
+  ServerUrlInfo,
+  ServerUrlValidation,
+} from './serverUrl';
 
 export {ASK_TIMEOUT_MS, requestTimeout, withTimeout} from './timeout';
 export type {RequestTimeout} from './timeout';

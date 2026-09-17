@@ -28,8 +28,8 @@ import AudioRecorderPlayer, {
 } from 'react-native-audio-recorder-player';
 
 import {audioStorageCache} from '../services/audioStorageCache';
-import {DEFAULT_BASE_URL} from '../api/client';
-import Config from 'react-native-config';
+import {describeError} from '../api/errors';
+import {getServerUrl} from '../api/serverUrl';
 import {
   classifyCacheMissOffline,
   classifyPlaybackEngineError,
@@ -51,17 +51,19 @@ export interface UseTranscriptAudioResult {
 
 /** Build the remote audio URL for a transcript. Same shape as
  *  Phase 191B's video file streaming — backend serves under
- *  `/v1/shop/{shop_id}/work-orders/{wo_id}/transcripts/{id}/audio`. */
-function buildRemoteAudioUrl(
+ *  `/v1/shop/{shop_id}/work-orders/{wo_id}/transcripts/{id}/audio`.
+ *
+ *  The player takes a URL rather than going through the API client, so
+ *  it resolves the server the same way the client does (Phase 209B
+ *  item 1). Rejects with NoServerSetError when no server is set. */
+export async function buildRemoteAudioUrl(
   shopId: number,
   woId: number,
   transcriptId: number,
-): string {
-  const baseUrl =
-    (Config.API_BASE_URL as string | undefined) ?? DEFAULT_BASE_URL;
-  const trimmed = baseUrl.replace(/\/+$/, '');
+): Promise<string> {
+  const baseUrl = await getServerUrl();
   return (
-    `${trimmed}/v1/shop/${shopId}/work-orders/${woId}` +
+    `${baseUrl}/v1/shop/${shopId}/work-orders/${woId}` +
     `/transcripts/${transcriptId}/audio`
   );
 }
@@ -169,7 +171,15 @@ export function useTranscriptAudio(
     if (playUri === null) {
       // Cache miss — probe remote endpoint to distinguish
       // cache-miss-offline from server-side audio-gone.
-      const remoteUrl = buildRemoteAudioUrl(shopId, woId, transcriptId);
+      let remoteUrl: string;
+      try {
+        remoteUrl = await buildRemoteAudioUrl(shopId, woId, transcriptId);
+      } catch (err) {
+        // No server set (or storage unreadable). Not an offline case —
+        // set directly so the copy says what to do.
+        setError(classifyStreamFailure({status: null, bodyMessage: describeError(err)}));
+        return;
+      }
       const probeError = await probeRemoteAudio(remoteUrl);
       if (probeError !== null) {
         // Probe failed. If it was a network/timeout failure (status

@@ -20,7 +20,7 @@
 // string[]. The runtime behavior was always correct because Metro
 // uses Babel (strips types without checking).
 
-import React, {useCallback, useEffect, useState, type ReactNode} from 'react';
+import React, {useCallback, useState, type ReactNode} from 'react';
 import {
   Alert,
   PermissionsAndroid,
@@ -33,10 +33,10 @@ import {
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
-import {api, describeError} from '../api';
+import {api, describeError, NoServerSetError} from '../api';
 import {bleService} from '../ble/BleService';
 import {OBD_SUPPORT} from '../config/features';
 import {useApiKey} from '../hooks/useApiKey';
@@ -55,12 +55,14 @@ type HomeNav = NativeStackNavigationProp<HomeStackParamList, 'Home'>;
 // Async-fetch state machine. `idle` is the initial state for
 // user-triggered fetches; `loading` is during in-flight calls;
 // `success` carries the typed response body; `error` carries a
-// human-readable string from describeError().
+// human-readable string from describeError(). `no-server` means no
+// request was made: nothing names a server yet (Phase 209B item 1).
 type FetchState<T> =
   | {kind: 'idle'}
   | {kind: 'loading'}
   | {kind: 'success'; data: T}
-  | {kind: 'error'; message: string};
+  | {kind: 'error'; message: string}
+  | {kind: 'no-server'; message: string};
 
 const SCAN_DURATION_MS = 10_000;
 
@@ -99,13 +101,21 @@ export function HomeScreen() {
       }
       setVersionState({kind: 'success', data});
     } catch (err) {
-      setVersionState({kind: 'error', message: describeError(err)});
+      setVersionState(
+        err instanceof NoServerSetError
+          ? {kind: 'no-server', message: err.message}
+          : {kind: 'error', message: describeError(err)},
+      );
     }
   }, []);
 
-  useEffect(() => {
-    void fetchVersion();
-  }, [fetchVersion]);
+  // On focus, not just on mount: coming back from Settings after changing
+  // the server should show the new server's status, not the old one's.
+  useFocusEffect(
+    useCallback(() => {
+      void fetchVersion();
+    }, [fetchVersion]),
+  );
 
   // ---------------------------------------------------------------
   // Auth (useApiKey + ApiKeyModal)
@@ -235,6 +245,7 @@ export function HomeScreen() {
           <BackendBlock
             state={versionState}
             onRetry={fetchVersion}
+            onOpenSettings={() => navigation.navigate('Settings')}
           />
         </Section>
 
@@ -261,7 +272,7 @@ export function HomeScreen() {
             hunt for. */}
         <Section title="Settings">
           <Text style={styles.sectionHelp}>
-            Appearance and app preferences.
+            Server address, appearance and app preferences.
           </Text>
           <TouchableOpacity
             style={styles.button}
@@ -352,13 +363,32 @@ function Section({title, children}: {title: string; children: ReactNode}) {
 function BackendBlock({
   state,
   onRetry,
+  onOpenSettings,
 }: {
   state: FetchState<VersionResponse>;
   onRetry: () => void;
+  onOpenSettings: () => void;
 }) {
   const styles = useStyles();
   if (state.kind === 'idle' || state.kind === 'loading') {
     return <Text style={styles.statusLine}>Checking…</Text>;
+  }
+  if (state.kind === 'no-server') {
+    return (
+      <View>
+        <Text style={[styles.statusLine, styles.errorText]} testID="backend-no-server">
+          {state.message}
+        </Text>
+        <TouchableOpacity
+          style={styles.smallButton}
+          onPress={onOpenSettings}
+          accessibilityRole="button"
+          accessibilityLabel="Open settings to set the server"
+          testID="backend-open-settings">
+          <Text style={styles.smallButtonText}>Open Settings</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
   if (state.kind === 'error') {
     return (

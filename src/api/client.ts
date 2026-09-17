@@ -8,32 +8,28 @@
 // `api.POST('/v1/vehicles', {body: ...})` patterns with end-to-end
 // type safety from the OpenAPI spec.
 //
-// Base URL resolution priority:
-//   1. options.baseUrl (caller override; primarily tests)
-//   2. Config.API_BASE_URL (react-native-config; from .env)
-//   3. DEFAULT_BASE_URL (10.0.2.2:8000 — Android emulator host loopback)
+// Server resolution (Phase 209B item 1): every request asks
+// `serverUrl.getServerUrl()` — the address saved in Settings, else the
+// build default from `.env` — at the moment it is made. `options.baseUrl`
+// pins one address instead; tests use it.
 //
 // Auth: every request resolves the API key via the injected resolver
 // (default: Keychain via auth.getApiKey) and adds X-API-Key when
 // present. No-op when there's no stored key — the backend returns
 // 401, which the call site surfaces via describeError.
-//
-// IMPORTANT — react-native-config gotcha: editing .env requires a
-// full Android rebuild (npm run android), NOT just a Metro reload.
-// Values are baked into BuildConfig at compile time. See
-// README.md → Environment variables.
 
 import createClient, {type Client} from 'openapi-fetch';
-import Config from 'react-native-config';
 
 import type {paths} from '../api-types';
 import {applyAuth, getApiKey} from './auth';
-
-export const DEFAULT_BASE_URL = 'http://10.0.2.2:8000';
+import {getServerUrl} from './serverUrl';
 
 export interface ApiClientOptions {
-  /** Override the base URL. Tests pass a mock server URL. */
+  /** Pin every request to this address. Tests pass a mock server URL.
+   *  When omitted, each request resolves the server as it is made. */
   baseUrl?: string;
+  /** Override the server resolver (default: serverUrl.getServerUrl). */
+  resolveBaseUrl?: () => Promise<string>;
   /** Override the key resolver. Default reads from Keychain;
    *  tests inject a fixed-value resolver to avoid native modules. */
   resolveApiKey?: () => Promise<string | null>;
@@ -44,14 +40,31 @@ export interface ApiClientOptions {
 
 export type MotoDiagApi = Client<paths>;
 
+type HttpMethod =
+  | 'GET'
+  | 'PUT'
+  | 'POST'
+  | 'DELETE'
+  | 'OPTIONS'
+  | 'HEAD'
+  | 'PATCH'
+  | 'TRACE';
+
+type LooseInit = Record<string, unknown> | undefined;
+
 export function makeClient(options: ApiClientOptions = {}): MotoDiagApi {
-  const baseUrl =
-    options.baseUrl ??
-    (Config.API_BASE_URL as string | undefined) ??
-    DEFAULT_BASE_URL;
+  const pinned = options.baseUrl;
+  const resolveBaseUrl =
+    pinned !== undefined
+      ? async () => pinned
+      : options.resolveBaseUrl ?? getServerUrl;
 
   const resolveKey = options.resolveApiKey ?? getApiKey;
-  const fetchImpl = options.fetchImpl ?? fetch;
+  // Looked up per call, not captured here: `api` below is built at
+  // import time, and a fetch swapped in later (a test, a network
+  // inspector) should still be the one used.
+  const fetchImpl: typeof fetch =
+    options.fetchImpl ?? ((input, init) => fetch(input, init));
 
   const customFetch: typeof fetch = async (input, init) => {
     const apiKey = await resolveKey();
@@ -88,11 +101,56 @@ export function makeClient(options: ApiClientOptions = {}): MotoDiagApi {
     return fetchImpl(input, {...init, headers: finalHeaders});
   };
 
-  return createClient<paths>({baseUrl, fetch: customFetch});
+  // Built without a base URL on purpose. Every call below passes the
+  // server it resolved at call time, through openapi-fetch's per-request
+  // `baseUrl` option, so a change in Settings reaches the next request.
+  // A request that somehow skipped that step would have a relative URL
+  // and fail, rather than quietly reach a stale server.
+  //
+  // Why not fix the URL up inside customFetch instead: React Native's
+  // fetch polyfill (whatwg-fetch) copies a Request onto a new URL by
+  // reading `options.body`, which its Request objects don't have, so the
+  // copy silently loses the body — every POST and PATCH would arrive
+  // empty on a phone while passing under Jest.
+  const inner = createClient<paths>({fetch: customFetch});
+
+  function onServer<M extends HttpMethod>(method: M): MotoDiagApi[M] {
+    const call = inner[method] as unknown as (
+      url: unknown,
+      init: LooseInit,
+    ) => Promise<unknown>;
+    const bound = async (url: unknown, init?: LooseInit) =>
+      call(url, {...init, baseUrl: await resolveBaseUrl()});
+    return bound as unknown as MotoDiagApi[M];
+  }
+
+  const request = inner.request as unknown as (
+    method: unknown,
+    url: unknown,
+    init: LooseInit,
+  ) => Promise<unknown>;
+
+  return {
+    request: (async (method: unknown, url: unknown, init?: LooseInit) =>
+      request(method, url, {
+        ...init,
+        baseUrl: await resolveBaseUrl(),
+      })) as unknown as MotoDiagApi['request'],
+    GET: onServer('GET'),
+    PUT: onServer('PUT'),
+    POST: onServer('POST'),
+    DELETE: onServer('DELETE'),
+    OPTIONS: onServer('OPTIONS'),
+    HEAD: onServer('HEAD'),
+    PATCH: onServer('PATCH'),
+    TRACE: onServer('TRACE'),
+    use: (...middleware) => inner.use(...middleware),
+    eject: (...middleware) => inner.eject(...middleware),
+  };
 }
 
-// Module-level singleton for app-wide use. Constructed lazily on
-// first import; reads Config.API_BASE_URL once at construction.
+// Module-level singleton for app-wide use. It holds no address: each
+// request resolves the server when it is made (see serverUrl.ts).
 // Tests should call makeClient() directly with overrides rather
 // than poking this singleton.
 export const api: MotoDiagApi = makeClient();
