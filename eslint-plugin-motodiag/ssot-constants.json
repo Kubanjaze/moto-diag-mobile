@@ -10,14 +10,6 @@
   },
   "constants": [
     {
-      "name": "DEFAULT_BASE_URL",
-      "source_module": "src/api/client",
-      "role": "contract",
-      "value_type": "string",
-      "live_value": "http://10.0.2.2:8000",
-      "description": "Dev backend URL the API client falls back to when neither options.baseUrl nor Config.API_BASE_URL is set. The 10.0.2.2:8000 value is the Android emulator host loopback; pinned by emulator regression coverage. Tests must import and contract-pin if literal-checked."
-    },
-    {
       "name": "DTC_SEARCH_DEBOUNCE_MS",
       "source_module": "src/hooks/useDTCSearch",
       "role": "contract",

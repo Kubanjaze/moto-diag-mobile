@@ -15,7 +15,7 @@
 ## What was NEVER completed (the remaining 2 minutes)
 1. Phone Safari probe: `http://100.80.109.103:8081/status` → expect `packager-status:running`; then `http://100.80.109.103:8000/healthz` → expect JSON.
 2. App hookup: MotoDiag Debug app → shake → Dev Menu → **Configure Bundler** → host `100.80.109.103`, port `8081` → app pulls JS from Mac Metro (watch for `BUNDLE` line).
-3. API base URL: `Config.API_BASE_URL` is baked at build time (react-native-config is native). For a no-rebuild override, add a dev-only, DO-NOT-COMMIT tailnet override in `src/api/client.ts` (precedence chain is `options.baseUrl` → `Config.API_BASE_URL` → `DEFAULT_BASE_URL`, see client.ts:12-14) pointing at `http://100.80.109.103:8000`, served live via Metro.
+3. API base URL: `Config.API_BASE_URL` is baked at build time (react-native-config is native). ~~For a no-rebuild override, add a dev-only, DO-NOT-COMMIT tailnet override in `src/api/client.ts`~~ — *superseded by Phase 209B item 1:* set the server in the app (Settings → Server) instead. Plain http is refused there except for localhost, 127.0.0.1 and 10.0.2.2, so use the `tailscale serve` https URL rather than `http://100.80.109.103:8000`.
 4. Unverified assumption that gated everything: **is the Debug build still installed on the phone?** Never confirmed.
 
 ## Cable session checklist (the chosen route)

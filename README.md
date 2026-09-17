@@ -53,7 +53,7 @@ Minimum iOS 15.1. Bundle id `com.bandithero.motodiag`.
 git clone https://github.com/Kubanjaze/moto-diag-mobile.git
 cd moto-diag-mobile
 npm install                 # postinstall applies patch-package patches
-cp .env.example .env        # set API_BASE_URL
+cp .env.example .env        # set API_BASE_URL (or leave it and use Settings → Server)
 
 cd ios && pod install && cd ..
 npm run ios
@@ -71,11 +71,22 @@ motodiag serve --host 0.0.0.0
 
 | Variable | Purpose |
 |---|---|
-| `API_BASE_URL` | Backend origin. iOS simulator: `http://localhost:8000`. Real device: the host's LAN IP, e.g. `http://192.168.1.20:8000` — `localhost` on a phone means the phone. |
+| `API_BASE_URL` | The **default** server. iOS simulator: `http://localhost:8000`. Real device: an https address the phone can reach — `localhost` on a phone means the phone, and plain http is refused for anything but `localhost`, `127.0.0.1` and `10.0.2.2`. |
+
+The server can also be set **in the app**: Settings → Server. That
+address wins over `API_BASE_URL`, is checked against the server's
+`/healthz` before it is saved, and survives restarts. Reset to default
+goes back to `API_BASE_URL`. With neither, the app says *"No server set
+— go to Settings."*
+
+> **A Release build fails without an https `API_BASE_URL`.** The
+> "Check release server URL" build phase runs
+> `scripts/check-release-env.js`, so no shipped build can land on the
+> "No server set" screen.
 
 > **Editing `.env` needs a rebuild, not a reload.** Values are baked in
 > at build time; Metro's hot reload will not pick them up. Re-run
-> `npm run ios`.
+> `npm run ios`. Changing the server in Settings needs neither.
 
 `.env` is gitignored. `.env.example` is the template.
 

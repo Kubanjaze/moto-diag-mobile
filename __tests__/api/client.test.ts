@@ -1,6 +1,6 @@
 // Phase 187 — client unit tests.
 //
-// Focused on the wiring layer: base URL resolution, auth header
+// Focused on the wiring layer: server resolution, auth header
 // injection, fetch override seam. We don't exercise the full
 // openapi-fetch call surface — that's covered by the upstream
 // library's own tests + the smoke test in Commit 4.
@@ -23,7 +23,35 @@ jest.mock('react-native-keychain', () => ({
   resetGenericPassword: jest.fn(async () => true),
 }));
 
-import {DEFAULT_BASE_URL, makeClient} from '../../src/api/client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Config from 'react-native-config';
+
+import {api, makeClient} from '../../src/api/client';
+import {describeError} from '../../src/api/errors';
+import {
+  clearServerUrl,
+  NO_SERVER_MESSAGE,
+  NoServerSetError,
+  SERVER_URL_STORAGE_KEY,
+  setServerUrl,
+} from '../../src/api/serverUrl';
+
+const config = Config as unknown as Record<string, string | undefined>;
+
+function okFetch() {
+  return jest.fn<Promise<Response>, [input: RequestInfo, init?: RequestInit]>(
+    async () =>
+      new Response('{}', {
+        status: 200,
+        headers: {'content-type': 'application/json'},
+      }),
+  );
+}
+
+afterEach(async () => {
+  delete config.API_BASE_URL;
+  await AsyncStorage.clear();
+});
 
 describe('makeClient — base URL resolution', () => {
   it('uses options.baseUrl when provided', async () => {
@@ -47,24 +75,146 @@ describe('makeClient — base URL resolution', () => {
     expect(callUrl).toMatch(/^https:\/\/test\.example\.com/);
   });
 
-  it('falls back to DEFAULT_BASE_URL when nothing set', async () => {
-    const fetchMock = jest.fn<
-      Promise<Response>,
-      [input: RequestInfo, init?: RequestInit]
-    >(async () =>
-      new Response('{}', {
-        status: 200,
-        headers: {'content-type': 'application/json'},
-      }),
+  it('pins every request to options.baseUrl, ignoring Settings', async () => {
+    await setServerUrl('https://settings.example.test');
+    const fetchMock = okFetch();
+    const client = makeClient({
+      baseUrl: 'https://test.example.com',
+      resolveApiKey: async () => null,
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+    await client.GET('/v1/version');
+    expect(extractUrl(fetchMock.mock.calls[0][0])).toBe(
+      'https://test.example.com/v1/version',
     );
+  });
+});
+
+// Phase 209B item 1 — the regression guard the operator asked for: the
+// client must read the stored setting, not the compiled-in constant.
+describe('makeClient — the server comes from Settings, at request time', () => {
+  const BUILD = 'https://build.example.test';
+  const SAVED = 'https://settings.example.test';
+
+  it('sends requests to the server saved in Settings, not the build-time value', async () => {
+    config.API_BASE_URL = BUILD;
+    await setServerUrl(SAVED);
+    const fetchMock = okFetch();
     const client = makeClient({
       resolveApiKey: async () => null,
       fetchImpl: fetchMock as unknown as typeof fetch,
     });
     await client.GET('/v1/version');
-    const callUrl = extractUrl(fetchMock.mock.calls[0][0]);
-    expect(callUrl).toMatch(/^http:\/\/10\.0\.2\.2:8000/);
-    expect(DEFAULT_BASE_URL).toBe('http://10.0.2.2:8000');  // f9-noqa: ssot-pin contract-pin: dev-loop fallback URL — Phase 187 runbook fixes Android emulator → host backend at this exact URL (10.0.2.2 is the AVD-routed host loopback; port 8000 is the FastAPI dev server in scripts/run-backend-dev.sh). Bumping requires updating the runbook + Android emulator config used in the smoke gate; the regex match on line 66 catches any prefix change automatically, this assertion catches the exact-shape contract.
+    expect(extractUrl(fetchMock.mock.calls[0][0])).toBe(`${SAVED}/v1/version`);
+  });
+
+  it('uses the build-time value when Settings has none', async () => {
+    config.API_BASE_URL = BUILD;
+    const fetchMock = okFetch();
+    const client = makeClient({
+      resolveApiKey: async () => null,
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+    await client.GET('/v1/version');
+    expect(extractUrl(fetchMock.mock.calls[0][0])).toBe(`${BUILD}/v1/version`);
+  });
+
+  it('applies a change made mid-session to the very next request, on the same client', async () => {
+    config.API_BASE_URL = BUILD;
+    const fetchMock = okFetch();
+    const client = makeClient({
+      resolveApiKey: async () => null,
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+    await client.GET('/v1/version');
+    await setServerUrl(SAVED);
+    await client.GET('/v1/version');
+    await clearServerUrl();
+    await client.GET('/v1/version');
+    expect(fetchMock.mock.calls.map((c) => extractUrl(c[0]))).toEqual([
+      `${BUILD}/v1/version`,
+      `${SAVED}/v1/version`,
+      `${BUILD}/v1/version`,
+    ]);
+  });
+
+  it('routes every method, and request(), through the resolver', async () => {
+    const resolveBaseUrl = jest.fn(async () => SAVED);
+    const fetchMock = okFetch();
+    const client = makeClient({
+      resolveBaseUrl,
+      resolveApiKey: async () => null,
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+    await client.GET('/v1/version');
+    await client.POST('/v1/sessions/{session_id}/close', {
+      params: {path: {session_id: 7}},
+    });
+    await client.PATCH('/v1/vehicles/{vehicle_id}', {
+      params: {path: {vehicle_id: 1}},
+      body: {year: 2006},
+    });
+    await client.DELETE('/v1/vehicles/{vehicle_id}', {
+      params: {path: {vehicle_id: 1}},
+    });
+    await client.request('get', '/v1/version');
+    expect(resolveBaseUrl).toHaveBeenCalledTimes(5);
+    for (const call of fetchMock.mock.calls) {
+      expect(extractUrl(call[0]).startsWith(`${SAVED}/v1/`)).toBe(true);
+    }
+  });
+
+  it('keeps the request body when the server is resolved per call', async () => {
+    // The approach this replaced would have rebuilt the Request on a new
+    // URL, which React Native's fetch polyfill does without the body.
+    await setServerUrl(SAVED);
+    const fetchMock = okFetch();
+    const client = makeClient({
+      resolveApiKey: async () => 'mdk_live_test',
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+    await client.POST('/v1/sessions/{session_id}/symptoms', {
+      params: {path: {session_id: 7}},
+      body: {symptom: 'idle bog at 4500 rpm'},
+    });
+    const [input, init] = fetchMock.mock.calls[0];
+    expect(input).toBeInstanceOf(Request);
+    await expect((input as Request).json()).resolves.toEqual({
+      symptom: 'idle bog at 4500 rpm',
+    });
+    const headers = headersToObject(init?.headers as HeadersLike | undefined);
+    expect(headers['content-type']).toMatch(/^application\/json/);
+    expect(headers['x-api-key']).toBe('mdk_live_test');
+  });
+
+  it('with no server anywhere, rejects with the Settings message and sends nothing', async () => {
+    const fetchMock = okFetch();
+    const resolveApiKey = jest.fn(async () => 'mdk_live_test');
+    const client = makeClient({
+      resolveApiKey,
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+    const err = await client.GET('/v1/version').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(NoServerSetError);
+    expect(describeError(err)).toBe(NO_SERVER_MESSAGE);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(resolveApiKey).not.toHaveBeenCalled();
+  });
+
+  it('the app-wide `api` singleton follows Settings too', async () => {
+    // Built once, at import — before this test set anything. It must
+    // still read the setting when the request is made.
+    const fetchMock = okFetch();
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    try {
+      config.API_BASE_URL = BUILD;
+      await AsyncStorage.setItem(SERVER_URL_STORAGE_KEY, SAVED);
+      await api.GET('/v1/version');
+      expect(extractUrl(fetchMock.mock.calls[0][0])).toBe(`${SAVED}/v1/version`);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
   });
 });
 
