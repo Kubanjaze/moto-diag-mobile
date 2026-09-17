@@ -1123,7 +1123,18 @@ flag. Degrading well is not the same as working.
   500 sweeps a month.
 - **~~Still open — needs a product call:~~ decided 2026-09-17 by the
   operator — two answers:**
-  - **At the cap: block new AI calls.** A new AI request gets a clear
+  - **Scope, revised 2026-09-17 after looking at the ledger:** build the
+    instrument, don't ship the number. Total spend to date is **32¢ across
+    4 calls** — too thin to set a ceiling on. At measured prices $25 is
+    ~2,500 text diagnoses, ~500 sweeps (~17/day) or ~190 video questions
+    (~6/day), so it isn't a limit a one-person shop reaches by working;
+    what a cap really guards is a runaway (a leaked key, a retry loop).
+    Also: `cost_cap_monthly_usd_cents` is a **server setting defaulting to
+    0**, not a per-shop column, and `shop_cost_this_month` was written for
+    a soft warning. So: attribution and per-shop monthly spend now,
+    blocking built but **off by default**, and a number chosen later from
+    real months.
+  - **At the cap (when one is set): block new AI calls.** A new AI request gets a clear
     "monthly AI limit reached" error until the month resets. A call already
     running finishes, and everything that isn't AI keeps working. Rejected:
     warn only; falling back to a cheaper model.
