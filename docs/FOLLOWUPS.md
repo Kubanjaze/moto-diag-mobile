@@ -1102,7 +1102,7 @@ flag. Degrading well is not the same as working.
   only thing that turns this from a surprise into a signal. Pair with
   a `pip-audit` run.
 
-### F78 (NEW) — Spending cap: $25/month per shop, enforced via `shop_cost_this_month`
+### F78 — Spending cap — INSTRUMENT BUILT 2026-09-17 (moto-diag Phase 209D, `fc3b770`); the number is still open
 
 - **Decided:** 2026-09-17, by the operator (moto-diag 209B → *Decisions §5*).
   **The number is $25/month per shop.** Not a launch blocker.
@@ -1155,6 +1155,24 @@ flag. Degrading well is not the same as working.
   3. Test through the real API route (CLAUDE.md gate item 6) that a shop
      over $25 is actually stopped, using **recorded** rows, not seeded ones.
      Seeded rows would hide exactly the NULL-`shop_id` gap above.
+
+- **Done by Phase 209D** (moto-diag `fc3b770`, schema v60 → v61):
+  - Migration 061 gives a session a shop; sessions are stamped at creation
+    (API: the caller's single active membership; CLI: `--shop` or the one
+    shop the database runs). Two of either stays unattributed rather than
+    landing on the wrong ledger — see **F84** for the app sending its own.
+  - `vision_sweep`, `vision_guidance` and `text_diagnosis` now record the
+    shop, so `shop_cost_this_month` stops returning $0 for everyone.
+  - The block is built and **off by default**
+    (`MOTODIAG_COST_CAP_MONTHLY_USD_CENTS=0`), checked **before** the paid
+    call at all three paid paths: 402 on the ask route, the sweep skipped
+    with the video left `pending`, the CLI exiting 1 without calling the SDK.
+  - `motodiag costs report --shop N --this-month` shows cap, spent and
+    remaining, or says none is set.
+- **Still open — the number.** Deliberately. A few real months of per-shop
+  spend are what should set it; the ledger can now produce them. Set it with
+  `MOTODIAG_COST_CAP_MONTHLY_USD_CENTS` when there is something to base it
+  on.
 
 ### F79 — Recompile per-machine memory on session close — RESOLVED 2026-09-17 (moto-diag Phase 209C, `f94ffd1`)
 
