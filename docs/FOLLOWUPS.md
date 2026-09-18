@@ -1458,7 +1458,7 @@ flag. Degrading well is not the same as working.
   `Literal`, no `CHECK` on `dtc_codes.dtc_category`, no mobile TS union,
   no icon or filter map keyed on a name, no test pinning a per-category
   count of `dtc_codes` — and it is empty because the corpus seeds **zero
-  Energica DTCs**: Phase 244 held Energica's 110-code owner's-manual table
+  Energica DTCs**: Phase 244 held Energica's owner's-manual code table (129 rows, 128 distinct labels; 244's row said 110 and Phase 247 corrected it)
   (Cod. ENF003100 Rev. 02, pp. 77-83) inside a known-issue entry rather
   than seeding it into `dtc_codes`. Phase 246 lists the BMS-relevant codes
   (P1000/P1001 pack, P1030/P1044 cell, P1005-P1009 BMS measurement,
@@ -1475,6 +1475,38 @@ flag. Degrading well is not the same as working.
   answers; then decide whether Zero's rider-facing fault numbers (51-56)
   belong in `dtc_codes` at all, since they are not SAE codes. Content
   work, one seed file and one test; no schema change.
+
+### F91 (NEW) — Phase 247 research: records found but not read, and sources not reached
+
+- **Surfaced:** moto-diag Phase 247 (2026-09-18), the motor-controller /
+  inverter row. The refuter pass found or failed to reach the items below;
+  none was written into the corpus because the sweep never read them or
+  the page was unreachable. Recorded so the next EV sweep starts here.
+- **Found, unread:** NHTSA campaigns 12V455000 (2012 Zero S/DS, motor
+  controller reprogramming) and 13V635000 (2012–13 XU/S/DS, 2013 FX,
+  'update controller firmware') — the only controller-firmware campaigns
+  in Zero's record, missed because the sweep queried model years from
+  2014; LiveWire bulletin L1010 (recall 1001) names VSC software
+  13.1.16.2 where the dealer notice names 13.3.16.2 — a discrepancy in
+  the manufacturer's own documents, not resolved; NHTSA's products
+  endpoint lists recalls for Zero FX 2016, SR/S 2021, DS 2023 and S 2026
+  that the by-vehicle endpoint does not return.
+- **Not reached:** the 2025 Zero DSR/X owner's manual (never fetched; the
+  2025 street manual was read); the 2013–2019 Zero owner's manuals
+  (media.zeromotorcycles.com unreachable); zeromanual.com (certificate
+  expired 2026-07-18, then 403); electricmotorcycleforum.com ('Database
+  Error'); hdlivewireforum.com and electricmotorcyclesforum.com
+  (JavaScript challenge); LiveWire's 'OTA RELEASE NOTES: S2 MODELS'
+  lookup (JavaScript shell); Energica's own site no longer hosts its
+  manuals or the RMI sheet (mirrors were read).
+- **A conflict recorded, not resolved:** zerologs.bike labels the Gen3
+  Zero controller 'Cypher III (proprietary)'; Zero's Part 573 filing for
+  the 2023 DSR/X names a Dana TM4 controller. The corpus states both on
+  separate rows under their own labels.
+- **What to do (not started):** read the two 2012–13 campaign records and
+  add them to the Zero recall row; ask LiveWire which VSC version L1010
+  meant; retry the unreachable sources at the next EV row (248 regen or
+  249 thermal).
 
 ### F88 (NEW) — An electric bike gets fewer safety alerts, not the right ones
 
