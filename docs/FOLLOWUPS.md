@@ -1508,6 +1508,44 @@ flag. Degrading well is not the same as working.
   meant; retry the unreachable sources at the next EV row (248 regen or
   249 thermal).
 
+### F92 (NEW) — Phase 248 research: records found by refuters, held until quoted
+
+- **Surfaced:** moto-diag Phase 248 (2026-09-18), the regenerative-braking
+  row. The refuter pass overturned four absence claims by finding records
+  the sweeps had missed. None has a verbatim quote in a refuter file, and
+  the corpus rule is no quote, no row, so none was written. In priority
+  order:
+- **Zero 20V704 Part 573** (RCLRPT-20V704-2481.PDF): the refuter reports a
+  sentence that model year 2021 and later SR/F and SR/S add a parallel
+  hydraulic-control-unit brake-lamp signal. Quote it; if confirmed it is
+  the only Zero document on how the lamp is signalled on those bikes and
+  belongs on the regen brake-light row with a cross-reference to 242.
+- **Zero NHTSA complaint ODI 10861302** (2013 Zero S, filed 2016): an
+  owner reports the brake light not illuminating under maximum regen.
+  Quote the summary and dates; it then becomes a record note (owner
+  complaint, not a statement) on the brake-light row.
+- **hdlivewireforum.com thread 5323** ("Regenerative brake light
+  flickering"): readable with a default-UA fetch; owners describe a 2020
+  LiveWire's brake lamp lighting or flickering on light regen. Quote the
+  opening post with its date; it becomes its own dated forum row
+  (LiveWire / Harley-Davidson ELW) and must never merge with the S2
+  manual's statement.
+- **electricmotorcycleforum.com topic 7898** (Wayback capture
+  20210328140250, April 2018 posts, "Energica Eva 107 vs Zero SR"): a post
+  says the brake light flashes as regen slows the bike. Quote it and
+  confirm which bike it describes before any row.
+- **Harley-Davidson/LiveWire communications filed with NHTSA**: 17 mention
+  regen; only MC-11026163 was quoted and shipped. Read its header for a
+  date before any row shows one. The rest are a bundle history, needed
+  only if one is wanted.
+- **Zero and Energica manufacturer communications**: enumerate them through
+  NHTSA's MFR_COMMS_RECEIVED files, the route the LiveWire refuter used.
+- **LiveWire ONE Cornering Rider Safety Enhancements page** (uid 1581527):
+  it carries the stiff-rear-pedal-under-regen row; quote it to extend the
+  2020 LiveWire statement to the ONE.
+- **For Phase 242**: its Zero brake-campaigns row does not carry 12V307
+  (2011–12 brake-light switch).
+
 ### F88 (NEW) — An electric bike gets fewer safety alerts, not the right ones
 
 - **Surfaced:** moto-diag Phase 244T, which wired `SafetyChecker` into
