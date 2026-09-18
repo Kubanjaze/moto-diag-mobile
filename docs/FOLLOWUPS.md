@@ -1417,6 +1417,29 @@ flag. Degrading well is not the same as working.
   check whether any build passes `category=electrical` or `category=idle` —
   neither exists in the new taxonomy.
 
+### F88 (NEW) — An electric bike gets fewer safety alerts, not the right ones
+
+- **Surfaced:** moto-diag Phase 244T, which wired `SafetyChecker` into
+  `motodiag diagnose` after four phases with no caller.
+- **What it is:** all 19 safety rules are combustion-or-universal — fuel leaks,
+  spark plugs, valve clearance, head gaskets. Phase 241 deliberately withheld
+  high-voltage rules because the checker had no delivery path; 244T built the
+  path and still did not add them, because sourcing HV procedure is content
+  work and inventing it is exactly what roadmap row 245 was rejected for.
+- **Consequence today:** 244T scopes rules by powertrain, so an electric bike
+  correctly stops seeing "strong fuel odor" — and sees **nothing in its place**.
+  A Zero or LiveWire gets a quieter safety panel than a carburetted twin, which
+  is the opposite of the truth about working near a traction pack.
+- **What exists to build from:** Phase 241's HV corpus — 10 `known_issues`
+  entries on service disconnect, live-dead-live meter proving, capacitor
+  discharge intervals, insulated PPE and qualification, all cross-make. That is
+  knowledge in the corpus, not rules in the checker.
+- **When picked up:** author HV rules with `applies_to = ("electric", "hybrid")`
+  so they cannot fire on a combustion bike, source each from a manufacturer or
+  standards document rather than prose, and invert
+  `test_the_hv_rules_are_still_missing_and_that_is_recorded` in
+  `tests/test_phase241_hv_safety.py`.
+
 ### F41 (NEW) — Mobile audio-stack deprecation tracking (post-195B backlog)
 
 - **Surfaced:** 2026-05-10 cousin's Mac `npm install` session. Two deprecation warnings during install — both related to the React Native Nitro modules rewrite cluster:
