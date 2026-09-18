@@ -1417,6 +1417,34 @@ flag. Degrading well is not the same as working.
   check whether any build passes `category=electrical` or `category=idle` —
   neither exists in the new taxonomy.
 
+### F89 (NEW) — Wire or delete: the six engine modules left on the shelf
+
+- **Surfaced:** moto-diag Phases 244Y–244Z (2026-09-18), the end of the
+  built-but-unreachable series. 244Y deleted every `superseded` module and
+  def the reachability gate reported (1,904 lines); 244Z fixed the content
+  hazards in the six that stayed. Both left the six exactly as reachable as
+  they found them: not at all.
+- **What it is:** `engine/repair.py`, `parts.py`, `workflows.py`,
+  `intermittent.py`, `correlation.py`, `confidence.py` — 2,140 lines, all on
+  `MODULE_ISLANDS` as `unwired-feature`, each carrying the 2026-09-17 audit's
+  consensus score (2.3–4.3 / 10) in its allowlist reason. The audit's word was
+  *keep shelved*: they are the only route to content the 970-entry knowledge
+  base does not carry (repair procedures, parts, guided troubleshooting).
+- **The decision, not taken:** wire (each needs a CLI surface, provenance on
+  screen, and for `repair`/`parts` a cost-ledger row and `stop_reason` check
+  per call — two of them spend money) or delete (the gate's stale-entry tests
+  fail the moment a file goes, which is the safety net). It is a product call
+  with a cost line, and the 244 series deliberately did not make it.
+- **What is already true:** the content that would have put a wrong number in
+  front of a technician is fixed (244Z); the false positives 244T found in the
+  safety checker are the same family and are fixed; the per-module defects the
+  audit listed are recorded verbatim in each `MODULE_ISLANDS` reason.
+- **When picked up:** decide per module, not as a block. The audit's per-module
+  proposed surfaces and blockers are in
+  `moto-diag/docs/phases/completed/244W_implementation.md` S0-6 and the
+  workflow output it cites. Do not wire `repair` or `parts` without the ledger
+  row and the labelling — that is F86's family at runtime.
+
 ### F88 (NEW) — An electric bike gets fewer safety alerts, not the right ones
 
 - **Surfaced:** moto-diag Phase 244T, which wired `SafetyChecker` into
