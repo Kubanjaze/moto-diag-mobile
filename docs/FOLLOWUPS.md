@@ -1546,6 +1546,44 @@ flag. Degrading well is not the same as working.
 - **For Phase 242**: its Zero brake-campaigns row does not carry 12V307
   (2011–12 brake-light switch).
 
+### F93 (NEW) — Phase 249's corrections to shipped rows, and its unread records
+
+- **Surfaced:** moto-diag Phase 249 (2026-09-18), the thermal row. Its
+  refuters checked whether each claim was new as well as true, and in
+  doing so found places where rows already shipped are imprecise or stale.
+  None was changed in 249; each is a text edit to a shipped row plus a
+  live-database update by title, copy first.
+- **Energica anchor wording (244, 246, 247, 248):** the Eva owner's manual
+  ENF003100 Rev. 02 is dated February 2018, but its sample labels read
+  model year 2016 and it names the Eva 80 and Eva 107 only (never the Ego).
+  "the 2018 Eva" occurs 2× in `known_issues_bms.json`, 10× in
+  `known_issues_inverter.json` and 12× in `known_issues_regen.json`; 244's
+  rows say "Eva/Ego owner's manual". Reword to the document code and
+  revision, as 249 does; 249's test pins the new form for its own rows.
+- **243's LiveWire caveat is stale:** "no LiveWire parts catalogue or
+  service manual could be opened". The LiveWire ONE (94000865) and S2
+  (94001237) service manuals are readable on the Service Information
+  Portal; search them for "thermostat" before amending. The S2 coolant
+  capacity (0.8 L in the service manual, 814 ml in the owner's manual) is
+  unverified.
+- **Battery-side findings for 246:** Cypher II BMS floors (2021 S/SR/DS/DSR
+  manual -20 °C against the 2020 service manual's -30 °C and -35 °C); the
+  2020 service manual's 55 °C charge figure and "Power Pack Too Hot"
+  procedure; Cypher II codes 10/11 Battery Temperature Warning; the 2025
+  manual's -35 °C on-charger winter floor; a §5.1 against §7.8 conflict in
+  the 2025 manual on the BMS cold cut-off; the S2 "RESS TEMP OUT OF RANGE"
+  charging icon; the Energica CTO's 2019 statement that power is reduced
+  at a battery temperature it does not publish.
+- **For 247:** Zero's 25V834 dealer bulletin (SV-RCL-025-021) lists 2023
+  SR, SR/F, SR/S, DSR/X and 2024 SR, SR/S, DSR, DSR/X, while 247's recall
+  row says the Part 573 report names only the 2023 DSR/X population.
+- **Unread:** the LiveWire emergency-response guides (2020 94000707, the
+  ONE's), the 2020 parts catalogue 94000706 and a parts-retailer
+  coolant-pump diagram (403 or challenge pages); an hdlivewireforum thread
+  with owner reports about the coolant pump during charging (readable,
+  unquoted); NHTSA owner complaints ODI 11449555 and 11471194 (Zero FX,
+  heat); the MotoE dry-ice articles (race bike, not road).
+
 ### F88 (NEW) — An electric bike gets fewer safety alerts, not the right ones
 
 - **Surfaced:** moto-diag Phase 244T, which wired `SafetyChecker` into
