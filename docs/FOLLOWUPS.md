@@ -1445,6 +1445,37 @@ flag. Degrading well is not the same as working.
   workflow output it cites. Do not wire `repair` or `parts` without the ledger
   row and the labelling — that is F86's family at runtime.
 
+### F90 (NEW) — `hv_battery` is a real, validated, empty DTC category
+
+- **Surfaced:** moto-diag Phase 246 close-out (2026-09-18). The plan's
+  Step 0 (S0-6) said the `dtc_category_meta` table held twelve rows without
+  `hv_battery` and that adding it needed migration 063; the close-out
+  re-verification found migration 004 seeded all twenty `DTCCategory`
+  members, `hv_battery` included, on a fresh database and on the live one.
+  `motodiag code --category hv_battery` is accepted by the CLI's meta-table
+  validation and answers "No DTCs found in category 'hv_battery'".
+- **What it is:** the category is data-only end to end — no Pydantic
+  `Literal`, no `CHECK` on `dtc_codes.dtc_category`, no mobile TS union,
+  no icon or filter map keyed on a name, no test pinning a per-category
+  count of `dtc_codes` — and it is empty because the corpus seeds **zero
+  Energica DTCs**: Phase 244 held Energica's 110-code owner's-manual table
+  (Cod. ENF003100 Rev. 02, pp. 77-83) inside a known-issue entry rather
+  than seeding it into `dtc_codes`. Phase 246 lists the BMS-relevant codes
+  (P1000/P1001 pack, P1030/P1044 cell, P1005-P1009 BMS measurement,
+  U0111/U0112/U0412 comms, P1002/P1003/P0514/P0516/P0517 temperature) in
+  `known_issues.dtc_codes`, where a `code` lookup reaches them, but
+  `--category hv_battery` still returns nothing.
+- **Why it matters:** it is the shape Phase 244R fixed — a category that
+  exists and answers empty looks like "no such faults" to a technician.
+  Nothing is wrong today; the trap is a future EV row assuming the
+  category is populated because it validates.
+- **What to do (not started):** seed the published Energica table into
+  `dtc_codes` with `dtc_category` assigned from the manual's own grouping,
+  under the 244 provenance convention (document named), so the category
+  answers; then decide whether Zero's rider-facing fault numbers (51-56)
+  belong in `dtc_codes` at all, since they are not SAE codes. Content
+  work, one seed file and one test; no schema change.
+
 ### F88 (NEW) — An electric bike gets fewer safety alerts, not the right ones
 
 - **Surfaced:** moto-diag Phase 244T, which wired `SafetyChecker` into
