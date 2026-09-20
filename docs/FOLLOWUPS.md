@@ -1912,3 +1912,59 @@ flag. Degrading well is not the same as working.
   answers.
 - Note also the slug conventions differ across stores: compat keys
   `harley`, the corpus says `Harley-Davidson`.
+
+### F100 (NEW) — The model-resolution pool is keyed by the raw `make` column
+
+- **Surfaced:** moto-diag Phase 250B Step 0 (2026-09-19), measured rather
+  than suspected. **Row 250C is open for the fix.**
+- `knowledge/models.py:vocabulary_from_conn` builds `{make: {models}}` from
+  `SELECT make, model FROM known_issues`, keyed by the **raw** make string.
+  A row whose make reads "Zero, Harley-Davidson, LiveWire, Energica" files
+  its models under that whole string, so they belong to no marque.
+  `vehicle_resolver.known_models(make)` reads that dict, and
+  `resolve_vehicle` uses it as the model matching pool.
+- **Measured against the junctions**, which are correct:
+
+  | marque | models resolvable | in the junction |
+  |---|---|---|
+  | LiveWire | **0** | 23 |
+  | Damon | **0** | 10 |
+  | Energica | 6 | 24 |
+  | Zero | 14 | 32 |
+  | Harley-Davidson | 13 | 36 |
+  | Moto Guzzi | 11 | 32 |
+  | Aprilia | 31 | 61 |
+  | MV Agusta | 30 | 59 |
+  | BMW | 51 | 74 |
+  | KTM | 62 | 85 |
+  | Ducati | 83 | 106 |
+  | Triumph | 82 | 104 |
+
+  Honda, Kawasaki, Suzuki and Yamaha are complete, because their rows carry
+  a single marque. Six of the 23 keys are not marques; one is a whole prose
+  sentence holding three models.
+- **Consequence:** the model tier cannot fire for those machines, so they
+  fall back to make-wide content. `resolve_vehicle("Harley-Davidson",
+  "LiveWire")` returns `model applied=False, method=unresolved`, which is
+  why that machine was handed V-twin rows until 250B filtered by
+  powertrain. The filter treats the symptom; this is the cause.
+- This is the defect **244F fixed for makes** and **244I fixed for model
+  values**, one level down in the *keys*. The junction already knows the
+  right answer, so the edit is small — the work is re-measuring what the
+  model tier does across all sixteen marques, Track K's included.
+
+### F101 (NEW) — `/ask` has its own retrieval path, its own 25 and its own hard-coded 12
+
+- **Surfaced:** moto-diag Phase 250B (2026-09-19), while mapping what a
+  change to the diagnose path would touch. Not fixed: 250B deliberately
+  confined itself to `_load_known_issues`.
+- `api/routes/videos.py:~526` calls `known_issues_for_vehicle` with
+  `limit=25`, **discards the identity** (so no resolution correction is
+  ever surfaced on that route, unlike the CLI), and applies **no year
+  filter** — `_covers_year` lives only in the diagnose path. The vision
+  formatter then slices to `[:12]` with its own hard-coded number
+  (`media/vision_analysis_pipeline.py:~106`), so 13 of the 25 fetched rows
+  are discarded unread.
+- Net: the video-question surface does not get 250B's powertrain filter or
+  relevance reservation, gets rows for the wrong year, and truncates by a
+  constant that is only coupled to `KNOWN_ISSUE_PROMPT_LIMIT` by a comment.
