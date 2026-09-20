@@ -1968,3 +1968,27 @@ flag. Degrading well is not the same as working.
 - Net: the video-question surface does not get 250B's powertrain filter or
   relevance reservation, gets rows for the wrong year, and truncates by a
   constant that is only coupled to `KNOWN_ISSUE_PROMPT_LIMIT` by a comment.
+
+### F102 (NEW) — Prose fragments are still tokenised as model names
+
+- **Surfaced:** moto-diag Phase 250C (2026-09-20), measured while keying the
+  model vocabulary by marque. Pre-existing, from Phase 244I's token
+  splitter; 250C changed *which marque* a token belongs to, not *what
+  counts as a token*, so this survives the change unaltered.
+- The model column holds prose, and the splitter keeps fragments that are
+  not machines: `known_models("Zero")` carries "BMS logs", "2020 service
+  manual" and "2025 owner's manuals"; Aprilia carries "CAN generations" and
+  "shim-under-bucket"; several marques carry "000 km" and "as this corpus
+  names them". `_PROSE_WORD` catches "models", "era", "variants" and a
+  dozen more, and these get through it.
+- **Measured:** 30 of the 639 pool entries are held by two or more
+  unrelated marques. Most are legitimate shared fragments — 1000, 1200,
+  750, 900, 998 — which belong in each marque's pool. The remainder are
+  these prose tokens, plus tokens from multi-marque rows that no
+  single-marque row owns, which is why "Alpinista" (a LiveWire S2) sits in
+  four electric marques' pools instead of LiveWire's alone.
+- **Why it is not urgent:** a junk token only matters if someone enters it
+  as a model, and it costs a pool entry otherwise. The fix is a better
+  token filter — probably "reject a token that appears in no title and no
+  description" — which is a different question from attribution and wants
+  its own measurement.
