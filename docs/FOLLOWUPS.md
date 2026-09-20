@@ -1801,3 +1801,114 @@ flag. Degrading well is not the same as working.
 - **Resolution:** `scripts/check_f9_patterns.py --check-tag-catalog-coverage` mode shipped at Phase 191D Commit 2. AST-walks `src/motodiag/api/routes/**/*.py` for `APIRouter(...)` calls; extracts `tags=[...]` keyword arguments; parses `src/motodiag/api/openapi.py` for `TAG_CATALOG`; diffs the two. Forward-direction (route declares tag missing from catalog) = error-severity finding; reverse-diff (catalog has unused tag) = warn-severity finding.
 - **Inaugural finding (case study #10 in pattern doc):** the rule's first run on `master` surfaced ONE warn-severity finding — the `auth` tag in `TAG_CATALOG` had no route consumer. Removed at Commit 4 with inline comment documenting the protocol for re-adding when actual auth routes materialize ("re-add this entry with the route declaration in the same commit"). Auth tag had been a Phase 183 forward-looking placeholder latent for **378 days** (2026-04-23 → 2026-05-05). The rule converted silent technical debt into noisy lint findings on its inaugural run — the architectural takeaway captured as the pattern doc Instance #10's lesson.
 - **Lint coverage at finalize:** `--check-tag-catalog-coverage` clean (post-auth-orphan removal). F22 escalation criterion: drift in 3+ subsequent phases triggers full FastAPI introspection refactor as its own dedicated phase. Inaugural finding counts as data point 0 (Phase 183 placeholder catching up); subsequent legitimate drift events count toward the trigger.
+### F94 (NEW) — The electric layers never reach a diagnosis; retrieval is symptom-blind and safety-saturated
+
+- **Surfaced:** moto-diag Phase 250 (2026-09-19), Gate 13, by walking the
+  path roadmap row 250 names rather than reading the corpus. **Row 250B is
+  open for the fix**; this entry is the record, and Gate 13's
+  `TestTheDiagnosticPathAsItIs` is its acceptance criteria — those tests
+  are written to FAIL when 250B lands.
+- **Measured** on a freshly seeded database (996 rows), through the real
+  `diagnose quick` with the AI call replaced:
+
+  | Query | Layers reaching the model | Available to retrieval |
+  |---|---|---|
+  | Zero SR/F 2023 | inverter only | bms 4, inverter 11, regen 7, thermal 4 |
+  | Energica Ego 2022 | none | bms 3, inverter 6, regen 6, thermal 4 |
+  | LiveWire ONE 2022 | inverter only | bms 3, inverter 7, regen 6, thermal 6 |
+  | Harley-Davidson LiveWire 2021 | none | bms 4, inverter 7, regen 7, thermal 12 |
+
+- **Why:** `cli/diagnose.py:_load_known_issues` fetches by vehicle through
+  the junction, year-filters, and truncates at
+  `KNOWN_ISSUE_PROMPT_LIMIT = 12`. Nothing in the path reads the rider's
+  symptoms, and since Phase 240C orders critical first, Phase 241's ten
+  critical HV-safety rows fill the cap on every electric bike. The twelve
+  rows are identical whether the rider reports a hot pack or a dead regen
+  brake light — verified by running both and comparing titles.
+- **Also:** the bike is registered `--powertrain electric` through
+  `garage add` and no knowledge query reads that column. Phase 243
+  recorded the missing powertrain filter as debt; this is the fourth phase
+  shaped by it.
+- **Not a re-ordering problem.** The HV rows are critical on purpose — a
+  technician opening a pack needs them first. 250B has to compose a prompt
+  that keeps the safety floor and still carries the layer the rider's
+  complaint points at.
+
+### F95 (NEW) — Every electric bike in the garage renders its power as "NonekW"
+
+- **Surfaced:** moto-diag Phase 250 (2026-09-19), Gate 13, pinned by
+  `test_an_electric_bike_shows_no_motor_power_in_the_garage`. **Scheduled
+  in row 250B.**
+- `cli/main.py` renders the engine column as
+  `f"{v.get('motor_kw', '?')}kW"` when `powertrain == "electric"`. The
+  `'?'` default never fires: `motor_kw` is a real column (migration 002,
+  and the vehicles rebuild at migration ~2775 keeps it), so the key exists
+  holding `None`, and `dict.get` returns it. Every electric bike prints
+  **"NonekW"**.
+- `garage add` exposes `--engine-cc` but no `--motor-kw`, so the column
+  cannot be populated from the CLI at all; the API's vehicle routes do
+  accept `motor_kw`. Fix is both halves: the renderer's fallback and a way
+  to set the value.
+
+### F96 (NEW) — `classify_code` has no SAE hybrid/EV branch, so P0A05 is "unrecognized"
+
+- **Surfaced:** moto-diag Phase 250 (2026-09-19), Gate 13. Phase 244
+  recorded the hazard ("several Energica codes carry a hex letter in the
+  second position, which a naive four-digit powertrain matcher silently
+  drops"); this measures it at the front door.
+- `motodiag code P0A05` answers "⚠ No DB entry — heuristic classification
+  only" and "P0A05 — unrecognized code format", Category `unknown`,
+  Severity `UNKNOWN`. `engine/fault_codes.py:classify_code` matches
+  `^P[0-9]{4}$`, which cannot match a hex letter in the third position,
+  and has no branch for the J2012 hybrid/EV block (P0A00–P0AFF, plus the
+  P0B/P0C/P0D ranges). Meanwhile `kb by-code P0A05` reaches Phase 249's
+  cooling-fault row, so the two code paths disagree for every electric
+  code — and the one a technician reaches for first is the one that fails.
+- Related but separate from **F90** (seeding the published Energica table
+  into `dtc_codes`): even with F90 done, an unseeded EV code would still
+  classify as unknown format rather than as a hybrid/EV powertrain code.
+
+### F97 (NEW) — `kb list --make` resolves a misspelt make; `GET /v1/kb/issues?make=` does not
+
+- **Surfaced:** moto-diag Phase 250 (2026-09-19), Gate 13, pinned by
+  `test_the_cli_resolves_a_misspelt_make_and_the_api_does_not`.
+- The CLI runs the resolver, prints "Reading 'X' as 'Y'", then filters
+  `make LIKE`. The API route filters `make LIKE` with no resolution, so
+  `?make=Zerro` returns 0 while the CLI returns the Zero corpus. Phase
+  244S fixed exactly this class of gap for the diagnostic path ("a bike
+  entered as 'Homda' returned 0 rows") and the HTTP surface was not part
+  of that fix.
+- The asymmetry is invisible for most electric queries only because
+  SQLite's `LIKE` is case-insensitive; it bites on hyphen/space forms and
+  misspellings.
+
+### F98 (NEW) — `fault_codes.py` still states Energica's pre-247 code count
+
+- **Surfaced:** moto-diag Phase 250 (2026-09-19), Gate 13. Phase 247
+  corrected the corpus row and the live database from 110 to **129 rows /
+  127 distinct codes**, but the comment block in
+  `engine/fault_codes.py` (the Phase 244 correction note) still reads "110
+  of them are published in the owner's manual". One-line text fix; no
+  behaviour change. Left untouched by Gate 13 because that gate writes no
+  production code.
+
+### F99 (NEW) — No adapter compatibility row exists for any electric make
+
+- **Surfaced:** moto-diag Phase 250 (2026-09-19), Gate 13, pinned by
+  `test_no_adapter_is_known_for_any_electric_bike` and
+  `test_the_compat_store_holds_no_electric_make`.
+- `compat_matrix.json` holds 167 rows over eleven makes (aprilia, bmw,
+  ducati, harley, honda, kawasaki, ktm, mv-agusta, suzuki, triumph,
+  yamaha) and none for zero, energica, livewire or damon, so
+  `hardware compat recommend` answers "No compat entries known for this
+  bike" for every electric machine.
+- **The tension worth resolving first:** Phase 244's shipped row states
+  that Energica publishes SAE J2012 codes and supports OBD Modes 1–4 and
+  9 under EU Reg. 168/2013, "so a generic scan tool reads them". If that
+  is true, at least one adapter has a compat status on Energica and the
+  store should say so; Phase 242 separately established that a Zero's
+  16-pin socket is **not** an OBD-II port, which is an "incompatible" row,
+  not an absent one. Absence is currently doing the work of two different
+  answers.
+- Note also the slug conventions differ across stores: compat keys
+  `harley`, the corpus says `Harley-Davidson`.
