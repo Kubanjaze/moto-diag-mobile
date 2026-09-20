@@ -1992,3 +1992,66 @@ flag. Degrading well is not the same as working.
   token filter — probably "reject a token that appears in no title and no
   description" — which is a different question from attribution and wants
   its own measurement.
+
+### F103 (NEW) — A recall census that cannot tell "no recalls" from "I was blocked"
+
+- **Surfaced:** moto-diag Phase 251 (2026-09-20), while building the Vespa
+  and Piaggio regulator rows. **Not a defect in this repo today** —
+  `advanced/data/recalls.json` is a static seeded file read by
+  `advanced/recall_repo.py`, and no code path queries NHTSA at runtime.
+  This is a binding constraint on any future recall-sync row.
+- `api.nhtsa.gov` returns **403 to Python's default `urllib` User-Agent**
+  and edge-blocks bursts with an Akamai HTML page. It also returns
+  **HTTP 400 with a valid `{"Count":0}` body** for genuine no-result
+  queries on `recalls/recallsByVehicle`, while `recalls/campaignNumber`
+  returns 200 with the same body. So 4xx means three different things and
+  a client that maps them all to "no data" cannot distinguish them.
+- **Measured, three times over.** Three sweeps of the same corpus returned
+  three different, barely-overlapping campaign lists, none raising an
+  error:
+
+  | Run | Reported | Ground truth |
+  |---|---|---|
+  | parallel, 24 workers | 1 campaign | ≥ 10 |
+  | throttled, 6 workers | 3 campaigns | ≥ 10 |
+  | lean, serial | 3 campaigns | ≥ 10 |
+
+  Only one campaign appears in more than one list. The throttled run
+  logged `ok 712, fail 2038, retry 10322` — a **74% hard-failure rate** —
+  printed it, and then printed `DISTINCT CAMPAIGNS = 3` as its finding.
+- **Why it matters more than an ordinary flake:** a partial-failure run
+  does not degrade visibly. It produces a confident, well-formed, plausible
+  answer, and a single run gives no signal that anything went wrong. Two
+  runs disagreeing was the only thing that exposed it.
+- **Requirements for any future recall sync:** send a browser User-Agent;
+  treat a 403 as a hard failure and never as an empty result; gate on the
+  failure count rather than printing it beside the answer; and assert a
+  round-trip invariant before trusting the output — a known-present
+  campaign must come back (MP3 500 / 2020 → 20V524000) or the run aborts.
+  Run twice and diff when the output will become corpus content.
+
+### F104 (NEW) — Vespa and Piaggio documents that could not be reached, and seven model-years the regulator will not return
+
+- **Surfaced:** moto-diag Phase 251 (2026-09-20). Recorded so a later row
+  does not re-spend the search, and so the corpus's silence on these is
+  understood as unreached rather than absent.
+- **Gated or unreachable documents.** `vespa.com`, `manuals.vespa.com` and
+  `manuals.piaggio.com` return an Akamai 403 to every non-browser client;
+  the owner's-manual channel is VIN-gated and email-delivered, covering
+  machines from 2004 onward, and the research did not submit personal data
+  to it. Most Piaggio documents cited in Phase 251 were therefore read from
+  third-party mirrors and say so in the row, per Phase 246's rule. Piaggio
+  *does* publish one-page interval sheets first-party for a few ranges.
+- **Never obtained at all:** any Zip document, a Typhoon 125 or Medley
+  service station manual, an MP3 250 document code, and the valve clearance
+  for the 50cc four-stroke — the most common Vespa in the US.
+- **Seven model-years NHTSA's index flags as recall-affected and no
+  endpoint will return:** 2006 and 2007 LX150, 2012 GTS 250, 2013, 2015
+  GTS 300, 2018 GTS RST, 2021 Primavera 150. The 2006-2007 LX150 window is
+  the notable one: 07V253000 restricts itself to the GTS 250 and 15V066000
+  starts at 2011 for the LX 150, so those two years are **unverified, not
+  recall-free**.
+- **One community source, undated.** A ModernVespa thread corroborates the
+  roll-lock architecture with a failure narrative, but the page renders its
+  date through JavaScript and none could be read, so under the rule it
+  could not carry a forum row. Phase 251 ships none.
