@@ -2019,6 +2019,16 @@ flag. Degrading well is not the same as working.
   Only one campaign appears in more than one list. The throttled run
   logged `ok 712, fail 2038, retry 10322` — a **74% hard-failure rate** —
   printed it, and then printed `DISTINCT CAMPAIGNS = 3` as its finding.
+- **Where the fault actually is — corrected after filing.** The block
+  returns an **HTML** body, so a JSON-parsing client *throws* on it: a
+  loud, obvious failure. The three silent runs were silent only because
+  the client caught `HTTPError` and returned `None`. The silent corruption
+  is in the client's exception handling, not in NHTSA's responses — which
+  makes this fixable on our side rather than a hazard to live with. The
+  rule that generalises: **never map an exception or a 4xx to an empty
+  result set.** Distinguish "queried successfully, found nothing" from
+  "did not successfully query", and let only the former count toward a
+  census.
 - **Why it matters more than an ordinary flake:** a partial-failure run
   does not degrade visibly. It produces a confident, well-formed, plausible
   answer, and a single run gives no signal that anything went wrong. Two
