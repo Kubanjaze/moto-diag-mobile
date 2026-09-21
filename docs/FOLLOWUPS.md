@@ -2029,6 +2029,20 @@ flag. Degrading well is not the same as working.
   result set.** Distinguish "queried successfully, found nothing" from
   "did not successfully query", and let only the former count toward a
   census.
+- **Corrected again at Phase 252 — the control nobody ran.** Three
+  separate sweeps concluded that the 400 marks an *unrecognised model
+  string*. It does not: it marks **zero results**, and a recognised string
+  returns it for the years that hold no campaign. `GROM125` returns 200 for
+  2014, 2015 and 2020 and **400 for 2013, 2016, 2019, 2021 and 2023**. So a
+  wrong model name and a genuine no-recall year are identical at every
+  layer, and **nothing in the response can validate a model string**. Two
+  claims built on the wrong reading also fell: `products/vehicle/models`
+  takes an **inert** `issueType` parameter — `r`, `c`, `i` and a garbage
+  value return byte-identical lists — so it is a vehicle catalogue and not
+  a recall index, and a model appearing in it may have only complaints. The
+  lesson is not about this API: the sweeps' *observations* were all
+  reproducible, and the *inference* attached to them was never tested.
+  Confirming the data is not confirming the inference.
 - **Why it matters more than an ordinary flake:** a partial-failure run
   does not degrade visibly. It produces a confident, well-formed, plausible
   answer, and a single run gives no signal that anything went wrong. Two
@@ -2065,3 +2079,143 @@ flag. Degrading well is not the same as working.
   roll-lock architecture with a failure narrative, but the page renders its
   date through JavaScript and none could be read, so under the rule it
   could not carry a forum row. Phase 251 ships none.
+
+### F105
+
+**`vehicle_resolver._count_hits` cannot see a list-valued model column — and a guard passes because of it.**
+
+`_count_hits` counts a resolved identity's rows with exact string equality on
+the `model` column:
+
+```sql
+SELECT COUNT(*) FROM known_issues WHERE make = ? AND (model = ? OR model = '*')
+```
+
+Its own docstring says the number "separates the two failures this phase exists
+for: zero after a successful resolution means the corpus really is silent about
+this machine".
+
+Every row written since Phase 242 lists several models in that column, so no
+modern row can satisfy the equality. Measured on the live database:
+
+| query | resolves | junction rows | `corpus_hits` |
+|---|---|---|---|
+| Vespa GTS 300 | exact | 8 | **0** |
+| Piaggio Beverly 125 | exact | 9 | **0** |
+| Zero SR/F | exact | 53 | **0** |
+| Damon HyperSport | exact | 11 | **0** |
+| Honda CBR1000RR (legacy, single-model) | exact | 143 | 31 |
+
+The pre-242 seed writes one model per row, so the legacy rows report a number.
+Every row Tracks K, L and M added reports zero — the field says "the corpus is
+silent about this machine" for precisely the machines the last ten phases
+documented.
+
+**And a guard passes because of it.** `test_phase245_damon_absence.py` asserts
+`identity.corpus_hits == 0` with the reason "a resolved model must not imply
+Damon content". The claim is true — Damon has no seed file of its own — but the
+assertion does not test it. It passes because `_count_hits` cannot read a
+list-valued column, and it would fail against a junction-backed count while the
+sentence it documents stayed true.
+
+Retrieval is unaffected: `known_issues_for_vehicle` uses the junction and
+returns the right rows. What is wrong is the number the resolver reports about
+its own reach, and the test that pins it.
+
+Found while measuring Phase 252's before-state. Not fixed there — 252 is a
+content row and changes no production code.
+
+---
+
+### F106
+
+**An `unverified` Honda row reaches every Honda ever made, and Honda's own manual contradicts four of its ten codes.**
+
+`known_issues` id 261 — make `Honda`, model `All` (the wildcard), years
+2001–2025, source **`unverified`** — is titled "PGM-FI self-diagnostic blink
+codes — reading without a dealer tool". Because its model column is the
+wildcard it reaches **every** Honda, so a rider asking about an FI light on a
+Grom, a PCX or a Metropolitan already gets an answer from a row that names no
+document.
+
+Phase 252 anchored the same subject for the GROM125 from Honda's own service
+manual (Date of Issue August 2013), whose MIL CODE INDEX holds exactly eleven
+codes. Against row 261's table:
+
+| code | row 261 says | Honda's GROM125 index says | |
+|---|---|---|---|
+| 7 | TPS | **EOT** (engine oil temperature) | wrong |
+| 8 | intake air temp | **TP** (throttle position) | wrong |
+| 9 | coolant temp | **IAT** (intake air temperature) | wrong |
+| 12 | injector | fuel injector | agrees |
+| 21 | O2 sensor | O2 sensor | agrees |
+| 33 | fuel pump | **EEPROM** | wrong |
+| 54 | bank angle | bank angle | agrees |
+| 1, 11, 25 | MAP, cam position, knock | **absent from this machine** | not present |
+
+Row 261's clearing procedure — "jump the diagnostic connector and turn ignition
+on/off 3 times" — is also not Honda's procedure for this machine, which is a
+six-step sequence with a timing window that fails silently if the connector is
+jumped while the lamp is dark.
+
+Two further defects in the same row, independent of the code table:
+
+- its `fix_procedure` contains a sentence beginning **"Forum tip:"** — a
+  community claim riding inside a procedure on a row labelled `unverified`,
+  which is what Phase 246's one-row-one-label rule exists to prevent;
+- its connector description is hedged three ways ("on some models", "usually a
+  2-pin green or black connector", "tucked under the seat or behind a side
+  cover"), which is unactionable as a procedure.
+
+Honda's codes genuinely vary by model, so the fix is not to correct row 261's
+numbers — it is that a generic table asserted across 25 model years and every
+model cannot be relied on per machine, and should not be shipped as though it
+can. 142 Honda rows are `unverified`; this is the one that reaches furthest.
+
+---
+
+### F107
+
+**Phase 252 — the documents that could not be reached.**
+
+Honda publishes **no** service manual free; the owner's manuals are on a CDN
+that returns 403 to every non-browser client until a full browser header set
+including `Referer`, `Sec-Fetch-*`, `sec-ch-ua` and `Accept-Encoding` is sent.
+What that left unanswered:
+
+- **Every Honda service manual for these machines.** The owner's manuals name
+  them — a "2025 PCX Service Manual", a "Common Service Manual (61CSM00)", a
+  single "2003-2024 Ruckus Service Manual" covering twenty-two model years, and
+  "61GJB04 2020 NCW50 Service Manual" — all sold through a dealer or Helm, Inc.
+  So this corpus has **no** valve-clearance figure, torque table, DLC location
+  or fault-code list for the Ruckus, the Metropolitan or the PCX. That is a
+  gap, not a finding that Honda publishes none.
+- **The 2022+ five-speed Grom service manual.** The only GROM125 book reachable
+  describes the pre-2022 four-speed machine, so every figure Phase 252 ships
+  for the Grom is scoped to it.
+- **Service literature for the Monkey 125, Super Cub C125 and Trail 125.** All
+  sibling claims rest on Honda press specification sheets alone.
+- **The 2021 PCX owner's manual**, the first year of the 157 cm3 engine — not
+  located on Honda's CDN; bracketed by the 2021 press release and the 2022
+  manual.
+- **Metropolitan owner's manuals for 2021 and 2022, and Ruckus manuals for
+  2019–2023 and 2026** — guessed filenames returned 404. Absence of a guessed
+  filename is not absence of the manual.
+- **Anything older than model year 2010 on Honda's own server**, which Honda
+  states it does not publish: "For vehicle manuals older than 2010 please Email
+  Us or call". The CHF50-generation material therefore rests on a mirror.
+- **The regulator's pre-2010 bulk recall file**, `FLAT_RCL.zip`, which returns
+  404 with `x-amz-delete-marker: true` — removed from the server. No
+  completeness claim about any of these machines is available by any route
+  attempted.
+- **Part 573 filings for five of the six campaigns.** Their URL suffix is a
+  non-derivable sequence number and the pages carrying the links were 403ing;
+  only 24V825000's filing was recoverable. The others are quoted from the
+  regulator's campaign records instead.
+- **Honda service bulletins.** None was located for any of these machines, and
+  no claim is made about whether any exist.
+
+One access note worth keeping: a scanned mirror's every page may be a single
+~700x899 px JPEG, and rendering at higher DPI adds nothing — the raster is the
+ceiling. It was just sufficient for a fault-code table and would not be for
+smaller type.
