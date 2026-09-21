@@ -1,8 +1,29 @@
-# Follow-ups
+# Follow-ups — mobile
 
 Cross-phase polish items that surfaced during gate testing or build but didn't block the originating phase. Listed in surfacing order. Each entry has: surfacing phase, severity, scope estimate, decision (when known).
 
 When picking one up, file it as a tiny phase OR fold it into the next phase that touches the affected code path — whichever fits cleaner. Delete the entry from this file when shipped.
+
+## Where a finding lives
+
+**A finding lives in the repo whose code it is about.** Mobile findings here;
+backend findings in [`moto-diag/docs/FOLLOWUPS.md`](https://github.com/Kubanjaze/moto-diag/blob/master/docs/FOLLOWUPS.md).
+A finding that spans both is filed once, in the repo where the fix lands, and
+referenced from the other. This is stated in `ROADMAP_AUTHORITY.md`, which is
+the binding contract — not in any one agent's memory.
+
+Entries below F115 predate that rule and **stay where they are**; several are
+about backend code. Nothing older was moved.
+
+## Numbering
+
+**F-numbers are ONE global sequence across both files.** The next number is
+`max(F across BOTH files) + 1`, never the max of one. Check both before
+assigning. A number is never reused and never renumbered when a finding moves
+repos.
+
+At the time of writing the highest assigned is **F125** (backend file); this
+file's highest is **F114**.
 
 ---
 
@@ -2483,191 +2504,6 @@ zero rate-limits and resolved all 3,545 combinations.
 - **An image-only Piaggio owner's manual** (786 characters across 53 pages) was
   fetched and **excluded from every zero-count** rather than counted as empty.
 
-### F115
+### F115–F123 — moved
 
-**A row is unreachable to the owners it was written for**
-
-Phase 254's row 4605 explains that three unrelated components are all called a
-drive belt, and that a Harley-Davidson final-drive belt is not a CVT belt. Its
-`make` column reads `Piaggio, Vespa, Honda, Yamaha, Kymco, SYM, Genuine`.
-
-Measured: `Harley-Davidson Road King` reaches row 4605 → **False**.
-`BMW R1200GS` → **False**. `Yamaha Bolt` → True. `Honda PCX 150` → True.
-
-**The row that exists to stop a Harley owner confusing two belts cannot be
-retrieved by a Harley owner.** The general half is the useful half and it is
-scoped to the marques that need it least. Not fixed in 255 — the row ships
-unscoped on the transmission axis, which is correct, but its `make` column is a
-separate defect. Splitting the general half out belongs to 255B.
-
-### F116
-
-**`manual` is the fifth substring collision, and the worst ratio yet**
-
-`SELECT * FROM known_issues WHERE description LIKE '%manual%'` returns **311
-rows, of which 300 are the document** — service manual, owner's manual, workshop
-manual. Exactly **2** use the word in the transmission sense.
-
-The previous four: `grommet` (Phase 250C), `symptom`/`system`/`genuine part`
-(253), `controller`/`kickstand` (250B), and now `manual`. Retrieval matching on
-substrings is the common cause. Phase 255 routes around it — 255B selects rows
-by the transmission axis rather than by searching for the word — but the
-collision itself is untouched.
-
-### F117
-
-**The XS650 cooling over-reach predates Phase 254**
-
-A Yamaha XS650 — an air-cooled parallel twin — retrieves **11 liquid-cooling
-rows**. This is not 254's doing; it predates it. Measured across the corpus: 67
-liquid-cooling rows, 11 of them naming more than one marque.
-
-Cooling is the third axis. It needs the same treatment the transmission axis
-just received, and the mechanism is now built.
-
-### F118
-
-**Final drive is a fourth axis, and must not be solved with `{manual}`**
-
-Measured on the live database:
-
-| machine | total rows | clutch | gearbox | **final-drive chain** |
-|---|---|---|---|---|
-| Honda PCX 150 | 165 | 3 | 1 | **8** |
-| Yamaha Zuma 125 | 127 | 1 | 2 | **4** |
-| Kymco Agility 50 | 16 | 0 | 1 | 0 |
-| Genuine Buddy 125 | 15 | 0 | 1 | 0 |
-
-A PCX has no chain. Neither does a belt-drive Harley-Davidson or a shaft-drive
-Gold Wing, and **those two would not be helped by a `{manual}` declaration** —
-they are manual-transmission machines that still must not receive chain content.
-Final drive is its own axis: chain / belt / shaft.
-
-Recorded on the general-applicability ticket as the fourth axis.
-
-### F119
-
-**Honda's US scooter owner's manuals name no transmission at all**
-
-While sourcing the Phase 255 lookup, every manufacturer document was re-read
-first-hand. Honda's US-market scooter owner's manuals are the outlier:
-
-* **2025 Ruckus owner's manual** (31GJP610, 107 pp): **zero** occurrences of
-  "belt".
-* **2025 Metropolitan owner's manual** (31GJB680, 124 pp): zero occurrences of
-  "drive belt" or "weight roller". Only "damage to the transmission" and a
-  "Transmission oil capacity" figure.
-
-Both are CVT machines. Neither can be classified from its own owner's manual, so
-**neither gets a lookup entry** and both lose the Phase 254 CVT layer. This
-echoes 254's own C24 finding that Honda's CHF50 schedules the clutch shoes and
-has no drive-belt row at all.
-
-By contrast Honda's European books do say it: the PCX125 21YM and SH125i/SH150i
-manuals both read *"the drive belt and weight rollers"*, and the PCX carries a
-V-BELT service indicator.
-
-**The gap is a document gap, not a knowledge gap** — which is exactly the kind
-this corpus is not allowed to close by inference.
-
-### F120
-
-**Piaggio uses "direct drive" to mean a CVT**
-
-The Vespa Primavera/S 150 owner's manual states:
-
-> "The vehicle is fitted with direct drive automatic transmission."
-
-This is a twist-and-go CVT scooter. Piaggio's "direct drive" means there is no
-intermediate gearbox — it does **not** mean the `direct_drive` value of the
-Phase 255 transmission enum, which is defined as no gearbox *and no clutch*. The
-same manual contains **zero** occurrences of "variator", which independently
-corroborates Phase 254's vocabulary row.
-
-A documentation hazard rather than a runtime one, because nothing in the code
-reads document text to classify anything. Recorded in the ADR and in the lookup
-entry itself so the next author does not resolve it the wrong way.
-
-### F121
-
-**Mobile has no transmission field, and the residual gap is user machines**
-
-`NewVehicleScreen.tsx:121` posts `make, model, year, engine_cc, vin, protocol,
-powertrain, engine_type, battery_chemistry, motor_kw, bms_present, mileage,
-notes`. No transmission. Every mobile-created vehicle lands with the column NULL
-and depends entirely on the backend resolver.
-
-Mobile already sends `powertrain` as a first-class field, so the precedent for
-adding one is in the same request body.
-
-**Named as the phase immediately after 255B**, not "later": the live `vehicles`
-table holds 10 machines and none of them is a CVT machine, so the exposure is
-entirely future — whatever a user adds next.
-
-### F122
-
-**One corrupt applicability value stops diagnosis**
-
-Phase 255's contract says an invalid `known_issues.applicability` is **rejected
-loudly** at seed load and again at read. Implementing that and then exercising
-it showed what "loudly" costs at read time.
-
-`_declared_for` raises `ApplicabilityError`, which propagates through
-`compose_prompt_rows` and out of `_load_known_issues` — the retrieval path for
-`motodiag diagnose` (two call sites) and `motodiag code` (one). **A single row
-with `{"transmision": ["cvt"]}` stops diagnosis for every machine, not just the
-one the row would have reached.**
-
-The trade was kept deliberately. Dropping the row silently would load a typo as
-*unscoped*, which puts it back in front of every Gold Wing — the exact defect
-Phase 255 exists to fix, reintroduced by one character. Treating it as "applies
-to nothing" would be fail-closed and safe but silent, and a corpus in a state
-nobody validated is not a corpus to answer from.
-
-Two things were changed rather than left: the error now names the offending row
-by id and title, and the behaviour is pinned by a test and two mutations.
-
-**For the operator to decide, not for a later phase to assume:** whether a read
-of a corrupt corpus should stop the product or degrade to withholding the row
-with a logged error. Only reachable by writing to the column outside
-`add_known_issue`, which validates — a JSON column has no CHECK constraint, so
-that path exists.
-
-### F123
-
-**`predict_failures` is a third retrieval door and still carries the Phase 254 over-reach.**
-
-Phase 255 fixed applicability on the two paths that hand corpus rows to a model
-as context about one machine: `_load_known_issues` (`motodiag diagnose`,
-`motodiag code`) and the video `/ask` endpoint. **`predict_failures` is a third
-and was left.**
-
-It does not use `known_issues_for_vehicle` at all. It runs its own four-pass
-`search_known_issues` retrieval — the `LIKE`-based path — dedupes by issue id,
-and scores fifty predictions with drift bonuses. Measured against the live
-corpus:
-
-| machine | Phase 254 rows behind its predictions |
-|---|---|
-| Yamaha MT07 | **5** — 4614, 4606, 4607, 4608, 4610 |
-| Yamaha XS650 | **5** — same |
-| Honda GL1800 Gold Wing | **2** — 4606, 4607 |
-
-So a Gold Wing owner still receives maintenance predictions derived from
-scooter variator-roller and clutch-lining rows.
-
-**Why it was not fixed in Phase 255.** The filter itself is a one-line call and
-the machinery exists. The pipeline is not: fifty scored predictions, a separate
-retrieval with four passes and its own year-window handling, drift bonuses,
-recall and TSB joins. Filtering its candidate pool changes what it predicts and
-by how much, and that needs a plan, a measurement of the before/after
-prediction set, and a refuter. **Changing a scored pipeline late in a phase,
-without those, is exactly how the Phase 254 defect shipped** — so it is filed
-rather than patched.
-
-**The general lesson is bigger than this ticket.** Phase 254 never asked which
-machines would receive its rows. Phase 255 asked it, and the answer was that
-there are three doors and nobody had a list of them. **There is still no test
-asserting that every retrieval path applies the applicability filter** — a new
-fourth door would leak silently. That guard belongs with the general
-applicability mechanism.
+Backend findings. Moved to `moto-diag/docs/FOLLOWUPS.md` on 2026-09-21, when `ROADMAP_AUTHORITY.md` was amended to state that a finding lives in the repo whose code it is about. Nothing older moved.
