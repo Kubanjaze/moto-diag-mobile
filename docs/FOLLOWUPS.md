@@ -2603,3 +2603,32 @@ adding one is in the same request body.
 **Named as the phase immediately after 255B**, not "later": the live `vehicles`
 table holds 10 machines and none of them is a CVT machine, so the exposure is
 entirely future — whatever a user adds next.
+
+### F122
+
+**One corrupt applicability value stops diagnosis**
+
+Phase 255's contract says an invalid `known_issues.applicability` is **rejected
+loudly** at seed load and again at read. Implementing that and then exercising
+it showed what "loudly" costs at read time.
+
+`_declared_for` raises `ApplicabilityError`, which propagates through
+`compose_prompt_rows` and out of `_load_known_issues` — the retrieval path for
+`motodiag diagnose` (two call sites) and `motodiag code` (one). **A single row
+with `{"transmision": ["cvt"]}` stops diagnosis for every machine, not just the
+one the row would have reached.**
+
+The trade was kept deliberately. Dropping the row silently would load a typo as
+*unscoped*, which puts it back in front of every Gold Wing — the exact defect
+Phase 255 exists to fix, reintroduced by one character. Treating it as "applies
+to nothing" would be fail-closed and safe but silent, and a corpus in a state
+nobody validated is not a corpus to answer from.
+
+Two things were changed rather than left: the error now names the offending row
+by id and title, and the behaviour is pinned by a test and two mutations.
+
+**For the operator to decide, not for a later phase to assume:** whether a read
+of a corrupt corpus should stop the product or degrade to withholding the row
+with a logged error. Only reachable by writing to the column outside
+`add_known_issue`, which validates — a JSON column has no CHECK constraint, so
+that path exists.
