@@ -2219,3 +2219,113 @@ One access note worth keeping: a scanned mirror's every page may be a single
 ~700x899 px JPEG, and rendering at higher DPI adds nothing — the raster is the
 ceiling. It was just sufficient for a fault-code table and would not be for
 smaller type.
+
+### F108
+
+**The model vocabulary holds 32 entries that are not models, because some rows use the model column as a description field.**
+
+Found while probing Phase 253's marque names: `resolve_vehicle("SYM", "Mio")`
+returned `ambiguous` against alternatives including `2017 campaign population`,
+`cast-aluminium Front Frame` and `maxi-scooter`. None of those is a machine.
+
+Measured across `vocabulary_from_conn` on the live database — 18 marques, 725
+model tokens — **32 entries are unambiguously not models**:
+
+**21 descriptive phrases**, each resolvable as a model of the marque shown:
+
+| marque | entry |
+|---|---|
+| Aprilia, Moto Guzzi | `Piaggio Group marques only` |
+| Aprilia, BMW, Ducati, KTM, Moto Guzzi, Triumph | `S 1000 RR by type code` |
+| Aprilia, MV Agusta | `approximately 2016 to 2020` |
+| Aprilia, BMW, Ducati, KTM, MV Agusta, Triumph | `one per make` |
+| Energica, Harley-Davidson, LiveWire, Zero | `as this corpus names them` |
+| BMW | `changeover around 2016-2017` |
+
+**11 components or traits**: `maxi-scooter` (Aprilia); `camhead boxers`,
+`camhead final drives` (BMW); `air-cooled 2V Desmodue`, `cast-aluminium Front
+Frame`, `in-tank pump flange`, `nylon fuel tank`, `remapped engine management`,
+`wet slipper clutch` (Ducati); `air-cooled 790`, `liquid-cooled 900` (Triumph).
+
+A first heuristic counted 56 and was wrong — `BMW S 1000 R`, `1290 Super Duke R`
+and `Road King (Twin Cam 88/96)` are real designations that happen to be long.
+The 32 above are the ones that carry a function word or name a part rather than
+a machine.
+
+**Why it matters.** These are *resolvable*: a query whose model reads "wet
+slipper clutch" resolves for Ducati, and a real model that fuzzy-matches one of
+them comes back `ambiguous` with junk alternatives, as `SYM Mio` did. The defect
+is upstream of the vocabulary — a handful of rows put a sentence in the `model`
+column — so the fix is either to clean those rows or to filter the derivation.
+
+Not fixed in Phase 253, which is a content row and changes no production code.
+
+---
+
+### F109
+
+**A method caution that does not reproduce becomes received wisdom, and buys a pipeline nobody needed.**
+
+Phase 253's Yamaha sweep reported two extraction hazards and built around both:
+
+- that the maintenance-chart pages are **rotated 90 degrees**, so layout-mode
+  extraction "returns nothing", requiring per-glyph coordinate work; and
+- that the V-belt row renders as `*V - b e l t` with inter-letter spacing, so a
+  plain search for "V-belt" misses it.
+
+Its refuter re-fetched all sixteen documents and **neither reproduced**. There
+are zero rotated glyphs: the pages carry a page-level `/Rotate 270` or `/Rotate
+90` attribute, which **any extractor that honours `/Rotate` returns upright and
+in reading order**. And there is no letter-spaced V-belt row anywhere — every one
+is a contiguous run with a maximum inter-glyph gap around 0.01 to 0.04, including
+in the two books the caution named specifically.
+
+Both cautions are harmless in themselves. What they cost is real: they justified
+a bespoke coordinate-reading pipeline in place of ordinary extraction, and —
+more importantly — a caution stated confidently in one sweep's output is read by
+the next sweep as established fact about the source. Phase 252 carried forward a
+PDF caution the same way.
+
+**The rule:** a method caution is a claim like any other and must be reproduced
+before it is carried forward. When a sweep reports "the tooling cannot do X",
+that belongs in the refuter's list, not in the next brief.
+
+Related: [[failure-count-beside-a-result-is-not-a-gate]] — same family, where a
+confident diagnosis of a tool's behaviour turned out to be untested.
+
+---
+
+### F110
+
+**Phase 253 — the documents that could not be reached.**
+
+- **No service manual from any of the four makers.** Yamaha's public library is
+  an owner's-manual library only and exposes no service-manual records; Kymco
+  sends service manuals to a third-party publisher; SYM publishes none; Genuine
+  gates them behind a dealer login. The one Yamaha service manual used (the 2009
+  Zuma 125) came from a third-party mirror, verified against its own internal
+  publication code.
+- **Genuine's technical resources** — service bulletins, wiring diagrams, parts
+  manuals, labor-time standards — are dealer-gated. No authentication was
+  attempted. So for Genuine machines this corpus can carry owner's-manual
+  content and nothing deeper.
+- **Sanyang Motor's investor filings.** The document most likely to state the
+  Honda arrangement in binding language was not fetchable; the relationship is
+  therefore anchored only to the company's own marketing pages.
+- **Part 573 manufacturer filings — zero retrieved across the whole phase.**
+  `www.nhtsa.gov` returned 403, and 67 probes against the static filing paths
+  returned nothing. Every campaign sentence in Phase 253 is quoted from the
+  regulator's summary. **The Phase 252 check — whether a rider-facing symptom
+  sentence exists only in the manufacturer's filing — remains undone for all
+  fourteen campaigns here.**
+- **The regulator's bulk recall files.** The current `FLAT_RCL.zip` now returns
+  404 carrying an explicit S3 delete marker, and the pre-2010 companion returns
+  404 with no version history at all. A file in the same family on the same host
+  still serves normally, so this is specific to those files. **No completeness
+  cross-check is available by any route**, which is why every campaign list in
+  Phases 251 to 253 ships as a floor.
+- **Yamaha's own model pages** return HTTP 200 but are JavaScript shells with no
+  specification content, so no Yamaha marketing-page figure was usable.
+- **One Kymco manual cannot be searched**: `K-PIPE125-Owners-Manual-1.pdf` has no
+  extractable text on 47 of its 57 pages. Any scoped zero that counts it is
+  unsupported for that document.
