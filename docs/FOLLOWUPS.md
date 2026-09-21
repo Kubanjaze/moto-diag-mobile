@@ -2329,3 +2329,156 @@ confident diagnosis of a tool's behaviour turned out to be untested.
 - **One Kymco manual cannot be searched**: `K-PIPE125-Owners-Manual-1.pdf` has no
   extractable text on 47 of its 57 pages. Any scoped zero that counts it is
   unsupported for that document.
+
+### F111
+
+**A shipped Phase 251 row's model scope includes a machine whose belt limit is a different number.**
+
+Phase 251's Piaggio CVT row publishes a drive-belt minimum width of 21.5 mm
+against a 22.5 ± 0.2 mm standard. **Those figures are correct**, and a refuter
+verified them in four separate Piaggio manuals — the Vespa LX 125-150 service
+station manual 633976, the Fly 125-150 workshop manual 633225, the Beverly
+Tourer 125 service station manual 665018, and workshop manual 618162 — as well as
+re-verifying all four of the row's Fly roller figures exactly.
+
+The row's `description` and `fix_procedure` are also correctly scoped: they
+attribute the figure to the Beverly 125 and Fly 125-150 and already state that
+the BV 350 publishes none.
+
+**The defect is in the row's coarse `model` scope field, which also lists
+Typhoon 50.** Piaggio's Fly 50 4T workshop manual 633212 publishes
+`Transmission belt/Minimum width 17.5 mm`, with no standard value at all. A
+50 cm3 machine does not take the 125-class figure, and the row's scope field
+implies it does.
+
+For completeness, the figures divide by **engine displacement class**, which
+Phase 254 now carries as generic-layer content:
+
+| class | minimum | standard |
+|---|---|---|
+| 50 | 17.5 mm | none published |
+| 125–150 | 21.5 mm | 22.5 ± 0.2 mm |
+| 250–300 | 19.5 mm | 21.3 ± 0.2 mm |
+| MP3 400 | 27 mm | 28.2 mm |
+
+Workshop manual 618162 prints two of those pairs **on the same page**, because it
+covers the Beverly 125 and the Beverly 250 together.
+
+**The fix is to narrow the scope field, not to touch the figures.** Note that
+`known_issues` identity is (make, model, title), so editing the `model` column
+creates a new row rather than updating the existing one — this needs a deliberate
+migration rather than a seed edit, which is why Phase 254 filed it instead of
+doing it.
+
+**One gap:** document 664603, which the row itself cites, was never reached. The
+figures were verified in four other Piaggio manuals covering the same machines.
+
+---
+
+### F112
+
+**The Phase 250C control-group pin has moved in three consecutive phases and has stopped testing what it was written to test — for two of its four marques.**
+
+`tests/test_phase250C_model_vocabulary.py` holds `UNCHANGED`, an **equality**
+assertion on the model-pool size of the four marques that write one marque per
+row. Its purpose is stated in its own docstring: raw-key and marque-key are the
+same thing for those marques, so if one moves, the derivation changed something
+it had no business changing.
+
+It has since moved every time a content phase named one of those marques:
+
+| phase | marque | move | cause |
+|---|---|---|---|
+| 252 | Honda | 27 → 46 | Ruckus, Metropolitan, Grom, PCX |
+| 253 | Yamaha | 23 → 46 | Zuma, Vino, Taiwanese makers' machines |
+| 254 | Honda | 46 → 52 | Honda scooters named in the generic CVT layer |
+| 254 | Yamaha | 46 → 50 | Yamaha scooters named in the same layer |
+
+Each move was legitimate and each was recorded with its reason. But the pattern
+is the finding: **for Honda and Yamaha the equality now tracks content rather
+than the derivation.** Kawasaki and Suzuki have not moved through any of the
+three phases and are doing the real work.
+
+**The re-shape:** assert the *property* the docstring describes — that for a
+single-marque marque, the marque-keyed pool equals the raw-keyed pool — rather
+than a number that any content phase can move. That keeps the guard's meaning
+and removes the maintenance.
+
+Filed rather than done, because 254 is a content row and this is 250C's test.
+
+---
+
+### F113
+
+**The regulator's two index endpoints contradict each other, in both directions, and neither can be trusted to enumerate.**
+
+This extends [[F103]] rather than restating it. F103 established that an HTTP 400
+from `recallsByVehicle` means zero results and certifies nothing about the query.
+Phase 254 measured the two *index* endpoints and found them inconsistent with
+each other and with the recall data.
+
+**Measured, 17 makes × 6 model years = 102 combinations:**
+
+- **13** where `products/vehicle/models` returns results but the make is **absent**
+  from `products/vehicle/makes` for the same year — 2014 Kymco, Lance, Moto
+  Guzzi; 2016 SYM, Lance; 2018 Vespa; 2020 Vespa; 2022 Piaggio, Aprilia, Kymco;
+  2024 Piaggio, Aprilia, Moto Guzzi.
+- **12 of the reverse** — make present in the makes index while the models index
+  returns zero: 2014 Aprilia; 2016 Piaggio, Kymco, **Suzuki**; 2018 Piaggio,
+  Aprilia, Moto Guzzi; 2020 Piaggio, Aprilia, Genuine Scooter; 2022 Lance;
+  2024 **Ducati**.
+- 77 consistent.
+
+**So it is bidirectional, not a one-way omission.** It concentrates in low-volume
+makes; only Suzuki 2016 and Ducati 2024 touched high-volume ones. 17 makes over 6
+years is a sample, not a census.
+
+**Worse, the models index cannot be trusted even as a source of query strings.**
+`VESPA/GTS RST/2018` — the exact model string the index supplies for that year —
+returns HTTP 400 with zero results from `recallsByVehicle`. And the 2026 Vespa
+models index returns count 0 while campaign 26V302000 is a live 2026 Vespa
+campaign.
+
+**Consequence, demonstrated rather than argued:** a sweep of 3,545 combinations
+driven by the models index collected 1,125 campaigns and **missed 26V302000 — a
+campaign that same sweep had already confirmed by campaign number.** Any
+enumeration built this way is a lower bound by construction.
+
+**Operational note worth keeping:** the rate limiter triggers on **concurrency,
+not on volume or User-Agent**. Five workers produced 511 × HTTP 403; four workers
+with adaptive backoff sustained roughly 196 requests per minute indefinitely with
+zero rate-limits and resolved all 3,545 combinations.
+
+---
+
+### F114
+
+**Phase 254 — the documents that could not be reached.**
+
+- **No maker-operated server yielded a service manual.** Every one of the eight
+  service manuals behind this phase's variator and clutch figures came from a
+  third-party mirror; `piaggio.com` returned 403 to a plain request. None of
+  Piaggio, Honda, Yamaha, Kymco, SYM or PGO publishes a service manual on its own
+  site.
+- **Honda's US owner's-manual CDN remained closed for the whole phase** —
+  `cdn.powersports.honda.com` 403 to curl with browser headers and to WebFetch,
+  `powersports.honda.com/owners-manuals` 403, and a 54-URL brute force across
+  2004–2013 returned 404 on every path. **Honda UK was the way in**, and is how
+  the Honda owner's-manual evidence was obtained at all.
+- **No SYM service manual could be fetched.** A 16.5 mm belt limit for the
+  Fiddle 50 and Jet 50 appears in search snippets; **it is a snippet, not a
+  fetch, and is not claimed anywhere in this phase.**
+- **Kymco's Agility 125 service manual** — 403. All Kymco CVT figures in this
+  phase come from the Agility 50 book, which contradicts itself four times.
+- **PGO under its own name** — no free direct PDF; every route paywalled. The
+  corpus carries Genuine's manuals instead.
+- **Parts catalogues, any maker** — not attempted. This bounds two scoped
+  negatives: no roller **mass in grams** and no roller **part number** appears in
+  the eight service manuals read, but a parts catalogue is where both would
+  normally live, so those are claims about service manuals only.
+- **Roller quantity** appears only in exploded diagrams. It was not counted out of
+  an illustration and no number is claimed.
+- **Piaggio document 664603**, which a shipped Phase 251 row cites, was never
+  reached; its figures were verified in four other Piaggio manuals instead.
+- **An image-only Piaggio owner's manual** (786 characters across 53 pages) was
+  fetched and **excluded from every zero-count** rather than counted as empty.
