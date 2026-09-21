@@ -2632,3 +2632,42 @@ of a corrupt corpus should stop the product or degrade to withholding the row
 with a logged error. Only reachable by writing to the column outside
 `add_known_issue`, which validates — a JSON column has no CHECK constraint, so
 that path exists.
+
+### F123
+
+**`predict_failures` is a third retrieval door and still carries the Phase 254 over-reach.**
+
+Phase 255 fixed applicability on the two paths that hand corpus rows to a model
+as context about one machine: `_load_known_issues` (`motodiag diagnose`,
+`motodiag code`) and the video `/ask` endpoint. **`predict_failures` is a third
+and was left.**
+
+It does not use `known_issues_for_vehicle` at all. It runs its own four-pass
+`search_known_issues` retrieval — the `LIKE`-based path — dedupes by issue id,
+and scores fifty predictions with drift bonuses. Measured against the live
+corpus:
+
+| machine | Phase 254 rows behind its predictions |
+|---|---|
+| Yamaha MT07 | **5** — 4614, 4606, 4607, 4608, 4610 |
+| Yamaha XS650 | **5** — same |
+| Honda GL1800 Gold Wing | **2** — 4606, 4607 |
+
+So a Gold Wing owner still receives maintenance predictions derived from
+scooter variator-roller and clutch-lining rows.
+
+**Why it was not fixed in Phase 255.** The filter itself is a one-line call and
+the machinery exists. The pipeline is not: fifty scored predictions, a separate
+retrieval with four passes and its own year-window handling, drift bonuses,
+recall and TSB joins. Filtering its candidate pool changes what it predicts and
+by how much, and that needs a plan, a measurement of the before/after
+prediction set, and a refuter. **Changing a scored pipeline late in a phase,
+without those, is exactly how the Phase 254 defect shipped** — so it is filed
+rather than patched.
+
+**The general lesson is bigger than this ticket.** Phase 254 never asked which
+machines would receive its rows. Phase 255 asked it, and the answer was that
+there are three doors and nobody had a list of them. **There is still no test
+asserting that every retrieval path applies the applicability filter** — a new
+fourth door would leak silently. That guard belongs with the general
+applicability mechanism.
