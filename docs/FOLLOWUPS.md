@@ -2482,3 +2482,124 @@ zero rate-limits and resolved all 3,545 combinations.
   reached; its figures were verified in four other Piaggio manuals instead.
 - **An image-only Piaggio owner's manual** (786 characters across 53 pages) was
   fetched and **excluded from every zero-count** rather than counted as empty.
+
+### F115
+
+**A row is unreachable to the owners it was written for**
+
+Phase 254's row 4605 explains that three unrelated components are all called a
+drive belt, and that a Harley-Davidson final-drive belt is not a CVT belt. Its
+`make` column reads `Piaggio, Vespa, Honda, Yamaha, Kymco, SYM, Genuine`.
+
+Measured: `Harley-Davidson Road King` reaches row 4605 → **False**.
+`BMW R1200GS` → **False**. `Yamaha Bolt` → True. `Honda PCX 150` → True.
+
+**The row that exists to stop a Harley owner confusing two belts cannot be
+retrieved by a Harley owner.** The general half is the useful half and it is
+scoped to the marques that need it least. Not fixed in 255 — the row ships
+unscoped on the transmission axis, which is correct, but its `make` column is a
+separate defect. Splitting the general half out belongs to 255B.
+
+### F116
+
+**`manual` is the fifth substring collision, and the worst ratio yet**
+
+`SELECT * FROM known_issues WHERE description LIKE '%manual%'` returns **311
+rows, of which 300 are the document** — service manual, owner's manual, workshop
+manual. Exactly **2** use the word in the transmission sense.
+
+The previous four: `grommet` (Phase 250C), `symptom`/`system`/`genuine part`
+(253), `controller`/`kickstand` (250B), and now `manual`. Retrieval matching on
+substrings is the common cause. Phase 255 routes around it — 255B selects rows
+by the transmission axis rather than by searching for the word — but the
+collision itself is untouched.
+
+### F117
+
+**The XS650 cooling over-reach predates Phase 254**
+
+A Yamaha XS650 — an air-cooled parallel twin — retrieves **11 liquid-cooling
+rows**. This is not 254's doing; it predates it. Measured across the corpus: 67
+liquid-cooling rows, 11 of them naming more than one marque.
+
+Cooling is the third axis. It needs the same treatment the transmission axis
+just received, and the mechanism is now built.
+
+### F118
+
+**Final drive is a fourth axis, and must not be solved with `{manual}`**
+
+Measured on the live database:
+
+| machine | total rows | clutch | gearbox | **final-drive chain** |
+|---|---|---|---|---|
+| Honda PCX 150 | 165 | 3 | 1 | **8** |
+| Yamaha Zuma 125 | 127 | 1 | 2 | **4** |
+| Kymco Agility 50 | 16 | 0 | 1 | 0 |
+| Genuine Buddy 125 | 15 | 0 | 1 | 0 |
+
+A PCX has no chain. Neither does a belt-drive Harley-Davidson or a shaft-drive
+Gold Wing, and **those two would not be helped by a `{manual}` declaration** —
+they are manual-transmission machines that still must not receive chain content.
+Final drive is its own axis: chain / belt / shaft.
+
+Recorded on the general-applicability ticket as the fourth axis.
+
+### F119
+
+**Honda's US scooter owner's manuals name no transmission at all**
+
+While sourcing the Phase 255 lookup, every manufacturer document was re-read
+first-hand. Honda's US-market scooter owner's manuals are the outlier:
+
+* **2025 Ruckus owner's manual** (31GJP610, 107 pp): **zero** occurrences of
+  "belt".
+* **2025 Metropolitan owner's manual** (31GJB680, 124 pp): zero occurrences of
+  "drive belt" or "weight roller". Only "damage to the transmission" and a
+  "Transmission oil capacity" figure.
+
+Both are CVT machines. Neither can be classified from its own owner's manual, so
+**neither gets a lookup entry** and both lose the Phase 254 CVT layer. This
+echoes 254's own C24 finding that Honda's CHF50 schedules the clutch shoes and
+has no drive-belt row at all.
+
+By contrast Honda's European books do say it: the PCX125 21YM and SH125i/SH150i
+manuals both read *"the drive belt and weight rollers"*, and the PCX carries a
+V-BELT service indicator.
+
+**The gap is a document gap, not a knowledge gap** — which is exactly the kind
+this corpus is not allowed to close by inference.
+
+### F120
+
+**Piaggio uses "direct drive" to mean a CVT**
+
+The Vespa Primavera/S 150 owner's manual states:
+
+> "The vehicle is fitted with direct drive automatic transmission."
+
+This is a twist-and-go CVT scooter. Piaggio's "direct drive" means there is no
+intermediate gearbox — it does **not** mean the `direct_drive` value of the
+Phase 255 transmission enum, which is defined as no gearbox *and no clutch*. The
+same manual contains **zero** occurrences of "variator", which independently
+corroborates Phase 254's vocabulary row.
+
+A documentation hazard rather than a runtime one, because nothing in the code
+reads document text to classify anything. Recorded in the ADR and in the lookup
+entry itself so the next author does not resolve it the wrong way.
+
+### F121
+
+**Mobile has no transmission field, and the residual gap is user machines**
+
+`NewVehicleScreen.tsx:121` posts `make, model, year, engine_cc, vin, protocol,
+powertrain, engine_type, battery_chemistry, motor_kw, bms_present, mileage,
+notes`. No transmission. Every mobile-created vehicle lands with the column NULL
+and depends entirely on the backend resolver.
+
+Mobile already sends `powertrain` as a first-class field, so the precedent for
+adding one is in the same request body.
+
+**Named as the phase immediately after 255B**, not "later": the live `vehicles`
+table holds 10 machines and none of them is a CVT machine, so the exposure is
+entirely future — whatever a user adds next.
