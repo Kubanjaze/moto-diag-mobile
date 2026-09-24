@@ -40,6 +40,7 @@ import type {
   EngineTypeLiteral,
   PowertrainLiteral,
   ProtocolLiteral,
+  TransmissionLiteral,
   VehicleResponse,
   VehicleUpdateRequest,
 } from '../types/api';
@@ -53,6 +54,9 @@ import {
   POWERTRAIN_OPTIONS,
   PROTOCOL_LABELS,
   PROTOCOL_OPTIONS,
+  TRANSMISSION_LABELS,
+  TRANSMISSION_NOT_SURE,
+  TRANSMISSION_OPTIONS,
 } from '../types/vehicleEnums';
 
 type Props = NativeStackScreenProps<GarageStackParamList, 'VehicleDetail'>;
@@ -189,6 +193,13 @@ export function VehicleDetailScreen({navigation, route}: Props) {
             value={labelFor(vehicle.powertrain, 'powertrain') ?? '—'}
           />
           <DetailRow
+            label="Transmission"
+            value={
+              labelFor(vehicle.transmission, 'transmission') ??
+              TRANSMISSION_NOT_SURE
+            }
+          />
+          <DetailRow
             label="Engine type"
             value={labelFor(vehicle.engine_type, 'engine_type') ?? '—'}
           />
@@ -281,6 +292,9 @@ function EditPane({
   const [engineType, setEngineType] = useState<EngineTypeLiteral>(
     (vehicle.engine_type as EngineTypeLiteral) ?? 'four_stroke',
   );
+  const [transmission, setTransmission] = useState<TransmissionLiteral | null>(
+    vehicle.transmission ?? null,
+  );
 
   const [errors, setErrors] = useState<EditErrors>({});
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -315,6 +329,9 @@ function EditPane({
         protocol,
         powertrain,
         engine_type: engineType,
+        // Sent as-is, never `?? undefined`: null is "Not sure", and the
+        // backend clears the field only when null is actually sent.
+        transmission,
         battery_chemistry: batteryChem ?? undefined,
         motor_kw: parseOptionalFloat(motorKw),
         mileage: parseOptionalInt(mileage),
@@ -353,6 +370,7 @@ function EditPane({
     protocol,
     powertrain,
     engineType,
+    transmission,
     batteryChem,
     motorKw,
     mileage,
@@ -437,6 +455,18 @@ function EditPane({
             labels={POWERTRAIN_LABELS}
             onChange={setPowertrain}
             testID="edit-vehicle-powertrain"
+          />
+          <SelectField<TransmissionLiteral>
+            label="Transmission"
+            value={transmission}
+            options={TRANSMISSION_OPTIONS}
+            labels={TRANSMISSION_LABELS}
+            onChange={setTransmission}
+            nullable
+            allowNull
+            nullLabel={TRANSMISSION_NOT_SURE}
+            placeholder={TRANSMISSION_NOT_SURE}
+            testID="edit-vehicle-transmission"
           />
           <SelectField<EngineTypeLiteral>
             label="Engine type"

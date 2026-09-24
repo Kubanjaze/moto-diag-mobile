@@ -22,8 +22,8 @@ about backend code. Nothing older was moved.
 assigning. A number is never reused and never renumbered when a finding moves
 repos.
 
-At the time of writing the highest assigned is **F131** (backend file); this
-file's highest is **F114**.
+At the time of writing the highest assigned is **F148** (backend file);
+this file's highest is **F147**.
 
 ---
 
@@ -2507,3 +2507,39 @@ zero rate-limits and resolved all 3,545 combinations.
 ### F115–F123 — moved
 
 Backend findings. Moved to `moto-diag/docs/FOLLOWUPS.md` on 2026-09-21, when `ROADMAP_AUTHORITY.md` was amended to state that a finding lives in the repo whose code it is about. Nothing older moved.
+
+### F145
+
+**The app does not show what the lookup already says about the bike**
+
+Phase 257B lets a rider set their bike's transmission; the backend's
+resolver uses it before its model lookup (121 entries). When the rider has
+not set one, the vehicle screen shows "Not sure", even for a machine the
+lookup names with a maker's document behind it (a Honda PCX150 resolves
+`cvt`, model-sourced). The rider cannot see that answer, so cannot confirm
+it or correct it. Out of scope for 257B by the operator's brief. What would
+close it: the backend returns the resolution (candidates and provenance)
+on the vehicle response, and the screen shows it as a suggestion the rider
+can accept, without writing it for them. Spans both repos; filed here
+because the part a rider sees lands here.
+
+### F146
+
+**Transmission can only be set one vehicle at a time**
+
+257B's field is per vehicle, edited on that vehicle's screen. A shop with a
+garage of bikes sets each one by hand. Out of scope for 257B by the
+operator's brief. What would close it: a bulk edit over the garage list, and
+a decision on whether the backend takes a batch PATCH or the app sends one
+PATCH per vehicle.
+
+### F147
+
+**The add-bike screen does not offer the transmission**
+
+`NewVehicleScreen.tsx` posts no `transmission`, so every bike is created
+unset and the rider has to open it again to set one. 257B put the field on
+the vehicle detail screen only (its D7: the brief names the vehicle
+screen); the backend's create endpoint already accepts the field. What
+would close it: the same `SelectField` with "Not sure" on the create form,
+sent as-is.

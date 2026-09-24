@@ -30,6 +30,7 @@ import type {
   EngineTypeLiteral,
   PowertrainLiteral,
   ProtocolLiteral,
+  TransmissionLiteral,
 } from './api';
 
 // ---------------------------------------------------------------
@@ -127,6 +128,36 @@ export const BATTERY_CHEMISTRY_LABELS: Record<BatteryChemistryLiteral, string> =
 };
 
 // ---------------------------------------------------------------
+// Transmission (Phase 257B)
+// ---------------------------------------------------------------
+//
+// The rider's own answer, which the backend's resolver uses before its
+// model lookup. Labels describe the mechanism in a rider's words, from
+// the definitions on `motodiag/core/models.py::VehicleTransmission`.
+// "Not sure" is not a value: it sends null, which clears the field and
+// hands the machine back to the lookup.
+
+export const TRANSMISSION_OPTIONS: readonly TransmissionLiteral[] = [
+  'manual',
+  'cvt',
+  'dct',
+  'semi_auto_centrifugal',
+  'semi_auto_actuated',
+  'direct_drive',
+];
+
+export const TRANSMISSION_LABELS: Record<TransmissionLiteral, string> = {
+  manual: 'Manual (clutch lever, you shift)',
+  cvt: 'Automatic CVT (twist-and-go)',
+  dct: 'Dual-clutch (DCT)',
+  semi_auto_centrifugal: 'Semi-auto, no clutch lever (Super Cub style)',
+  semi_auto_actuated: 'Semi-auto, electronic clutch (Y-AMT style)',
+  direct_drive: 'Direct drive (no gearbox)',
+};
+
+export const TRANSMISSION_NOT_SURE = 'Not sure';
+
+// ---------------------------------------------------------------
 // View-mode label lookup
 // ---------------------------------------------------------------
 
@@ -147,7 +178,12 @@ export const BATTERY_CHEMISTRY_LABELS: Record<BatteryChemistryLiteral, string> =
  */
 export function labelFor(
   value: string | null | undefined,
-  kind: 'protocol' | 'powertrain' | 'engine_type' | 'battery_chemistry',
+  kind:
+    | 'protocol'
+    | 'powertrain'
+    | 'engine_type'
+    | 'battery_chemistry'
+    | 'transmission',
 ): string | null {
   if (value === null || value === undefined || value === '') return null;
   switch (kind) {
@@ -167,5 +203,7 @@ export function labelFor(
       return (
         BATTERY_CHEMISTRY_LABELS[value as BatteryChemistryLiteral] ?? value
       );
+    case 'transmission':
+      return TRANSMISSION_LABELS[value as TransmissionLiteral] ?? value;
   }
 }
