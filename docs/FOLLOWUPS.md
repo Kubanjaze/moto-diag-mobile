@@ -22,8 +22,8 @@ about backend code. Nothing older was moved.
 assigning. A number is never reused and never renumbered when a finding moves
 repos.
 
-At the time of writing the highest assigned is **F147** (this file, Phase
-257B); the backend file's highest is **F144**.
+At the time of writing the highest assigned is **F148** (backend file);
+this file's highest is **F147**.
 
 ---
 
