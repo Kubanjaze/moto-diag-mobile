@@ -91,6 +91,8 @@ export type DTCCategoryResponse = components['schemas']['DTCCategoryResponse'];
 export type ProtocolLiteral = NonNullable<VehicleCreateRequest['protocol']>;
 export type PowertrainLiteral = NonNullable<VehicleCreateRequest['powertrain']>;
 export type EngineTypeLiteral = NonNullable<VehicleCreateRequest['engine_type']>;
+/** Phase 257B: generated from the backend's six VehicleTransmission values. */
+export type TransmissionLiteral = NonNullable<VehicleUpdateRequest['transmission']>;
 
 /**
  * Battery chemistry — manually defined because the backend Pydantic

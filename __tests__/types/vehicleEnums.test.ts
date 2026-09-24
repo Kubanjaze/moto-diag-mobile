@@ -10,6 +10,8 @@ import {
   labelFor,
   POWERTRAIN_LABELS,
   PROTOCOL_LABELS,
+  TRANSMISSION_LABELS,
+  TRANSMISSION_OPTIONS,
 } from '../../src/types/vehicleEnums';
 import type {BatteryChemistryLiteral} from '../../src/types/api';
 
@@ -100,5 +102,32 @@ describe('BatteryChemistryLiteral type', () => {
       'lead_acid',
     ];
     expect(all).toHaveLength(5);
+  });
+});
+
+// Phase 257B — transmission. The union is generated from the backend, so
+// the Record type already fails tsc on a missing label; this pins the
+// order the picker shows and the "Not sure" fall-back.
+describe('TRANSMISSION_OPTIONS (Phase 257B)', () => {
+  it('matches the backend VehicleTransmission enum (6 values, exact strings)', () => {
+    expect(TRANSMISSION_OPTIONS).toEqual([
+      'manual',
+      'cvt',
+      'dct',
+      'semi_auto_centrifugal',
+      'semi_auto_actuated',
+      'direct_drive',
+    ]);
+  });
+
+  it('label map contains exactly the option keys', () => {
+    expect(Object.keys(TRANSMISSION_LABELS).sort()).toEqual(
+      [...TRANSMISSION_OPTIONS].sort(),
+    );
+  });
+
+  it('labelFor gives words for a value and null for unset', () => {
+    expect(labelFor('cvt', 'transmission')).toBe('Automatic CVT (twist-and-go)');
+    expect(labelFor(null, 'transmission')).toBeNull();
   });
 });

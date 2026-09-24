@@ -2610,6 +2610,8 @@ export interface components {
             bms_present: boolean;
             /** Mileage */
             mileage?: number | null;
+            /** Transmission */
+            transmission?: ("manual" | "cvt" | "dct" | "semi_auto_centrifugal" | "semi_auto_actuated" | "direct_drive") | null;
         };
         /** VehicleListResponse */
         VehicleListResponse: {
@@ -2656,6 +2658,8 @@ export interface components {
             bms_present?: boolean | null;
             /** Mileage */
             mileage?: number | null;
+            /** Transmission */
+            transmission?: ("manual" | "cvt" | "dct" | "semi_auto_centrifugal" | "semi_auto_actuated" | "direct_drive") | null;
             /** Created At */
             created_at?: string | null;
             /** Updated At */
@@ -2692,6 +2696,11 @@ export interface components {
             bms_present?: boolean | null;
             /** Mileage */
             mileage?: number | null;
+            /**
+             * Transmission
+             * @description Unlike every other field here, an explicit null is honoured: it clears the value back to unset. Omit the key to leave it alone.
+             */
+            transmission?: ("manual" | "cvt" | "dct" | "semi_auto_centrifugal" | "semi_auto_actuated" | "direct_drive") | null;
         };
         /** VersionInfo */
         VersionInfo: {

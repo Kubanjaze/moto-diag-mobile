@@ -14401,6 +14401,25 @@
               }
             ],
             "title": "Mileage"
+          },
+          "transmission": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "manual",
+                  "cvt",
+                  "dct",
+                  "semi_auto_centrifugal",
+                  "semi_auto_actuated",
+                  "direct_drive"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transmission"
           }
         },
         "type": "object",
@@ -14589,6 +14608,25 @@
               }
             ],
             "title": "Mileage"
+          },
+          "transmission": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "manual",
+                  "cvt",
+                  "dct",
+                  "semi_auto_centrifugal",
+                  "semi_auto_actuated",
+                  "direct_drive"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transmission"
           },
           "created_at": {
             "anyOf": [
@@ -14806,6 +14844,26 @@
               }
             ],
             "title": "Mileage"
+          },
+          "transmission": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "manual",
+                  "cvt",
+                  "dct",
+                  "semi_auto_centrifugal",
+                  "semi_auto_actuated",
+                  "direct_drive"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transmission",
+            "description": "Unlike every other field here, an explicit null is honoured: it clears the value back to unset. Omit the key to leave it alone."
           }
         },
         "type": "object",
