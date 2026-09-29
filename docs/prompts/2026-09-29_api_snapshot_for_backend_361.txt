@@ -1,0 +1,40 @@
+Do this: refresh this repo's API contract for moto-diag Phase 361, and make the app stop assuming or inventing a bike's powertrain and engine type. First, commit this prompt (docs/prompts/2026-09-29_api_snapshot_for_backend_361.txt).
+
+Why: moto-diag Phase 361 fixes two findings.
+- **F178:** the API's powertrain values become the backend's three: `ice`, `electric` and `hybrid`. `hybrid_parallel` and `hybrid_series` go. Today this app's bike edit screen can save `hybrid_parallel`, and the backend's safety rules then hide seven warnings for that bike, the fuel-leak warning among them.
+- **F177:** a bike's engine type is no longer assumed to be `four_stroke`. The operator's pick for how, and the exact API shape that results, are recorded in moto-diag's docs/phases/in_progress/361_phase_log.md. Read them there before changing anything.
+
+moto-diag's gate 11 fails until this repo's `api-schema/openapi.json` matches the new API. The 361 builder has stopped on it, as planned.
+
+1. Serve the backend's working tree safely, then refresh the snapshot, as for Phase 360.
+   - ~/Projects/moto-diag belongs to the paused 361 builder, so treat it as read-only.
+   - Copy the live database into this session's scratchpad with the SQLite backup API, opening the source read-only.
+   - Serve that copy with `--skip-migrations`, on 127.0.0.1 and a free port, with `PYTHONDONTWRITEBYTECODE=1`. Never point it at data/motodiag.db: the tree holds migration 075, and `serve` applies pending migrations at start.
+   - Run `npm run refresh-api-schema` with `API_BASE_URL` set, then `npm run generate-api-types`. Stop the server.
+2. Read the snapshot's diff before accepting it. It should change only:
+   - the powertrain values;
+   - the engine type's default or nullability;
+   - anything else that 361's log lists as an API change.
+
+   If anything else moved, stop and tell me.
+3. The app.
+   - **Powertrain options:** in `src/types/vehicleEnums.ts`, the options become `ice`, `electric` and `hybrid`, with their labels; the two hybrid variants go. If the app keeps vehicles offline (Phase 198's local store), say what happens to a cached hybrid variant.
+   - **The edit screen's fallback.** `src/screens/VehicleDetailScreen.tsx` (about line 290) fills a missing powertrain with `'ice'` and sends it on every save, so editing any field re-records petrol on a bike nobody stated.
+     - File it as a finding in docs/FOLLOWUPS.md first. The next free F-number is shared across both repos, so check both files.
+     - Then fix it: a bike with no powertrain on record shows it as not recorded, and a save sends the powertrain only when the user chose one.
+     - Do the same for the engine type.
+   - **The add-bike form's `four_stroke` preselect** is the app's side of F177. Mirror the backend's pick from 361's log; for the powertrain, F179 made the form ask.
+   - Each fix gets a test with a planted known-bad case its assertion must fail on.
+4. Verify:
+   - this repo's tests pass, the typecheck passes, and lint is clean on the changed files;
+   - moto-diag's gate 11 passes against the refreshed snapshot. Run it read-only from ~/Projects/moto-diag: `PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest -q -p no:cacheprovider tests/test_phase205_gate11.py`.
+5. Commit and push on `main`, as separate commands, with commit messages through a quoted heredoc. In docs/FOLLOWUPS.md, close the new finding, and note that F177's app side is closed by this change.
+
+Report:
+- the snapshot diff;
+- the types diff, in one line;
+- the new finding's number, and each fix;
+- this repo's test results, and gate 11's result;
+- the commit hash.
+
+Then stop.
