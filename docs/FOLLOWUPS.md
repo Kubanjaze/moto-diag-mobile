@@ -22,8 +22,8 @@ about backend code. Nothing older was moved.
 assigning. A number is never reused and never renumbered when a finding moves
 repos.
 
-At the time of writing the highest assigned is **F148** (backend file);
-this file's highest is **F147**.
+At the time of writing the highest assigned is **F179** (this file);
+the backend file's highest is **F178**.
 
 ---
 
@@ -2543,3 +2543,24 @@ the vehicle detail screen only (its D7: the brief names the vehicle
 screen); the backend's create endpoint already accepts the field. What
 would close it: the same `SelectField` with "Not sure" on the create form,
 sent as-is.
+
+### F179
+
+**The add-bike form states petrol for a bike whose powertrain nobody gave**
+
+Closed in the change that filed it (2026-09-29). The app's twin of the
+backend's F174, which moto-diag Phase 360 fixes: `VehicleCreateRequest.powertrain`
+is now nullable with no default. `NewVehicleScreen.tsx` preselected `'ice'`
+(`useState<PowertrainLiteral>('ice')`) and always sent it, so a rider who
+never touched the picker had stated an internal-combustion engine, and the
+backend's fix could not reach them.
+
+Fix: the picker starts unchosen ("Choose…"), is marked required, and the
+form does not submit until a powertrain is chosen ("Choose a powertrain"
+under the field). No "Not sure" row: the create form asks, and the backend's
+null stays for bikes created elsewhere. Test:
+`__tests__/screens/NewVehicle.powertrain.test.tsx`; with the old `'ice'`
+preselect planted back, 2 of its 3 cases fail.
+
+Not done here: the same form preselects `engine_type` `'four_stroke'`, the
+app's side of the backend's F177, which is still open.

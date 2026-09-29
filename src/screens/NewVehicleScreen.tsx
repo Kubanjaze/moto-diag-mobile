@@ -6,6 +6,10 @@
 // api.POST('/v1/vehicles', {body: ...}). Handles 402 quota-
 // exceeded with tier-aware copy + generic 422 for other
 // validation failures.
+//
+// Phase 360 (moto-diag) / F179: powertrain starts unchosen and is
+// required. It used to preselect 'ice' and always send it, so a rider
+// who never touched the picker had stated petrol for an electric bike.
 
 import React, {useCallback, useState} from 'react';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
@@ -53,6 +57,7 @@ interface Errors {
   engine_cc?: string | null;
   mileage?: string | null;
   motor_kw?: string | null;
+  powertrain?: string | null;
 }
 
 export function NewVehicleScreen({navigation}: Props) {
@@ -73,7 +78,9 @@ export function NewVehicleScreen({navigation}: Props) {
 
   // Literal dropdowns
   const [protocol, setProtocol] = useState<ProtocolLiteral>('none');
-  const [powertrain, setPowertrain] = useState<PowertrainLiteral>('ice');
+  const [powertrain, setPowertrain] = useState<PowertrainLiteral | null>(
+    null,
+  );
   const [engineType, setEngineType] =
     useState<EngineTypeLiteral>('four_stroke');
 
@@ -88,15 +95,20 @@ export function NewVehicleScreen({navigation}: Props) {
       engine_cc: validateOptionalInt(engineCc),
       mileage: validateOptionalInt(mileage),
       motor_kw: validateOptionalFloat(motorKw),
+      powertrain: powertrain === null ? 'Choose a powertrain' : null,
     };
     const hasError = Object.values(next).some(v => v !== null && v !== undefined);
     return hasError ? next : null;
-  }, [make, model, year, engineCc, mileage, motorKw]);
+  }, [make, model, year, engineCc, mileage, motorKw, powertrain]);
 
   const handleSubmit = useCallback(async () => {
     const validationErrors = validate();
     if (validationErrors) {
       setErrors(validationErrors);
+      return;
+    }
+    // validate() already refused a null powertrain; this narrows it.
+    if (powertrain === null) {
       return;
     }
     setErrors({});
@@ -233,8 +245,16 @@ export function NewVehicleScreen({navigation}: Props) {
             options={POWERTRAIN_OPTIONS}
             labels={POWERTRAIN_LABELS}
             onChange={setPowertrain}
+            nullable
+            required
+            placeholder="Choose…"
             testID="new-vehicle-powertrain"
           />
+          {errors.powertrain ? (
+            <Text style={styles.errorLine} testID="new-vehicle-powertrain-error">
+              {errors.powertrain}
+            </Text>
+          ) : null}
           <SelectField<EngineTypeLiteral>
             label="Engine type"
             value={engineType}
@@ -331,4 +351,5 @@ const useStyles = createThemedStyles((t) => ({
   },
   spacer: {height: 20},
   gap: {height: 10},
+  errorLine: {fontSize: 13, color: t.danger, marginTop: -8, marginBottom: 12},
 }));

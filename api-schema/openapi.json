@@ -14340,15 +14340,21 @@
             "title": "Notes"
           },
           "powertrain": {
-            "type": "string",
-            "enum": [
-              "ice",
-              "electric",
-              "hybrid_parallel",
-              "hybrid_series"
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ice",
+                  "electric",
+                  "hybrid_parallel",
+                  "hybrid_series"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Powertrain",
-            "default": "ice"
+            "title": "Powertrain"
           },
           "engine_type": {
             "type": "string",

@@ -2587,12 +2587,8 @@ export interface components {
             protocol: "none" | "obd2" | "can" | "k_line" | "j1850_pwm" | "j1850_vpw" | "iso9141" | "iso14230" | "iso15765" | "ford_msc" | "kawasaki_kds" | "suzuki_sds" | "yamaha_yds";
             /** Notes */
             notes?: string | null;
-            /**
-             * Powertrain
-             * @default ice
-             * @enum {string}
-             */
-            powertrain: "ice" | "electric" | "hybrid_parallel" | "hybrid_series";
+            /** Powertrain */
+            powertrain?: ("ice" | "electric" | "hybrid_parallel" | "hybrid_series") | null;
             /**
              * Engine Type
              * @default four_stroke
