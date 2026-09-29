@@ -6,9 +6,12 @@
 import {
   BATTERY_CHEMISTRY_LABELS,
   BATTERY_CHEMISTRY_OPTIONS,
+  ENGINE_TYPE_CHOICES,
   ENGINE_TYPE_LABELS,
+  ENGINE_TYPE_OPTIONS,
   labelFor,
   POWERTRAIN_LABELS,
+  POWERTRAIN_OPTIONS,
   PROTOCOL_LABELS,
   TRANSMISSION_LABELS,
   TRANSMISSION_OPTIONS,
@@ -129,5 +132,35 @@ describe('TRANSMISSION_OPTIONS (Phase 257B)', () => {
   it('labelFor gives words for a value and null for unset', () => {
     expect(labelFor('cvt', 'transmission')).toBe('Automatic CVT (twist-and-go)');
     expect(labelFor(null, 'transmission')).toBeNull();
+  });
+});
+
+// Phase 361 (moto-diag): the API's powertrain values are the backend's three
+// (F178), and its engine types the backend enum's five (F177). A picker
+// offering an old value would be refused with 422 by the API.
+describe('powertrain and engine type options match the API (Phase 361)', () => {
+  it('powertrain is ice, electric, hybrid: no hybrid variants', () => {
+    expect(POWERTRAIN_OPTIONS).toEqual(['ice', 'electric', 'hybrid']);
+    expect(Object.keys(POWERTRAIN_LABELS).sort()).toEqual(
+      ['electric', 'hybrid', 'ice'],
+    );
+    expect(POWERTRAIN_LABELS.hybrid).toBe('Hybrid');
+  });
+
+  it('engine type is the five, with no rotary, diesel or none', () => {
+    expect(ENGINE_TYPE_OPTIONS).toEqual([
+      'four_stroke',
+      'two_stroke',
+      'electric_motor',
+      'hybrid',
+      'desmodromic',
+    ]);
+    expect(Object.keys(ENGINE_TYPE_LABELS).sort()).toEqual(
+      [...ENGINE_TYPE_OPTIONS].sort(),
+    );
+  });
+
+  it('the forms offer the five plus "Not listed or not sure", last', () => {
+    expect(ENGINE_TYPE_CHOICES).toEqual([...ENGINE_TYPE_OPTIONS, 'not_listed']);
   });
 });

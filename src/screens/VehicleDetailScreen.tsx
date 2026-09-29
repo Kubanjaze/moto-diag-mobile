@@ -4,6 +4,13 @@
 // that reuses Field + SelectField (same shape as NewVehicleScreen).
 // Edit submits PATCH /v1/vehicles/{id} and falls back to view on
 // success. Delete stays on the view side, same confirm flow.
+//
+// F181 (moto-diag Phase 361): powertrain and engine type are never
+// guessed. The edit pane used to fill a missing one with 'ice' or
+// 'four_stroke' and send both on every save, so editing the mileage
+// recorded petrol on a bike nobody had stated. A bike with no value
+// shows "Not recorded", and a save sends either field only when the
+// user picked it.
 
 import React, {useCallback, useState} from 'react';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
@@ -47,9 +54,11 @@ import type {
 import {
   BATTERY_CHEMISTRY_LABELS,
   BATTERY_CHEMISTRY_OPTIONS,
-  ENGINE_TYPE_LABELS,
-  ENGINE_TYPE_OPTIONS,
+  ENGINE_TYPE_CHOICE_LABELS,
+  ENGINE_TYPE_CHOICES,
+  ENGINE_TYPE_NOT_LISTED,
   labelFor,
+  NOT_RECORDED,
   POWERTRAIN_LABELS,
   POWERTRAIN_OPTIONS,
   PROTOCOL_LABELS,
@@ -58,6 +67,7 @@ import {
   TRANSMISSION_NOT_SURE,
   TRANSMISSION_OPTIONS,
 } from '../types/vehicleEnums';
+import type {EngineTypeChoice} from '../types/vehicleEnums';
 
 type Props = NativeStackScreenProps<GarageStackParamList, 'VehicleDetail'>;
 
@@ -190,7 +200,7 @@ export function VehicleDetailScreen({navigation, route}: Props) {
           />
           <DetailRow
             label="Powertrain"
-            value={labelFor(vehicle.powertrain, 'powertrain') ?? '—'}
+            value={labelFor(vehicle.powertrain, 'powertrain') ?? NOT_RECORDED}
           />
           <DetailRow
             label="Transmission"
@@ -201,7 +211,7 @@ export function VehicleDetailScreen({navigation, route}: Props) {
           />
           <DetailRow
             label="Engine type"
-            value={labelFor(vehicle.engine_type, 'engine_type') ?? '—'}
+            value={labelFor(vehicle.engine_type, 'engine_type') ?? NOT_RECORDED}
           />
           <DetailRow
             label="Battery chem"
@@ -286,12 +296,18 @@ function EditPane({
   const [protocol, setProtocol] = useState<ProtocolLiteral>(
     vehicle.protocol as ProtocolLiteral,
   );
-  const [powertrain, setPowertrain] = useState<PowertrainLiteral>(
-    (vehicle.powertrain as PowertrainLiteral) ?? 'ice',
+  // The user's pick, null until they make one (F181). The picker shows
+  // the pick, else the value on record, else "Not recorded".
+  const [powertrain, setPowertrain] = useState<PowertrainLiteral | null>(
+    null,
   );
-  const [engineType, setEngineType] = useState<EngineTypeLiteral>(
-    (vehicle.engine_type as EngineTypeLiteral) ?? 'four_stroke',
+  const [engineType, setEngineType] = useState<EngineTypeChoice | null>(
+    null,
   );
+  const shownPowertrain =
+    powertrain ?? (vehicle.powertrain as PowertrainLiteral | null) ?? null;
+  const shownEngineType =
+    engineType ?? (vehicle.engine_type as EngineTypeLiteral | null) ?? null;
   const [transmission, setTransmission] = useState<TransmissionLiteral | null>(
     vehicle.transmission ?? null,
   );
@@ -327,8 +343,15 @@ function EditPane({
         engine_cc: parseOptionalInt(engineCc),
         vin: vin.trim() || undefined,
         protocol,
-        powertrain,
-        engine_type: engineType,
+        // Absent unless picked: the backend leaves an absent key as it is.
+        ...(powertrain !== null ? {powertrain} : {}),
+        // "Not listed or not sure" sends null, which clears it to unknown.
+        ...(engineType !== null
+          ? {
+              engine_type:
+                engineType === ENGINE_TYPE_NOT_LISTED ? null : engineType,
+            }
+          : {}),
         // Sent as-is, never `?? undefined`: null is "Not sure", and the
         // backend clears the field only when null is actually sent.
         transmission,
@@ -450,10 +473,12 @@ function EditPane({
           />
           <SelectField<PowertrainLiteral>
             label="Powertrain"
-            value={powertrain}
+            value={shownPowertrain}
             options={POWERTRAIN_OPTIONS}
             labels={POWERTRAIN_LABELS}
             onChange={setPowertrain}
+            nullable
+            placeholder={NOT_RECORDED}
             testID="edit-vehicle-powertrain"
           />
           <SelectField<TransmissionLiteral>
@@ -468,12 +493,14 @@ function EditPane({
             placeholder={TRANSMISSION_NOT_SURE}
             testID="edit-vehicle-transmission"
           />
-          <SelectField<EngineTypeLiteral>
+          <SelectField<EngineTypeChoice>
             label="Engine type"
-            value={engineType}
-            options={ENGINE_TYPE_OPTIONS}
-            labels={ENGINE_TYPE_LABELS}
+            value={shownEngineType}
+            options={ENGINE_TYPE_CHOICES}
+            labels={ENGINE_TYPE_CHOICE_LABELS}
             onChange={setEngineType}
+            nullable
+            placeholder={NOT_RECORDED}
             testID="edit-vehicle-engine-type"
           />
           <SelectField<BatteryChemistryLiteral>

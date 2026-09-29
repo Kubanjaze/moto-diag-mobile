@@ -2588,13 +2588,9 @@ export interface components {
             /** Notes */
             notes?: string | null;
             /** Powertrain */
-            powertrain?: ("ice" | "electric" | "hybrid_parallel" | "hybrid_series") | null;
-            /**
-             * Engine Type
-             * @default four_stroke
-             * @enum {string}
-             */
-            engine_type: "four_stroke" | "two_stroke" | "rotary" | "diesel" | "none";
+            powertrain?: ("ice" | "electric" | "hybrid") | null;
+            /** Engine Type */
+            engine_type?: ("four_stroke" | "two_stroke" | "electric_motor" | "hybrid" | "desmodromic") | null;
             /** Battery Chemistry */
             battery_chemistry?: string | null;
             /** Motor Kw */
@@ -2681,9 +2677,9 @@ export interface components {
             /** Notes */
             notes?: string | null;
             /** Powertrain */
-            powertrain?: ("ice" | "electric" | "hybrid_parallel" | "hybrid_series") | null;
+            powertrain?: ("ice" | "electric" | "hybrid") | null;
             /** Engine Type */
-            engine_type?: ("four_stroke" | "two_stroke" | "rotary" | "diesel" | "none") | null;
+            engine_type?: ("four_stroke" | "two_stroke" | "electric_motor" | "hybrid" | "desmodromic") | null;
             /** Battery Chemistry */
             battery_chemistry?: string | null;
             /** Motor Kw */
@@ -3257,7 +3253,7 @@ export interface operations {
                 make?: string | null;
                 model?: string | null;
                 year?: number | null;
-                powertrain?: ("ice" | "electric" | "hybrid_parallel" | "hybrid_series") | null;
+                powertrain?: ("ice" | "electric" | "hybrid") | null;
                 limit?: number;
             };
             header?: {

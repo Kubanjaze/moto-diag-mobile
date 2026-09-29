@@ -73,39 +73,64 @@ export const PROTOCOL_LABELS: Record<ProtocolLiteral, string> = {
 // Powertrain
 // ---------------------------------------------------------------
 
+// The backend's three (moto-diag Phase 361, F178). The API no longer
+// takes `hybrid_parallel` or `hybrid_series`.
 export const POWERTRAIN_OPTIONS: readonly PowertrainLiteral[] = [
   'ice',
   'electric',
-  'hybrid_parallel',
-  'hybrid_series',
+  'hybrid',
 ];
 
 export const POWERTRAIN_LABELS: Record<PowertrainLiteral, string> = {
   ice: 'Internal combustion',
   electric: 'Electric',
-  hybrid_parallel: 'Hybrid (parallel)',
-  hybrid_series: 'Hybrid (series)',
+  hybrid: 'Hybrid',
 };
 
 // ---------------------------------------------------------------
 // Engine type
 // ---------------------------------------------------------------
 
+// The backend's five (moto-diag Phase 361, F177). Rotary and diesel have
+// no value yet (the backend's F180): such a bike is stored as unknown.
 export const ENGINE_TYPE_OPTIONS: readonly EngineTypeLiteral[] = [
   'four_stroke',
   'two_stroke',
-  'rotary',
-  'diesel',
-  'none',
+  'electric_motor',
+  'hybrid',
+  'desmodromic',
 ];
 
 export const ENGINE_TYPE_LABELS: Record<EngineTypeLiteral, string> = {
   four_stroke: '4-stroke',
   two_stroke: '2-stroke',
-  rotary: 'Rotary',
-  diesel: 'Diesel',
-  none: 'N/A',
+  electric_motor: 'Electric motor',
+  hybrid: 'Hybrid',
+  desmodromic: 'Desmodromic (4-stroke)',
 };
+
+// An answer that is not a value: the forms send no engine type for it
+// (the edit screen sends null, which clears one on record), and the
+// backend stores the bike's engine type as unknown.
+export const ENGINE_TYPE_NOT_LISTED = 'not_listed';
+
+export type EngineTypeChoice =
+  | EngineTypeLiteral
+  | typeof ENGINE_TYPE_NOT_LISTED;
+
+export const ENGINE_TYPE_CHOICES: readonly EngineTypeChoice[] = [
+  ...ENGINE_TYPE_OPTIONS,
+  ENGINE_TYPE_NOT_LISTED,
+];
+
+export const ENGINE_TYPE_CHOICE_LABELS: Record<EngineTypeChoice, string> = {
+  ...ENGINE_TYPE_LABELS,
+  [ENGINE_TYPE_NOT_LISTED]: 'Not listed or not sure',
+};
+
+// Shown for a powertrain or engine type the bike has no value for
+// (F181). Never replaced by a guess.
+export const NOT_RECORDED = 'Not recorded';
 
 // ---------------------------------------------------------------
 // Battery chemistry (Phase 189 commit 1 — F1 fix)

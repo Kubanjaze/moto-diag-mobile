@@ -22,8 +22,8 @@ about backend code. Nothing older was moved.
 assigning. A number is never reused and never renumbered when a finding moves
 repos.
 
-At the time of writing the highest assigned is **F179** (this file);
-the backend file's highest is **F178**.
+At the time of writing the highest assigned is **F181** (this file);
+the backend file's highest is **F180**.
 
 ---
 
@@ -2564,3 +2564,47 @@ preselect planted back, 2 of its 3 cases fail.
 
 Not done here: the same form preselects `engine_type` `'four_stroke'`, the
 app's side of the backend's F177, which is still open.
+
+The app's side of F177 is closed by the change that closed F181, below.
+
+### F181
+
+**The bike edit screen states petrol and a 4-stroke for a bike whose powertrain and engine type nobody gave**
+
+Filed and closed in the same change (2026-09-29), the mobile session for
+moto-diag Phase 361. `VehicleDetailScreen.tsx`'s edit pane seeded its state
+with `vehicle.powertrain ?? 'ice'` and `vehicle.engine_type ?? 'four_stroke'`,
+and every save sent both. A bike with neither on record (the backend stores
+NULL for an absent powertrain since Phase 360, and for an absent engine type
+since Phase 361) showed "Internal combustion" and "4-stroke" in the edit
+pane, and an edit to any other field, the mileage say, recorded both. The
+backend's safety rules read the powertrain, so a guessed `ice` became a
+stated one.
+
+Fix: view mode and the edit pane show a missing value as "Not recorded".
+The edit pane holds the user's pick apart from the value on record, and a
+save sends `powertrain` or `engine_type` only when the user picked it (the
+backend's PATCH leaves an absent key as it is). "Not listed or not sure"
+sends `engine_type: null`, which clears it to unknown. Test:
+`__tests__/screens/VehicleDetail.powertrainEngineType.test.tsx`; with the
+`'ice'` fallback and the always-sent powertrain planted back, 3 cases fail,
+and with the same done for `'four_stroke'`, 3 fail.
+
+**F177's app side, closed in the same change.** The add-bike form
+preselected `engine_type` `'four_stroke'` and always sent it. It now mirrors
+the backend's pick (c): the engine-type picker starts unchosen and the form
+does not submit without an answer. "Not listed or not sure" is an answer,
+for a rotary or a diesel (no value until the backend's F180), and sends no
+engine type, which the backend stores as unknown. Choosing electric fills in
+"Electric motor" while the engine type is unanswered, as `garage add`
+derives it. Test: `__tests__/screens/NewVehicle.engineType.test.tsx`; with
+the `'four_stroke'` preselect planted back, 3 of its 6 cases fail.
+
+The same change took the snapshot for Phase 361 (F178, F177): the powertrain
+options are `ice`, `electric` and `hybrid`, and the engine types the
+backend's five, `four_stroke`, `two_stroke`, `electric_motor`, `hybrid`
+and `desmodromic` (`rotary`, `diesel` and `none`, "N/A", are gone).
+Vehicles are not kept offline (the Phase 198 store holds the DTC catalog and
+queued session writes only), so no device holds a cached hybrid variant. A
+bike already stored with an old value on the server (none live) shows it raw
+and keeps it until someone picks a new one.

@@ -10,6 +10,14 @@
 // Phase 360 (moto-diag) / F179: powertrain starts unchosen and is
 // required. It used to preselect 'ice' and always send it, so a rider
 // who never touched the picker had stated petrol for an electric bike.
+//
+// Phase 361 (moto-diag) / F177: engine type is asked the same way, the
+// backend's pick (c) mirrored. It used to preselect 'four_stroke'. The
+// picker starts unchosen and needs an answer, but "Not listed or not
+// sure" is one (a rotary or a diesel has no value yet): it sends no
+// engine type, which the backend stores as unknown. Choosing electric
+// fills in 'electric_motor' while the engine type is still unanswered,
+// as the backend's `garage add` derives it.
 
 import React, {useCallback, useState} from 'react';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
@@ -32,7 +40,6 @@ import type {GarageStackParamList} from '../navigation/types';
 import {createThemedStyles} from '../theme/createThemedStyles';
 import type {
   BatteryChemistryLiteral,
-  EngineTypeLiteral,
   PowertrainLiteral,
   ProtocolLiteral,
   VehicleCreateRequest,
@@ -40,13 +47,15 @@ import type {
 import {
   BATTERY_CHEMISTRY_LABELS,
   BATTERY_CHEMISTRY_OPTIONS,
-  ENGINE_TYPE_LABELS,
-  ENGINE_TYPE_OPTIONS,
+  ENGINE_TYPE_CHOICE_LABELS,
+  ENGINE_TYPE_CHOICES,
+  ENGINE_TYPE_NOT_LISTED,
   POWERTRAIN_LABELS,
   POWERTRAIN_OPTIONS,
   PROTOCOL_LABELS,
   PROTOCOL_OPTIONS,
 } from '../types/vehicleEnums';
+import type {EngineTypeChoice} from '../types/vehicleEnums';
 
 type Props = NativeStackScreenProps<GarageStackParamList, 'NewVehicle'>;
 
@@ -57,6 +66,7 @@ interface Errors {
   engine_cc?: string | null;
   mileage?: string | null;
   motor_kw?: string | null;
+  engine_type?: string | null;
   powertrain?: string | null;
 }
 
@@ -81,8 +91,16 @@ export function NewVehicleScreen({navigation}: Props) {
   const [powertrain, setPowertrain] = useState<PowertrainLiteral | null>(
     null,
   );
-  const [engineType, setEngineType] =
-    useState<EngineTypeLiteral>('four_stroke');
+  const [engineType, setEngineType] = useState<EngineTypeChoice | null>(
+    null,
+  );
+
+  const choosePowertrain = useCallback((next: PowertrainLiteral | null) => {
+    setPowertrain(next);
+    if (next === 'electric') {
+      setEngineType(current => current ?? 'electric_motor');
+    }
+  }, []);
 
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -96,10 +114,14 @@ export function NewVehicleScreen({navigation}: Props) {
       mileage: validateOptionalInt(mileage),
       motor_kw: validateOptionalFloat(motorKw),
       powertrain: powertrain === null ? 'Choose a powertrain' : null,
+      engine_type:
+        engineType === null
+          ? 'Choose an engine type, or "Not listed or not sure"'
+          : null,
     };
     const hasError = Object.values(next).some(v => v !== null && v !== undefined);
     return hasError ? next : null;
-  }, [make, model, year, engineCc, mileage, motorKw, powertrain]);
+  }, [make, model, year, engineCc, mileage, motorKw, powertrain, engineType]);
 
   const handleSubmit = useCallback(async () => {
     const validationErrors = validate();
@@ -122,7 +144,10 @@ export function NewVehicleScreen({navigation}: Props) {
         vin: vin.trim() || undefined,
         protocol,
         powertrain,
-        engine_type: engineType,
+        engine_type:
+          engineType === null || engineType === ENGINE_TYPE_NOT_LISTED
+            ? undefined
+            : engineType,
         battery_chemistry: batteryChem ?? undefined,
         motor_kw: parseOptionalFloat(motorKw),
         bms_present: false,
@@ -244,7 +269,7 @@ export function NewVehicleScreen({navigation}: Props) {
             value={powertrain}
             options={POWERTRAIN_OPTIONS}
             labels={POWERTRAIN_LABELS}
-            onChange={setPowertrain}
+            onChange={choosePowertrain}
             nullable
             required
             placeholder="Choose…"
@@ -255,14 +280,22 @@ export function NewVehicleScreen({navigation}: Props) {
               {errors.powertrain}
             </Text>
           ) : null}
-          <SelectField<EngineTypeLiteral>
+          <SelectField<EngineTypeChoice>
             label="Engine type"
             value={engineType}
-            options={ENGINE_TYPE_OPTIONS}
-            labels={ENGINE_TYPE_LABELS}
+            options={ENGINE_TYPE_CHOICES}
+            labels={ENGINE_TYPE_CHOICE_LABELS}
             onChange={setEngineType}
+            nullable
+            required
+            placeholder="Choose…"
             testID="new-vehicle-engine-type"
           />
+          {errors.engine_type ? (
+            <Text style={styles.errorLine} testID="new-vehicle-engine-type-error">
+              {errors.engine_type}
+            </Text>
+          ) : null}
           <SelectField<BatteryChemistryLiteral>
             label="Battery chemistry (EV/hybrid only)"
             value={batteryChem}

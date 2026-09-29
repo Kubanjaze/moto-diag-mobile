@@ -450,8 +450,7 @@
                   "enum": [
                     "ice",
                     "electric",
-                    "hybrid_parallel",
-                    "hybrid_series"
+                    "hybrid"
                   ],
                   "type": "string"
                 },
@@ -14346,8 +14345,7 @@
                 "enum": [
                   "ice",
                   "electric",
-                  "hybrid_parallel",
-                  "hybrid_series"
+                  "hybrid"
                 ]
               },
               {
@@ -14357,16 +14355,22 @@
             "title": "Powertrain"
           },
           "engine_type": {
-            "type": "string",
-            "enum": [
-              "four_stroke",
-              "two_stroke",
-              "rotary",
-              "diesel",
-              "none"
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "four_stroke",
+                  "two_stroke",
+                  "electric_motor",
+                  "hybrid",
+                  "desmodromic"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Engine Type",
-            "default": "four_stroke"
+            "title": "Engine Type"
           },
           "battery_chemistry": {
             "anyOf": [
@@ -14777,8 +14781,7 @@
                 "enum": [
                   "ice",
                   "electric",
-                  "hybrid_parallel",
-                  "hybrid_series"
+                  "hybrid"
                 ]
               },
               {
@@ -14794,9 +14797,9 @@
                 "enum": [
                   "four_stroke",
                   "two_stroke",
-                  "rotary",
-                  "diesel",
-                  "none"
+                  "electric_motor",
+                  "hybrid",
+                  "desmodromic"
                 ]
               },
               {
