@@ -1,0 +1,28 @@
+Do this: refresh this repo's API contract for moto-diag Phase 360, and fix the powertrain picker, which is F174's twin in the app. First, commit this prompt (docs/prompts/2026-09-29_api_snapshot_for_backend_360.txt): prompts are kept in the repo.
+
+Why: moto-diag Phase 360 (F174: a bike's powertrain is never assumed) makes `VehicleCreateRequest.powertrain` nullable, with no default. moto-diag's gate 11 (`tests/test_phase205_gate11.py::TestContractSnapshot::test_shared_schemas_have_not_drifted`) compares the live API with this repo's `api-schema/openapi.json`. That file still says `"default": "ice"`, so the gate fails. The 360 builder has stopped on it, and it must not touch this repository; this session is the one that does.
+
+1. Serve the new API safely, then refresh the snapshot.
+   - The new API exists only as uncommitted changes in ~/Projects/moto-diag, on branch phase-360. Treat that checkout as read-only: its paused builder owns it. Do not commit there, edit files there or switch its branch.
+   - `motodiag serve` applies pending migrations when it starts, and that working tree holds migration 074. So never point it at ~/Projects/moto-diag/data/motodiag.db.
+   - Instead, copy the live database into this session's scratchpad (SQLite backup API, with the source opened read-only). Serve that copy with `--skip-migrations`, bound to 127.0.0.1 on a free port (nothing listened on 8000–8010 at 2026-09-29 00:00). Check the exact option names with `motodiag serve --help`, and set `PYTHONDONTWRITEBYTECODE=1`.
+   - Run `API_BASE_URL=http://127.0.0.1:<port> npm run refresh-api-schema`, then `npm run generate-api-types`. Stop the server.
+2. Read the snapshot's diff before accepting it. It should change only what Phase 360 changed: the create request's powertrain (nullable, no default), and anything else 360's patch changes in the API. If any other schema moved, stop and tell me. Do not accept unrelated drift.
+3. F174's twin in the app.
+   - `src/screens/NewVehicleScreen.tsx:76` preselects `'ice'` (`useState<PowertrainLiteral>('ice')`) and always sends it, so a user who never touches the picker has stated petrol.
+   - File it as a finding in this repo's docs/FOLLOWUPS.md. F-numbers are one sequence across both repos; the backend's highest is F178, so check both files for the next free number.
+   - Then fix it: nothing preselected, and the form does not submit until a powertrain is chosen.
+   - A test covers the fix, with a planted known-bad case its assertion must fail on.
+4. Verify:
+   - this repo's tests and its typecheck pass;
+   - moto-diag's gate 11 passes against the refreshed snapshot. Run it read-only from ~/Projects/moto-diag: `PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest -q -p no:cacheprovider tests/test_phase205_gate11.py`.
+5. Commit and push on `main`, as separate commands, with commit messages through a quoted heredoc. Record the change where this repo's docs/ROADMAP.md and docs/FOLLOWUPS.md keep such changes. If there is no place for a change that is not a phase, say so rather than inventing a number.
+
+Report:
+- the snapshot diff;
+- the types diff, in one line;
+- the finding's number and the picker fix;
+- this repo's test results, and gate 11's result;
+- the commit hash.
+
+Then stop.
