@@ -2074,6 +2074,31 @@ flag. Degrading well is not the same as working.
   round-trip invariant before trusting the output — a known-present
   campaign must come back (MP3 500 / 2020 → 20V524000) or the run aborts.
   Run twice and diff when the output will become corpus content.
+- **2026-10-01 — met by moto-diag Phase 281, closes when Phase 281 merges.**
+  Phase 281 (Track O batch 3) builds the recall sync this entry
+  constrains: `motodiag advanced recall refresh`. Still open because that
+  code is the 281 builder's held, uncommitted work, which merges only after
+  this repo's API snapshot is refreshed for it (the same change as this
+  note).
+  Evidence: the section "The planned stop: gate 11's contract snapshot" of
+  moto-diag's `docs/phases/in_progress/281_phase_log.md` (pushed at
+  `2112cba`, branch `phase-281`), with the smoke calls in "The smoke calls".
+  Against the requirements above:
+  - *User-Agent:* met in substance, not in letter. The client sends a
+    User-Agent of the app's own, not a browser's, and NHTSA accepted it
+    (200 on `recallsByVehicle`, 2026-09-30T22:36:26).
+  - *A 403 is a hard failure, never an empty result:* met; a 403 or an
+    HTML page is a failure.
+  - *Never map a 4xx to empty:* met; NHTSA's 400 counts as "no recalls"
+    only with its zero-result body.
+  - *Gate on the failure count:* met; a refresh of every bike exits 1 and
+    lists each bike that failed.
+  - *Round-trip invariant:* met; a refresh of every bike first requires
+    20V524000 for PIAGGIO MP3 500 2020. The smoke call returned it and
+    22V217000, the two campaigns Phase 252 recorded.
+  - *Run twice and diff for corpus content:* not covered by the evidence.
+    It is a procedure for whoever turns a sweep into corpus rows rather
+    than a property of the client, so it does not hold this entry open.
 
 ### F104 (NEW) — Vespa and Piaggio documents that could not be reached, and seven model-years the regulator will not return
 

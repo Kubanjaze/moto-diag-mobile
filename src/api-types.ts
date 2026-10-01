@@ -1873,11 +1873,6 @@ export interface components {
             /** Work Order Id */
             work_order_id: number;
             /**
-             * Tax Rate
-             * @default 0
-             */
-            tax_rate: number;
-            /**
              * Shop Supplies Pct
              * @default 0
              */

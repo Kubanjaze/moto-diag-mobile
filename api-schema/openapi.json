@@ -11890,13 +11890,6 @@
             "type": "integer",
             "title": "Work Order Id"
           },
-          "tax_rate": {
-            "type": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "title": "Tax Rate",
-            "default": 0
-          },
           "shop_supplies_pct": {
             "type": "number",
             "maximum": 1,
