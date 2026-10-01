@@ -1,0 +1,41 @@
+Do this: refresh this repo's API contract for moto-diag Phase 281, and record where F103 stands. First, commit this prompt (docs/prompts/2026-09-30_api_snapshot_for_backend_281.txt).
+
+Why: moto-diag Phase 281 (Track O batch 3) fixes F184: an invoice's tax defaulted to zero.
+- The API's `InvoiceGenerateRequest` loses its `tax_rate` field. The tax now comes from the shop's tax record, and an invoice for a shop with no valid rate is refused (409).
+- moto-diag's gate 11 fails until this repo's `api-schema/openapi.json` matches. The 281 builder has stopped on it, as planned.
+- The app never calls invoice generation; only `src/api-types.ts` names it.
+
+1. Serve the backend's working tree safely, then refresh the snapshot, as for Phases 360 and 361.
+   - ~/Projects/moto-diag belongs to the paused 281 builder, so treat it as read-only: no commits, edits or branch switches there.
+   - Copy the live database into this session's scratchpad with the SQLite backup API, opening the source read-only.
+   - Serve that copy with `--skip-migrations`, on 127.0.0.1 and a free port, with `PYTHONDONTWRITEBYTECODE=1`. Never point it at data/motodiag.db: the tree holds migration 078, and `serve` applies pending migrations at start.
+   - Run `npm run refresh-api-schema` with `API_BASE_URL` set, then `npm run generate-api-types`. Stop the server.
+2. Read the snapshot's diff before accepting it. It should remove `InvoiceGenerateRequest.tax_rate` and change nothing else. If anything else moved, stop and tell me.
+3. The app: confirm with a search that nothing outside `src/api-types.ts` uses the field. The typecheck must still pass.
+4. F103, in this repo's docs/FOLLOWUPS.md. Phase 281 builds the recall client F103 asked for.
+   - The evidence is in the section "The planned stop: gate 11's contract snapshot" of ~/Projects/moto-diag/docs/phases/in_progress/281_phase_log.md, pushed at 2112cba. It lists each of F103's requirements and how it is met. Read it there.
+   - Don't close F103 yet. The code that meets it is the builder's held work, which merges only after this refresh.
+   - Add a dated note to F103 saying which requirements Phase 281 meets, where the evidence is, and that F103 closes when Phase 281 merges.
+   - File no new finding unless something is actually wrong. If you do file one, say so in the report: the F-number sequence is shared with moto-diag.
+5. Verify:
+   - this repo's tests pass, and the typecheck passes;
+   - moto-diag's gate 11 passes against the refreshed snapshot. Run it read-only from ~/Projects/moto-diag: `PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest -q -p no:cacheprovider tests/test_phase205_gate11.py`.
+   - **One known failure before midnight Eastern:** until 00:00 EDT on 2026-10-01, gate 11's re-run of gate 9 (`test_earlier_gate_still_passes[tests/test_phase184_gate9.py]`) fails at `total_this_month`.
+     - The cause is F10 in this repo's FOLLOWUPS: sessions are stamped in local time, while "this month" starts in UTC. On a month's last evening, a new session therefore counts for neither month.
+     - It is unrelated to the snapshot.
+   - **What counts as passing:**
+     - Gate 11's three snapshot tests must pass.
+     - Before midnight Eastern, if that F10 failure is the only one, say so in the report, with the time gate 11 ran, and carry on.
+     - After midnight Eastern, gate 11 must pass outright.
+6. Commit and push on `main`, as separate commands, with commit messages through a quoted heredoc.
+   - Stage only the files you changed, by name.
+   - An untracked symlink named `moto-diag-mobile` sits at this repo's root and points back to the repo itself. It was made 2026-09-29 20:20, origin unknown, and the operator will decide what to do with it. Leave it alone, and don't commit it.
+
+Report:
+- the snapshot diff;
+- the types diff, in one line;
+- the note added to F103;
+- this repo's test results, and gate 11's result with the time it ran;
+- the commit hash.
+
+Then stop.
