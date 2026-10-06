@@ -2014,7 +2014,7 @@ flag. Degrading well is not the same as working.
   description" — which is a different question from attribution and wants
   its own measurement.
 
-### F103 (NEW) — A recall census that cannot tell "no recalls" from "I was blocked"
+### F103 — A recall census that cannot tell "no recalls" from "I was blocked" — CLOSED moto-diag Phase 281 (2026-10-01), merge `2806017`
 
 - **Surfaced:** moto-diag Phase 251 (2026-09-20), while building the Vespa
   and Piaggio regulator rows. **Not a defect in this repo today** —
@@ -2099,6 +2099,29 @@ flag. Degrading well is not the same as working.
   - *Run twice and diff for corpus content:* not covered by the evidence.
     It is a procedure for whoever turns a sweep into corpus rows rather
     than a property of the client, so it does not hold this entry open.
+- **2026-10-06 — closed.** Phase 281 merged to moto-diag's `master` on
+  2026-10-01 at merge `2806017`, so the condition in the note above is met.
+  Each requirement as the merged code meets it, read on `master` at
+  `9ac9bb7` (lines as of that commit):
+  - *The app's own User-Agent:* `src/motodiag/core/outbound.py:27`
+    defines `USER_AGENT` as `motodiag/<version> (+<repo URL>)`, and
+    `fetch` sends it on every request at `outbound.py:88`.
+  - *A 403 or a web page is a failure, never "no recalls":*
+    `outbound.py:96-97` raises `ServiceUnavailable` ("blocked") on a 403,
+    and `outbound.py:100-103` raises it on any status whose body is an
+    HTML page (`_looks_like_html`, `outbound.py:77-79`).
+  - *NHTSA's 400 counts as zero results only with its zero-result body:*
+    `src/motodiag/advanced/nhtsa.py:68` admits a 400 past `fetch`; then
+    `nhtsa.py:46-55` requires a results list whose `Count` equals its
+    length, and `nhtsa.py:56-57` raises on a 400 whose `Count` is not 0.
+  - *A refresh of every bike first requires 20V524000 for PIAGGIO MP3 500
+    2020, and exits 1 listing each bike that failed:*
+    `src/motodiag/advanced/recall_repo.py:661-662` (`KNOWN_PRESENT`);
+    `recall_repo.py:819-828` stops `refresh_all_bikes` before any bike if
+    that request fails or the campaign is missing; `recall_repo.py:840-842`
+    records each failed bike. In `src/motodiag/cli/recall_nhtsa.py`,
+    `:136-138` exits 1 when the check fails, and `:144-148` prints each
+    bike not refreshed and exits 1.
 
 ### F104 (NEW) — Vespa and Piaggio documents that could not be reached, and seven model-years the regulator will not return
 
