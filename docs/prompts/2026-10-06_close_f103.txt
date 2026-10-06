@@ -1,0 +1,28 @@
+Do this: close F103 in this repo's docs/FOLLOWUPS.md, now that the code meeting it is merged. First, commit this prompt (docs/prompts/2026-10-06_close_f103.txt).
+
+Why: F103 asked that any recall sync tell "no recalls" from "I was blocked". moto-diag Phase 281 built that client.
+- Phase 281 merged to moto-diag's master on 2026-10-01, at merge `2806017`.
+- F103's dated note of 2026-10-01 says it closes when 281 merges.
+- It stayed open because the code was then held work.
+
+1. Read F103, including its 2026-10-01 note. Then confirm the evidence on moto-diag's master, read-only: ~/Projects/moto-diag is not yours to edit, commit in or switch.
+   - `docs/phases/completed/281_phase_log.md`: the sections "The planned stop: gate 11's contract snapshot" and "The smoke calls".
+   - `src/motodiag/core/outbound.py` and `src/motodiag/advanced/nhtsa.py`.
+   - For each requirement the note lists, find where the merged code meets it, as a file and line:
+     - the app's own User-Agent;
+     - a 403 or a web page is a failure, never "no recalls";
+     - NHTSA's 400 counts as zero results only with its zero-result body;
+     - a refresh of every bike first requires 20V524000 for PIAGGIO MP3 500 2020, and exits 1 listing each bike that failed.
+   - If any one is not on master, stop and tell me. Do not close F103.
+2. Close F103.
+   - Mark its heading closed by moto-diag Phase 281 (2026-10-01), citing merge `2806017`.
+   - Add a dated line listing where each requirement is met.
+   - Keep the earlier text as it is, including the note's reading of "run twice and diff" as a procedure for whoever builds corpus rows.
+3. File no new finding. If you do file one, say so in the report: the F-number sequence is shared with moto-diag.
+4. Commit and push on `main`, as separate commands, with commit messages through a quoted heredoc. Stage only the files you changed, by name.
+
+Report:
+- each requirement, with the file and line on moto-diag's master that meets it;
+- the commit hash.
+
+Then stop.
