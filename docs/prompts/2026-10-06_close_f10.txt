@@ -1,0 +1,31 @@
+Do this: close F10 in this repo's docs/FOLLOWUPS.md, now that the code meeting it is merged. First, commit this prompt (docs/prompts/2026-10-06_close_f10.txt).
+
+Why: F10 is backend code, filed here on 2026-05-01. moto-diag Phase 370 fixed it.
+- Phase 370 merged to moto-diag's master on 2026-10-06, at merge `089891b`. Its handoff is docs/handoffs/2026-10-06_370_closed.md.
+- Migration 079 converted the live sessions' times to UTC.
+
+1. Read F10. Then confirm the evidence on moto-diag's master, read-only: ~/Projects/moto-diag is not yours to edit, commit in or switch.
+   - docs/phases/completed/370_implementation.md (the sections "The format" and "Risks") and 370_phase_log.md.
+   - src/motodiag/core/session_repo.py, src/motodiag/core/timestamps.py and tests/test_phase370_session_utc.py.
+   - For each thing F10 asks for, find where the merged code meets it, as a file and line:
+     - each write path F10 names stamps UTC: create_session, update_session, add_symptom, add_fault_code, set_diagnosis, close_session, append_note, reopen_session. Some names differ in the code (add_symptom_to_session, for one); map each.
+     - `_month_start_iso()` and the stored times share one format, so they compare correctly;
+     - a test simulates the boundary: local time still a month's last day, UTC already the 1st;
+     - at that moment the Phase 178 quota tests pass.
+   - F10 proposed SQLite's format: a space, no microseconds, no zone suffix. 370 chose `YYYY-MM-DDTHH:MM:SS.mmm+00:00` at its Step 0. Record that, with 370's reasons from "The format". Do not write that F10's format was used.
+   - If any one is not on master, stop and tell me. Do not close F10.
+2. Check this app, read-only. Find every place it reads a session's created_at, updated_at or closed_at, and say what each does with a string of the new shape. 370 found one: formatTimestamp in src/screens/SessionDetailScreen.tsx, which calls new Date(). If any reader would show a different time, or the raw string, stop and tell me. Change no app code. A device test is not needed: the new shape is ECMAScript's own date-time format, which every engine must parse.
+3. Close F10.
+   - Mark its heading closed by moto-diag Phase 370 (2026-10-06), citing merge `089891b`.
+   - Add a dated line listing where each item is met, and the format difference from step 1.
+   - Keep the earlier text as it is.
+4. File no new finding. If you do file one, say so in the report: the F-number sequence is shared with moto-diag, and a new number turns moto-diag's B1 check red until its header names it.
+5. Commit and push on `main`, as separate commands, with commit messages through a quoted heredoc. Stage only the files you changed, by name.
+
+Report:
+- each item, with the file and line on moto-diag's master that meets it;
+- the format difference, in one line;
+- each app reader, and what it shows;
+- the commit hash.
+
+Then stop.
