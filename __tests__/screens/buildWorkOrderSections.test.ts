@@ -157,7 +157,50 @@ describe('buildWorkOrderSections — customer rows', () => {
   });
 });
 
+// The phone's zone, fixed for the lifecycle rows. jest gives each suite
+// a copy of process.env, so `process.env.TZ = ...` here would not reach
+// the engine; instead the two locale methods formatTimestamp calls get
+// America/New_York (and en-US) unless the caller names its own.
+const PHONE_ZONE = 'America/New_York';
+function fixPhoneZone(): void {
+  const proto = Date.prototype;
+  const date = proto.toLocaleDateString;
+  const time = proto.toLocaleTimeString;
+  const pin = (
+    locales?: Intl.LocalesArgument,
+    options?: Intl.DateTimeFormatOptions,
+  ): [Intl.LocalesArgument, Intl.DateTimeFormatOptions] => [
+    locales === undefined || (Array.isArray(locales) && locales.length === 0)
+      ? 'en-US'
+      : locales,
+    {timeZone: PHONE_ZONE, ...options},
+  ];
+  jest.spyOn(proto, 'toLocaleDateString').mockImplementation(
+    function (this: Date, locales?: Intl.LocalesArgument, options?: Intl.DateTimeFormatOptions) {
+      return date.apply(this, pin(locales, options));
+    },
+  );
+  jest.spyOn(proto, 'toLocaleTimeString').mockImplementation(
+    function (this: Date, locales?: Intl.LocalesArgument, options?: Intl.DateTimeFormatOptions) {
+      return time.apply(this, pin(locales, options));
+    },
+  );
+}
+
+function lifecycleRows(wo: WorkOrderListRow): Array<[string, string]> {
+  const lifecycle = buildWorkOrderSections(wo, []).find(
+    s => s.kind === 'lifecycle',
+  );
+  if (!lifecycle || lifecycle.kind !== 'lifecycle') {
+    throw new Error('no lifecycle section');
+  }
+  return lifecycle.rows;
+}
+
 describe('buildWorkOrderSections — lifecycle rows', () => {
+  beforeEach(fixPhoneZone);
+  afterEach(() => jest.restoreAllMocks());
+
   it('always includes status / priority / created baseline', () => {
     const sections = buildWorkOrderSections(baseWO, []);
     const lifecycle = sections.find(s => s.kind === 'lifecycle');
@@ -165,8 +208,53 @@ describe('buildWorkOrderSections — lifecycle rows', () => {
       expect(lifecycle.rows).toContainEqual(['Status', 'open']);
       expect(lifecycle.rows).toContainEqual(['Priority', '3']);
       expect(lifecycle.rows).toContainEqual(
-        ['Created', '2026-05-06T10:00:00Z'],
+        ['Created', '5/6/2026 06:00 AM'],
       );
+    }
+  });
+
+  // moto-diag Phase 377: the API sends each time in UTC with its offset.
+  it('shows each of the five times in the phone\'s local time', () => {
+    const utc = '2026-10-15T16:00:00.000+00:00';
+    const rows = lifecycleRows({
+      ...baseWO,
+      created_at: utc,
+      opened_at: utc,
+      started_at: utc,
+      completed_at: utc,
+      closed_at: utc,
+    } as WorkOrderListRow);
+    for (const label of ['Created', 'Opened', 'Started', 'Completed', 'Closed']) {
+      expect(rows).toContainEqual([label, '10/15/2026 12:00 PM']);
+    }
+  });
+
+  it('shows a time new Date cannot parse as given', () => {
+    const rows = lifecycleRows({
+      ...baseWO,
+      created_at: 'not a time',
+      opened_at: 'not a time',
+      started_at: 'not a time',
+      completed_at: 'not a time',
+      closed_at: 'not a time',
+    } as WorkOrderListRow);
+    for (const label of ['Created', 'Opened', 'Started', 'Completed', 'Closed']) {
+      expect(rows).toContainEqual([label, 'not a time']);
+    }
+  });
+
+  it('shows a missing Created as the em-dash, and omits the other four', () => {
+    const rows = lifecycleRows({
+      ...baseWO,
+      created_at: null,
+      opened_at: null,
+      started_at: undefined,
+      completed_at: '',
+    } as unknown as WorkOrderListRow);
+    expect(rows).toContainEqual(['Created', '—']);
+    const labels = rows.map(r => r[0]);
+    for (const label of ['Opened', 'Started', 'Completed', 'Closed']) {
+      expect(labels).not.toContain(label);
     }
   });
 

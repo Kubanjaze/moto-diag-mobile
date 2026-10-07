@@ -29,6 +29,7 @@ import type {
   WorkOrderTimeEntry,
   WorkOrderTranscript,
 } from '../types/workOrder';
+import {formatTimestamp} from './formatTimestamp';
 
 /** Display constant for missing values. Matches Phase 182's em-
  *  dash sentinel convention. */
@@ -239,19 +240,21 @@ function _lifecycleRows(
   const rows: Array<[string, string]> = [
     ['Status', _str(wo.status)],
     ['Priority', String(wo.priority)],
-    ['Created', _str(wo.created_at)],
+    ['Created', formatTimestamp(wo.created_at)],
   ];
   // Optional lifecycle timestamps — surface only when populated.
   // Backend's WorkOrderResponse includes these as nullable strings.
+  // From moto-diag Phase 377 all five times arrive in UTC with their
+  // offset; formatTimestamp shows them in the phone's local time.
   const opened = (wo as Record<string, unknown>).opened_at;
   const started = (wo as Record<string, unknown>).started_at;
   const completed = (wo as Record<string, unknown>).completed_at;
   const closed = (wo as Record<string, unknown>).closed_at;
   const onHoldReason = (wo as Record<string, unknown>).on_hold_reason;
-  if (opened) rows.push(['Opened', _str(opened)]);
-  if (started) rows.push(['Started', _str(started)]);
-  if (completed) rows.push(['Completed', _str(completed)]);
-  if (closed) rows.push(['Closed', _str(closed)]);
+  if (opened) rows.push(['Opened', formatTimestamp(String(opened))]);
+  if (started) rows.push(['Started', formatTimestamp(String(started))]);
+  if (completed) rows.push(['Completed', formatTimestamp(String(completed))]);
+  if (closed) rows.push(['Closed', formatTimestamp(String(closed))]);
   if (onHoldReason) rows.push(['On hold reason', _str(onHoldReason)]);
   return rows;
 }

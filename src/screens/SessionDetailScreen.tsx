@@ -48,6 +48,7 @@ import {MAX_VIDEOS_PER_SESSION, type SessionVideo} from '../types/video';
 import type {SessionsStackParamList} from '../navigation/types';
 import type {SessionResponse, SessionUpdateRequest} from '../types/api';
 import {createThemedStyles} from '../theme/createThemedStyles';
+import {formatTimestamp} from './formatTimestamp';
 import {
   deriveSeverityState,
   packSeverityForSubmit,
@@ -282,12 +283,12 @@ export function SessionDetailScreen({navigation, route}: Props) {
             <Text style={styles.cardTitle}>Lifecycle</Text>
             <DetailRow
               label="Created"
-              value={formatTimestamp(styles, session.created_at)}
+              value={formatTimestamp(session.created_at)}
             />
             {session.closed_at ? (
               <DetailRow
                 label="Closed"
-                value={formatTimestamp(styles, session.closed_at)}
+                value={formatTimestamp(session.closed_at)}
               />
             ) : null}
             <View style={styles.spacer} />
@@ -1234,15 +1235,6 @@ function DetailRow({
       </Text>
     </View>
   );
-}
-
-function formatTimestamp(
-  styles: ReturnType<typeof useStyles>,iso: string | null | undefined): string {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return `${d.toLocaleDateString()} ${d
-    .toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`;
 }
 
 const useStyles = createThemedStyles((t) => ({
