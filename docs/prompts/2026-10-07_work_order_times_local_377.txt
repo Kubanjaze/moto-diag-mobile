@@ -1,0 +1,32 @@
+Do this: show a work order's five lifecycle times in the phone's local time, for moto-diag Phase 377. First, commit this prompt (docs/prompts/2026-10-07_work_order_times_local_377.txt).
+
+Why: moto-diag Phase 377 (F186, F191) stores the shop's times in UTC. From 377 on, the API sends each of a work order's times in one format, `YYYY-MM-DDTHH:MM:SS.mmm+00:00` (Phase 370's), for example `2026-10-15T16:00:00.000+00:00`. The app shows them as raw strings today, through `_str`, in src/screens/buildWorkOrderSections.ts:242-254 (`_lifecycleRows`):
+- "Created" is `work_orders.created_at`. Until 377 the API sent SQLite's UTC `YYYY-MM-DD HH:MM:SS`, and the app showed UTC as if it were local time.
+- "Opened", "Started", "Completed" and "Closed" were naive local strings.
+After 377 all five are UTC with their offset, so a raw string would show UTC. The operator chose (377 Step 0, question 3, answer 3A) that the app formats the times it receives; the API's types do not change, and the OpenAPI snapshot does not move.
+
+1. Read moto-diag's branch `phase-377`, read-only: ~/Projects/moto-diag is not yours to edit, commit in or switch. Use `git -C ~/Projects/moto-diag show phase-377:<path>`.
+   - docs/phases/in_progress/377_implementation.md ("The format" and Logic step 6) and 377_phase_log.md.
+   - src/motodiag/core/timestamps.py (`with_utc_times`) and src/motodiag/api/routes/shop_mgmt.py (`_items` and each work-order return).
+   - tests/test_phase377_shop_utc.py, `TestReaders::test_the_api_sends_the_stored_format`: the shape the API now sends.
+   If the API on that branch does not send all five times in that format, stop and tell me.
+2. Change the app:
+   - In buildWorkOrderSections.ts, the five lifecycle rows (Created, Opened, Started, Completed, Closed) show the time in the phone's local time, with `new Date(iso)` and the same rendering `formatTimestamp` uses in src/screens/SessionDetailScreen.tsx:1239 (`toLocaleDateString()` and `toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})`).
+   - A value `new Date` cannot parse is shown as given, as formatTimestamp does; a missing one is the em-dash, as today.
+   - Keep one formatter: if you move formatTimestamp to a shared module so both screens use it, say so; do not write a second copy with different rules.
+   - Change nothing else: no other screen, no API types, no snapshot.
+3. Test it in __tests__/screens/buildWorkOrderSections.test.ts, with the time zone fixed away from UTC (America/New_York; say how the test fixes it):
+   - `2026-10-15T16:00:00.000+00:00` shows as the local 12:00 of 2026-10-15 for each of the five rows;
+   - an unparsable value shows as given; a missing one shows the em-dash;
+   - the planted control: break the formatter back to `_str` for one row and show the test goes red, then restore it.
+   Run the app's whole jest suite and the type check, and give the counts.
+4. File a finding only if you find a defect; if you do, say so in the report: the F-number sequence is shared with moto-diag (highest assigned F193), and a new number turns moto-diag's B1 check red until its header names it.
+5. Commit and push on `main`, as separate commands, with commit messages through a quoted heredoc. Stage only the files you changed, by name.
+
+Report:
+- what the API sends, from step 1;
+- the change, file and line;
+- the tests and the control, with the jest counts and the type check;
+- the commit hash.
+
+Then stop.
