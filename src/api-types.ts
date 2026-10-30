@@ -952,6 +952,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shop/{shop_id}/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A shop's audit trail, newest first
+         * @description Pass the last item's id as ``before_id`` for the next page;
+         *     ``next_before_id`` is null on the last page.
+         */
+        get: operations["shop_audit_v1_shop__shop_id__audit_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/reports/session/{session_id}": {
         parameters: {
             query?: never;
@@ -5683,6 +5704,52 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             402: components["responses"]["SubscriptionRequired"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    shop_audit_v1_shop__shop_id__audit_get: {
+        parameters: {
+            query?: {
+                since?: string | null;
+                until?: string | null;
+                user_id?: number | null;
+                limit?: number;
+                before_id?: number | null;
+            };
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             /** @description Validation Error */
             422: {
