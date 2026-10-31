@@ -13,6 +13,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate,
 
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
+  var launchOptions: [UIApplication.LaunchOptionsKey: Any]?
 
   func application(
     _ application: UIApplication,
@@ -24,14 +25,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate,
 
     reactNativeDelegate = delegate
     reactNativeFactory = factory
-
-    window = UIWindow(frame: UIScreen.main.bounds)
-
-    factory.startReactNative(
-      withModuleName: "MotoDiag",
-      in: window,
-      launchOptions: launchOptions
-    )
+    // The window and startReactNative live in SceneDelegate (iOS 27
+    // scene lifecycle); it starts React Native through this factory.
+    self.launchOptions = launchOptions
 
     // F52 — without this delegate, iOS renders NOTHING for a push that
     // arrives while the app is foregrounded. A mechanic tapping around
