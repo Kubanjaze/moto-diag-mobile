@@ -641,3 +641,32 @@ discipline, which failed. Nothing verifies the two copies match.
   prompt earlier and iOS does not ask again. A fresh-install prompt test
   (uninstall, reinstall, launch) was not run, because uninstalling wipes the
   app's data on the phone. Run it on the next clean install.
+
+---
+
+### 2026-10-31 13:00 — Bug fix #4: Xcode 27.2 build fails on a pod resource bundle at iOS 13.0
+
+- **Issue:** the build failed on Xcode 27.2. AsyncStorage's resource-bundle
+  target set `IPHONEOS_DEPLOYMENT_TARGET = 13.0`, outside Xcode 27.2's
+  supported range (15.0–27.2). The phone build for Bug fix #3's
+  diagnosis used a one-off command-line override,
+  `IPHONEOS_DEPLOYMENT_TARGET=15.1`.
+- **Root cause:** `react_native_post_install` → `updateOSDeploymentTarget`
+  (`node_modules/react-native/scripts/cocoapods/utils.rb:357–366`) raises
+  each pod's `native_target` to `min_ios_version_supported` (15.1) but never
+  visits resource-bundle targets. A bundle therefore keeps its podspec's
+  value. Before the fix, the generated Pods project had 190 configs at
+  15.1 and 2 at 13.0, both AsyncStorage's bundle (Debug and Release).
+- **Fix:** `ios/Podfile` `post_install`, after `react_native_post_install`,
+  walks every `installer.pods_project` target and raises any config below
+  `min_ios_version_supported` to it. Nothing is lowered, and the app's
+  15.1 stays as it is.
+- **Files:** `ios/Podfile` (43–56); `ios/Podfile.lock` (PODFILE CHECKSUM
+  only). `pod install` also re-serialized `MotoDiag.xcodeproj` (build-phase
+  order, key order). That churn was reverted rather than committed, because
+  it would have moved Phase 209B's "Check release server URL" phase.
+- **Verified:** `pod install` (CocoaPods 1.16.2, matching the lockfile;
+  `bundle exec` is broken on this Mac because vendored bundler 1.17.2 fails
+  on Ruby 4.0, an environment issue) gives 192/192 Pods configs at 15.1 and
+  0 at 13.0. The Release device build (command in Bug fix #3) **BUILD
+  SUCCEEDED** without the override.

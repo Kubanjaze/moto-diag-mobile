@@ -40,5 +40,19 @@ target 'MotoDiag' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
+    # react_native_post_install raises each pod's native target to
+    # min_ios_version_supported but skips resource-bundle targets, so
+    # AsyncStorage's privacy bundle kept its podspec's 13.0 — below
+    # Xcode 27's supported range (15.0+), and the build failed. Raise
+    # every Pods-project target, bundles included, to the app's 15.1.
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |build_config|
+        current = build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+        if current && current.to_f < min_ios_version_supported.to_f
+          build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = min_ios_version_supported
+        end
+      end
+    end
   end
 end
