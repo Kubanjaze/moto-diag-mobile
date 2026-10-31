@@ -589,3 +589,84 @@ byte-identical (`md5 87f96432e7534ffd53f33b2a96f5eefa`). Filed as **F125**: the
 contract's stated purpose is to remove a drift class "structurally rather than
 relying on hand-sync discipline", and it is itself maintained by hand-sync
 discipline, which failed. Nothing verifies the two copies match.
+
+---
+
+### 2026-10-31 12:57 — Bug fix #3: Release app crashes at launch on iOS 27 (UIScene lifecycle not adopted)
+
+- **Issue:** on a physical iPhone 18 Pro Max (iOS 27.0.1), the Release app
+  built with Xcode 27.2 installed, then crashed at launch every time.
+  `MotoDiag-2026-10-31-124516.ips`: `EXC_BREAKPOINT` (SIGTRAP), faulting frame
+  UIKitCore `___UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption_block_invoke`,
+  called from `-[UIApplication workspace:didCreateScene:withTransitionContext:completion:]`.
+  Five such reports on the phone, 12:43–12:45.
+- **Root cause:** apps linked against the iOS 27 SDK must adopt the UIScene
+  lifecycle. `AppDelegate.swift` built its own `UIWindow(frame:)` in
+  `didFinishLaunching` and `Info.plist` had no `UIApplicationSceneManifest`.
+  This followed the RN 0.85-stable template, which has no scene adoption;
+  the community template adopted it on main on 2026-09-17 (template #246)
+  against RN nightly, using a `startReactNative(…connectionOptions:)`
+  overload that RN 0.85.2 does not have. F9 substrate drift: the platform
+  contract moved under an unchanged template.
+- **Fix:** `Info.plist` gets the template's manifest (one window scene,
+  `$(PRODUCT_MODULE_NAME).SceneDelegate`, multiple scenes off). A new
+  `SceneDelegate` builds `UIWindow(windowScene:)` and starts React Native
+  through the factory the AppDelegate still owns, via 0.85.2's
+  `startReactNative(withModuleName:in:launchOptions:)`. The AppDelegate
+  keeps the factory, the `UNUserNotificationCenter` delegate assignment,
+  and all five push methods (Phase 199 token bridge, F52 foreground
+  banners) unchanged. It now stores its launch options, which
+  `RNCPushNotificationIOS.m:440` reads for the initial notification. The
+  scene sets `AppDelegate.window` too, because `RCTLogBoxView.mm:87` makes
+  `UIApplication.delegate.window` key. That was the only native reader
+  found by a grep across `node_modules` and `ios/Pods`.
+- **Files:** `ios/MotoDiag/SceneDelegate.swift` (new, 1–40);
+  `ios/MotoDiag/AppDelegate.swift` (16, 28–30; window creation and
+  `startReactNative` removed); `ios/MotoDiag/Info.plist` (77–95);
+  `ios/MotoDiag.xcodeproj/project.pbxproj` (14, 27, 51, 284; file
+  registered, four lines only).
+- **Verified:** `npx jest` 99 suites / 1197 green; `npx tsc --noEmit` clean;
+  `npm run lint` 0 errors (140 warnings, unchanged, since no JS changed).
+  Release `xcodebuild … -destination "id=00008160-000C090926100036"`
+  **BUILD SUCCEEDED** with no command-line override (the Podfile part is
+  Bug fix #4). The built app's Info.plist carries the manifest
+  (`MotoDiag.SceneDelegate`). Installed and launched with `devicectl`: the
+  JS bundle evaluated and the app stayed up 60 s until my own `alarm`
+  ended the console attach, then relaunched detached and kept running
+  (pid 929). **No new `MotoDiag-*.ips`**: 5 on the phone before, the same 5
+  after, and the listing found the known 124516 report, which shows it can
+  see them. Kerwyn confirmed the first screen renders.
+  **Notification prompt not observed:** Settings › Apps › MotoDiag ›
+  Notifications already shows Allow ON, so this install had answered the
+  prompt earlier and iOS does not ask again. A fresh-install prompt test
+  (uninstall, reinstall, launch) was not run, because uninstalling wipes the
+  app's data on the phone. Run it on the next clean install.
+
+---
+
+### 2026-10-31 13:00 — Bug fix #4: Xcode 27.2 build fails on a pod resource bundle at iOS 13.0
+
+- **Issue:** the build failed on Xcode 27.2. AsyncStorage's resource-bundle
+  target set `IPHONEOS_DEPLOYMENT_TARGET = 13.0`, outside Xcode 27.2's
+  supported range (15.0–27.2). The phone build for Bug fix #3's
+  diagnosis used a one-off command-line override,
+  `IPHONEOS_DEPLOYMENT_TARGET=15.1`.
+- **Root cause:** `react_native_post_install` → `updateOSDeploymentTarget`
+  (`node_modules/react-native/scripts/cocoapods/utils.rb:357–366`) raises
+  each pod's `native_target` to `min_ios_version_supported` (15.1) but never
+  visits resource-bundle targets. A bundle therefore keeps its podspec's
+  value. Before the fix, the generated Pods project had 190 configs at
+  15.1 and 2 at 13.0, both AsyncStorage's bundle (Debug and Release).
+- **Fix:** `ios/Podfile` `post_install`, after `react_native_post_install`,
+  walks every `installer.pods_project` target and raises any config below
+  `min_ios_version_supported` to it. Nothing is lowered, and the app's
+  15.1 stays as it is.
+- **Files:** `ios/Podfile` (43–56); `ios/Podfile.lock` (PODFILE CHECKSUM
+  only). `pod install` also re-serialized `MotoDiag.xcodeproj` (build-phase
+  order, key order). That churn was reverted rather than committed, because
+  it would have moved Phase 209B's "Check release server URL" phase.
+- **Verified:** `pod install` (CocoaPods 1.16.2, matching the lockfile;
+  `bundle exec` is broken on this Mac because vendored bundler 1.17.2 fails
+  on Ruby 4.0, an environment issue) gives 192/192 Pods configs at 15.1 and
+  0 at 13.0. The Release device build (command in Bug fix #3) **BUILD
+  SUCCEEDED** without the override.
