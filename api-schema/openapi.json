@@ -6434,6 +6434,673 @@
         ]
       }
     },
+    "/v1/shop/{shop_id}/payments/account": {
+      "get": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "The shop's Stripe account",
+        "description": "As stored, or with ``refresh=true`` read from Stripe first and stored,\nas `motodiag shop payments status` does. Any active member may read it.",
+        "operationId": "payments_account_v1_shop__shop_id__payments_account_get",
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "refresh",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Refresh"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentAccount"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden",
+            "description": "Forbidden"
+          },
+          "409": {
+            "description": "Stripe cannot be asked for this yet: the shop has no account or it cannot take card payments, the invoice is not sent or overdue, the shop has no reader, or a contact email is missing. The detail says which, and what to do.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Payments are not configured on this server, or Stripe could not be reached or refused the request. The detail names the setting or the Stripe call, never a key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/shop/{shop_id}/payments/connect": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Connect the shop to Stripe and get its onboarding link",
+        "description": "``contact_email`` is required the first time. ``country`` (two\nletters) and ``currency`` (three) default to the shop's tax\njurisdiction. Stripe's warning: the onboarding link is used once, by\nthe shop's owner, opened inside the app.",
+        "operationId": "payments_connect_v1_shop__shop_id__payments_connect_post",
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The shop already had an account; only a fresh link was made. Stripe's warning: the link is used once, by the shop's owner, opened inside the app, and never sent by email or text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectAnswer"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden",
+            "description": "Forbidden"
+          },
+          "409": {
+            "description": "Stripe cannot be asked for this yet: the shop has no account or it cannot take card payments, the invoice is not sent or overdue, the shop has no reader, or a contact email is missing. The detail says which, and what to do.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Payments are not configured on this server, or Stripe could not be reached or refused the request. The detail names the setting or the Stripe call, never a key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "The shop's Stripe account was created now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectAnswer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/shop/{shop_id}/invoices/{invoice_id}/payments/checkout": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Start an online payment of the invoice (a pay-link)",
+        "description": "A Stripe Checkout page on the shop's account for the invoice's total.\nThe invoice is not paid by this: see ``paid_when``.",
+        "operationId": "payments_checkout_v1_shop__shop_id__invoices__invoice_id__payments_checkout_post",
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Invoice Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutStarted"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden",
+            "description": "Forbidden"
+          },
+          "409": {
+            "description": "Stripe cannot be asked for this yet: the shop has no account or it cannot take card payments, the invoice is not sent or overdue, the shop has no reader, or a contact email is missing. The detail says which, and what to do.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Payments are not configured on this server, or Stripe could not be reached or refused the request. The detail names the setting or the Stripe call, never a key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/shop/{shop_id}/invoices/{invoice_id}/payments/terminal": {
+      "post": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "Send the invoice to the shop's card reader",
+        "description": "A card-present payment sent to the shop's reader. The invoice is not\npaid by this: see ``paid_when``.",
+        "operationId": "payments_terminal_v1_shop__shop_id__invoices__invoice_id__payments_terminal_post",
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Invoice Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TerminalStarted"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden",
+            "description": "Forbidden"
+          },
+          "409": {
+            "description": "Stripe cannot be asked for this yet: the shop has no account or it cannot take card payments, the invoice is not sent or overdue, the shop has no reader, or a contact email is missing. The detail says which, and what to do.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Payments are not configured on this server, or Stripe could not be reached or refused the request. The detail names the setting or the Stripe call, never a key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/shop/{shop_id}/invoices/{invoice_id}/payments": {
+      "get": {
+        "tags": [
+          "payments"
+        ],
+        "summary": "An invoice's Stripe payments and their outcomes",
+        "description": "Oldest first, as `motodiag shop invoice payments` lists them.",
+        "operationId": "invoice_payments_v1_shop__shop_id__invoices__invoice_id__payments_get",
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Invoice Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoicePayments"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden",
+            "description": "Forbidden"
+          },
+          "409": {
+            "description": "Stripe cannot be asked for this yet: the shop has no account or it cannot take card payments, the invoice is not sent or overdue, the shop has no reader, or a contact email is missing. The detail says which, and what to do.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Payments are not configured on this server, or Stripe could not be reached or refused the request. The detail names the setting or the Stripe call, never a key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "402": {
+            "$ref": "#/components/responses/SubscriptionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/v1/shop/{shop_id}/audit": {
       "get": {
         "tags": [
@@ -9533,6 +10200,9 @@
               }
             }
           },
+          "403": {
+            "description": "Share links are switched off for now. You can still send the report as a PDF."
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -9789,7 +10459,7 @@
             "content": {
               "text/html": {}
             },
-            "description": "Unknown link. Generic by design."
+            "description": "Unknown link. Generic by design. While share links are switched off, every link answers 404."
           },
           "410": {
             "content": {
@@ -11964,6 +12634,49 @@
         ],
         "title": "CheckoutSessionResponse"
       },
+      "CheckoutStarted": {
+        "properties": {
+          "payment_id": {
+            "type": "integer",
+            "title": "Payment Id"
+          },
+          "invoice_number": {
+            "type": "string",
+            "title": "Invoice Number"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "title": "Amount Cents"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "channel": {
+            "type": "string",
+            "title": "Channel"
+          },
+          "checkout_url": {
+            "type": "string",
+            "title": "Checkout Url"
+          },
+          "paid_when": {
+            "type": "string",
+            "title": "Paid When"
+          }
+        },
+        "type": "object",
+        "required": [
+          "payment_id",
+          "invoice_number",
+          "amount_cents",
+          "currency",
+          "channel",
+          "checkout_url",
+          "paid_when"
+        ],
+        "title": "CheckoutStarted"
+      },
       "ClockInResponse": {
         "properties": {
           "entry": {
@@ -11985,6 +12698,92 @@
           "entry"
         ],
         "title": "ClockInResponse"
+      },
+      "ConnectAnswer": {
+        "properties": {
+          "stripe_account_id": {
+            "type": "string",
+            "title": "Stripe Account Id"
+          },
+          "created": {
+            "type": "boolean",
+            "title": "Created"
+          },
+          "onboarding_url": {
+            "type": "string",
+            "title": "Onboarding Url"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "card_payments_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Card Payments Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stripe_account_id",
+          "created",
+          "onboarding_url",
+          "expires_at",
+          "card_payments_status"
+        ],
+        "title": "ConnectAnswer"
+      },
+      "ConnectRequest": {
+        "properties": {
+          "contact_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Email"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          }
+        },
+        "type": "object",
+        "title": "ConnectRequest"
       },
       "ConsolidatedPartNeed": {
         "properties": {
@@ -12678,6 +13477,130 @@
           "work_order_id"
         ],
         "title": "InvoiceGenerateRequest"
+      },
+      "InvoicePayment": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "channel": {
+            "type": "string",
+            "title": "Channel"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "title": "Amount Cents"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "outcome_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome Reason"
+          },
+          "failure_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Message"
+          },
+          "refunded_cents": {
+            "type": "integer",
+            "title": "Refunded Cents"
+          },
+          "started_at": {
+            "type": "string",
+            "title": "Started At"
+          },
+          "settled_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settled At"
+          },
+          "started_by_user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started By User Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "channel",
+          "amount_cents",
+          "currency",
+          "status",
+          "outcome",
+          "outcome_reason",
+          "failure_message",
+          "refunded_cents",
+          "started_at",
+          "settled_at",
+          "started_by_user_id"
+        ],
+        "title": "InvoicePayment"
+      },
+      "InvoicePayments": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InvoicePayment"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "InvoicePayments"
       },
       "IssueCreateRequest": {
         "properties": {
@@ -13771,6 +14694,65 @@
         ],
         "title": "PasswordResetRequest"
       },
+      "PaymentAccount": {
+        "properties": {
+          "stripe_account_id": {
+            "type": "string",
+            "title": "Stripe Account Id"
+          },
+          "card_payments_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Card Payments Status"
+          },
+          "requirements_due": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requirements Due"
+          },
+          "status_checked_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Checked At"
+          },
+          "livemode": {
+            "type": "boolean",
+            "title": "Livemode"
+          },
+          "can_take_payments": {
+            "type": "boolean",
+            "title": "Can Take Payments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stripe_account_id",
+          "card_payments_status",
+          "requirements_due",
+          "status_checked_at",
+          "livemode",
+          "can_take_payments"
+        ],
+        "title": "PaymentAccount"
+      },
       "PdfRenderRequest": {
         "properties": {
           "preset": {
@@ -14820,6 +15802,61 @@
           "name"
         ],
         "title": "SymptomResponse"
+      },
+      "TerminalStarted": {
+        "properties": {
+          "payment_id": {
+            "type": "integer",
+            "title": "Payment Id"
+          },
+          "invoice_number": {
+            "type": "string",
+            "title": "Invoice Number"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "title": "Amount Cents"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "channel": {
+            "type": "string",
+            "title": "Channel"
+          },
+          "payment_intent_id": {
+            "type": "string",
+            "title": "Payment Intent Id"
+          },
+          "reader_action_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reader Action Status"
+          },
+          "paid_when": {
+            "type": "string",
+            "title": "Paid When"
+          }
+        },
+        "type": "object",
+        "required": [
+          "payment_id",
+          "invoice_number",
+          "amount_cents",
+          "currency",
+          "channel",
+          "payment_intent_id",
+          "reader_action_status",
+          "paid_when"
+        ],
+        "title": "TerminalStarted"
       },
       "TimeEntry": {
         "properties": {
@@ -16492,6 +17529,10 @@
     {
       "name": "audit",
       "description": "Phase 348 — the audit log. `GET /shop/{shop_id}/audit` lists the shop's own events, newest first: who made each write request, what it was and how it answered. Needs `manage_users` at the shop (the owner). Every POST, PUT, PATCH and DELETE is recorded; no body or query string is."
+    },
+    {
+      "name": "payments",
+      "description": "Phase 372 — a shop's card payments through Stripe. `GET /shop/{shop_id}/payments/account` reads the shop's Stripe account (any member; `refresh=true` asks Stripe); `POST /shop/{shop_id}/payments/connect` creates it and returns a one-time onboarding link (`manage_billing`); `POST /shop/{shop_id}/invoices/{invoice_id}/payments/checkout` and `.../terminal` start a payment online or at the shop's reader, and `GET /shop/{shop_id}/invoices/{invoice_id}/payments` lists the invoice's payments (`manage_shop`). Starting a payment never pays the invoice: it is paid only by Stripe's verified news."
     },
     {
       "name": "voice-transcripts",
