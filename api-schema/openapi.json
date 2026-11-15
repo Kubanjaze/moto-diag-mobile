@@ -13486,6 +13486,10 @@
           },
           "channel": {
             "type": "string",
+            "enum": [
+              "checkout",
+              "terminal"
+            ],
             "title": "Channel"
           },
           "amount_cents": {
@@ -13498,6 +13502,11 @@
           },
           "status": {
             "type": "string",
+            "enum": [
+              "started",
+              "failed",
+              "succeeded"
+            ],
             "title": "Status"
           },
           "outcome": {
