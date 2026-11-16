@@ -952,6 +952,112 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shop/{shop_id}/payments/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The shop's Stripe account
+         * @description As stored, or with ``refresh=true`` read from Stripe first and stored,
+         *     as `motodiag shop payments status` does. Any active member may read it.
+         */
+        get: operations["payments_account_v1_shop__shop_id__payments_account_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/payments/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Connect the shop to Stripe and get its onboarding link
+         * @description ``contact_email`` is required the first time. ``country`` (two
+         *     letters) and ``currency`` (three) default to the shop's tax
+         *     jurisdiction. Stripe's warning: the onboarding link is used once, by
+         *     the shop's owner, opened inside the app.
+         */
+        post: operations["payments_connect_v1_shop__shop_id__payments_connect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/invoices/{invoice_id}/payments/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start an online payment of the invoice (a pay-link)
+         * @description A Stripe Checkout page on the shop's account for the invoice's total.
+         *     The invoice is not paid by this: see ``paid_when``.
+         */
+        post: operations["payments_checkout_v1_shop__shop_id__invoices__invoice_id__payments_checkout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/invoices/{invoice_id}/payments/terminal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send the invoice to the shop's card reader
+         * @description A card-present payment sent to the shop's reader. The invoice is not
+         *     paid by this: see ``paid_when``.
+         */
+        post: operations["payments_terminal_v1_shop__shop_id__invoices__invoice_id__payments_terminal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/invoices/{invoice_id}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * An invoice's Stripe payments and their outcomes
+         * @description Oldest first, as `motodiag shop invoice payments` lists them.
+         */
+        get: operations["invoice_payments_v1_shop__shop_id__invoices__invoice_id__payments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shop/{shop_id}/audit": {
         parameters: {
             query?: never;
@@ -1778,10 +1884,52 @@ export interface components {
             /** Session Id */
             session_id: string;
         };
+        /** CheckoutStarted */
+        CheckoutStarted: {
+            /** Payment Id */
+            payment_id: number;
+            /** Invoice Number */
+            invoice_number: string;
+            /** Amount Cents */
+            amount_cents: number;
+            /** Currency */
+            currency: string;
+            /**
+             * Channel
+             * @enum {string}
+             */
+            channel: "checkout" | "terminal";
+            /** Checkout Url */
+            checkout_url: string;
+            /** Paid When */
+            paid_when: string;
+        };
         /** ClockInResponse */
         ClockInResponse: {
             entry: components["schemas"]["TimeEntry"];
             auto_closed?: components["schemas"]["TimeEntry"] | null;
+        };
+        /** ConnectAnswer */
+        ConnectAnswer: {
+            /** Stripe Account Id */
+            stripe_account_id: string;
+            /** Created */
+            created: boolean;
+            /** Onboarding Url */
+            onboarding_url: string;
+            /** Expires At */
+            expires_at: string | null;
+            /** Card Payments Status */
+            card_payments_status: string | null;
+        };
+        /** ConnectRequest */
+        ConnectRequest: {
+            /** Contact Email */
+            contact_email?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Currency */
+            currency?: string | null;
         };
         /** ConsolidatedPartNeed */
         ConsolidatedPartNeed: {
@@ -2040,6 +2188,46 @@ export interface components {
             labor_hourly_rate_cents?: number | null;
             /** Notes */
             notes?: string | null;
+        };
+        /** InvoicePayment */
+        InvoicePayment: {
+            /** Id */
+            id: number;
+            /**
+             * Channel
+             * @enum {string}
+             */
+            channel: "checkout" | "terminal";
+            /** Amount Cents */
+            amount_cents: number;
+            /** Currency */
+            currency: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "started" | "failed" | "succeeded";
+            /** Outcome */
+            outcome: ("paid_invoice" | "paid_twice" | "rejected") | null;
+            /** Outcome Reason */
+            outcome_reason: string | null;
+            /** Failure Message */
+            failure_message: string | null;
+            /** Refunded Cents */
+            refunded_cents: number;
+            /** Started At */
+            started_at: string;
+            /** Settled At */
+            settled_at: string | null;
+            /** Started By User Id */
+            started_by_user_id: number | null;
+        };
+        /** InvoicePayments */
+        InvoicePayments: {
+            /** Items */
+            items: components["schemas"]["InvoicePayment"][];
+            /** Total */
+            total: number;
         };
         /** IssueCreateRequest */
         IssueCreateRequest: {
@@ -2361,6 +2549,21 @@ export interface components {
             /** New Password */
             new_password: string;
         };
+        /** PaymentAccount */
+        PaymentAccount: {
+            /** Stripe Account Id */
+            stripe_account_id: string;
+            /** Card Payments Status */
+            card_payments_status: string | null;
+            /** Requirements Due */
+            requirements_due: number | null;
+            /** Status Checked At */
+            status_checked_at: string | null;
+            /** Livemode */
+            livemode: boolean;
+            /** Can Take Payments */
+            can_take_payments: boolean;
+        };
         /**
          * PdfRenderRequest
          * @description Body for POST ``/v1/reports/session/{id}/pdf`` (Phase 192B).
@@ -2652,6 +2855,28 @@ export interface components {
             category?: string | null;
             /** Related Systems */
             related_systems?: string[];
+        };
+        /** TerminalStarted */
+        TerminalStarted: {
+            /** Payment Id */
+            payment_id: number;
+            /** Invoice Number */
+            invoice_number: string;
+            /** Amount Cents */
+            amount_cents: number;
+            /** Currency */
+            currency: string;
+            /**
+             * Channel
+             * @enum {string}
+             */
+            channel: "checkout" | "terminal";
+            /** Payment Intent Id */
+            payment_intent_id: string;
+            /** Reader Action Status */
+            reader_action_status: string | null;
+            /** Paid When */
+            paid_when: string;
         };
         /** TimeEntry */
         TimeEntry: {
@@ -5718,6 +5943,319 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    payments_account_v1_shop__shop_id__payments_account_get: {
+        parameters: {
+            query?: {
+                refresh?: boolean;
+            };
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentAccount"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            402: components["responses"]["SubscriptionRequired"];
+            /** @description Forbidden */
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Stripe cannot be asked for this yet: the shop has no account or it cannot take card payments, the invoice is not sent or overdue, the shop has no reader, or a contact email is missing. The detail says which, and what to do. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+            /** @description Payments are not configured on this server, or Stripe could not be reached or refused the request. The detail names the setting or the Stripe call, never a key. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    payments_connect_v1_shop__shop_id__payments_connect_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectRequest"];
+            };
+        };
+        responses: {
+            /** @description The shop already had an account; only a fresh link was made. Stripe's warning: the link is used once, by the shop's owner, opened inside the app, and never sent by email or text. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectAnswer"];
+                };
+            };
+            /** @description The shop's Stripe account was created now. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectAnswer"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            402: components["responses"]["SubscriptionRequired"];
+            /** @description Forbidden */
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Stripe cannot be asked for this yet: the shop has no account or it cannot take card payments, the invoice is not sent or overdue, the shop has no reader, or a contact email is missing. The detail says which, and what to do. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+            /** @description Payments are not configured on this server, or Stripe could not be reached or refused the request. The detail names the setting or the Stripe call, never a key. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    payments_checkout_v1_shop__shop_id__invoices__invoice_id__payments_checkout_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                invoice_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckoutStarted"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            402: components["responses"]["SubscriptionRequired"];
+            /** @description Forbidden */
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Stripe cannot be asked for this yet: the shop has no account or it cannot take card payments, the invoice is not sent or overdue, the shop has no reader, or a contact email is missing. The detail says which, and what to do. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+            /** @description Payments are not configured on this server, or Stripe could not be reached or refused the request. The detail names the setting or the Stripe call, never a key. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    payments_terminal_v1_shop__shop_id__invoices__invoice_id__payments_terminal_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                invoice_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TerminalStarted"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            402: components["responses"]["SubscriptionRequired"];
+            /** @description Forbidden */
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Stripe cannot be asked for this yet: the shop has no account or it cannot take card payments, the invoice is not sent or overdue, the shop has no reader, or a contact email is missing. The detail says which, and what to do. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+            /** @description Payments are not configured on this server, or Stripe could not be reached or refused the request. The detail names the setting or the Stripe call, never a key. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    invoice_payments_v1_shop__shop_id__invoices__invoice_id__payments_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                invoice_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoicePayments"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            402: components["responses"]["SubscriptionRequired"];
+            /** @description Forbidden */
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Stripe cannot be asked for this yet: the shop has no account or it cannot take card payments, the invoice is not sent or overdue, the shop has no reader, or a contact email is missing. The detail says which, and what to do. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+            /** @description Payments are not configured on this server, or Stripe could not be reached or refused the request. The detail names the setting or the Stripe call, never a key. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
     shop_audit_v1_shop__shop_id__audit_get: {
         parameters: {
             query?: {
@@ -6884,6 +7422,13 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            /** @description Share links are switched off for now. You can still send the report as a PDF. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             404: components["responses"]["NotFound"];
             /** @description Validation Error */
             422: {
@@ -6996,7 +7541,7 @@ export interface operations {
                     "text/html": unknown;
                 };
             };
-            /** @description Unknown link. Generic by design. */
+            /** @description Unknown link. Generic by design. While share links are switched off, every link answers 404. */
             404: {
                 headers: {
                     [name: string]: unknown;
