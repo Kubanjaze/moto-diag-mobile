@@ -628,6 +628,180 @@
         ]
       }
     },
+    "/v1/terms": {
+      "get": {
+        "tags": [
+          "terms"
+        ],
+        "summary": "The current Terms of Service, and whether the caller accepted them",
+        "operationId": "current_terms_v1_terms_get",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TermsInfo"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/terms/accept": {
+      "post": {
+        "tags": [
+          "terms"
+        ],
+        "summary": "Accept the current Terms of Service",
+        "operationId": "accept_terms_v1_terms_accept_post",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Acceptance"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/v1/shops/{shop_id}": {
       "get": {
         "tags": [
@@ -12485,6 +12659,38 @@
   },
   "components": {
     "schemas": {
+      "AcceptRequest": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "description": "The version the user was shown"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version"
+        ],
+        "title": "AcceptRequest"
+      },
+      "Acceptance": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "accepted_at": {
+            "type": "string",
+            "title": "Accepted At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "accepted_at"
+        ],
+        "title": "Acceptance"
+      },
       "AddPartRequest": {
         "properties": {
           "part_id": {
@@ -15880,6 +16086,58 @@
         ],
         "title": "TerminalStarted"
       },
+      "TermsInfo": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "terms_url": {
+            "type": "string",
+            "title": "Terms Url"
+          },
+          "privacy_url": {
+            "type": "string",
+            "title": "Privacy Url"
+          },
+          "accepted": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted",
+            "description": "Signed in: whether the caller accepted this version; null for an anonymous caller"
+          },
+          "accepted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted At",
+            "description": "When the caller accepted it, UTC; null if not"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "date",
+          "terms_url",
+          "privacy_url"
+        ],
+        "title": "TermsInfo"
+      },
       "TimeEntry": {
         "properties": {
           "id": {
@@ -17547,6 +17805,10 @@
     {
       "name": "auth",
       "description": "Phase 303 — staff logins. `POST /auth/login` (public) returns a session token once, with the user's shops, roles and permissions; the token is sent like an API key. Also the caller (`/auth/me`), logout, the caller's sessions, a password change, and an owner's password reset for a shop member (needs `manage_users`)."
+    },
+    {
+      "name": "terms",
+      "description": "Phase 334 — the Terms of Service. `GET /terms` gives the current version, its date and the addresses of the terms and the privacy policy, and, signed in, whether the caller accepted that version; `POST /terms/accept` records the caller's acceptance of the current version. With `MOTODIAG_TERMS_REQUIRED` on, every other route that takes a credential answers 403 `terms-not-accepted` until then."
     },
     {
       "name": "audit",

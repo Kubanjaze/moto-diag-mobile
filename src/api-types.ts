@@ -178,6 +178,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The current Terms of Service, and whether the caller accepted them */
+        get: operations["current_terms_v1_terms_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/terms/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept the current Terms of Service */
+        post: operations["accept_terms_v1_terms_accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}": {
         parameters: {
             query?: never;
@@ -1822,6 +1856,21 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AcceptRequest */
+        AcceptRequest: {
+            /**
+             * Version
+             * @description The version the user was shown
+             */
+            version: string;
+        };
+        /** Acceptance */
+        Acceptance: {
+            /** Version */
+            version: string;
+            /** Accepted At */
+            accepted_at: string;
+        };
         /** AddPartRequest */
         AddPartRequest: {
             /** Part Id */
@@ -2878,6 +2927,27 @@ export interface components {
             /** Paid When */
             paid_when: string;
         };
+        /** TermsInfo */
+        TermsInfo: {
+            /** Version */
+            version: string;
+            /** Date */
+            date: string;
+            /** Terms Url */
+            terms_url: string;
+            /** Privacy Url */
+            privacy_url: string;
+            /**
+             * Accepted
+             * @description Signed in: whether the caller accepted this version; null for an anonymous caller
+             */
+            accepted?: boolean | null;
+            /**
+             * Accepted At
+             * @description When the caller accepted it, UTC; null if not
+             */
+            accepted_at?: string | null;
+        };
         /** TimeEntry */
         TimeEntry: {
             /** Id */
@@ -3734,6 +3804,80 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    current_terms_v1_terms_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TermsInfo"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    accept_terms_v1_terms_accept_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Acceptance"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
             /** @description Validation Error */
             422: {
                 headers: {
