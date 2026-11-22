@@ -562,7 +562,7 @@ function VehiclesBlock({
         </Text>
       </TouchableOpacity>
       {disabled ? (
-        <Text style={styles.helpText}>Set an API key first.</Text>
+        <Text style={styles.helpText}>Sign in first.</Text>
       ) : null}
       {state.kind === 'error' ? (
         <Text style={[styles.statusLine, styles.errorText]} testID="vehicles-error">
