@@ -22,9 +22,14 @@ import createClient, {type Client} from 'openapi-fetch';
 
 import type {paths} from '../api-types';
 import {applyAuth, getApiKey, isSignInToken} from './auth';
-import {hasProblemSlug} from './errors';
+import {
+  hasProblemSlug,
+  type AuthProblemSlug,
+  type TermsProblemSlug,
+} from './errors';
 import {getServerUrl} from './serverUrl';
 import {notifySignInEnded} from './signInEvents';
+import {notifyTermsRequired} from './termsEvents';
 
 export interface ApiClientOptions {
   /** Pin every request to this address. Tests pass a mock server URL.
@@ -41,6 +46,9 @@ export interface ApiClientOptions {
   /** Phase 303B: told when a request that carried a sign-in token comes
    *  back 401 invalid-api-key. Default: signInEvents.notifySignInEnded. */
   onSignInEnded?: (token: string) => void;
+  /** Phase 334B: told when a request comes back 403 terms-not-accepted.
+   *  Default: termsEvents.notifyTermsRequired. */
+  onTermsRequired?: () => void;
 }
 
 export type MotoDiagApi = Client<paths>;
@@ -72,6 +80,7 @@ export function makeClient(options: ApiClientOptions = {}): MotoDiagApi {
     options.fetchImpl ?? ((input, init) => fetch(input, init));
 
   const signInEnded = options.onSignInEnded ?? notifySignInEnded;
+  const termsRequired = options.onTermsRequired ?? notifyTermsRequired;
 
   const customFetch: typeof fetch = async (input, init) => {
     const apiKey = await resolveKey();
@@ -117,6 +126,19 @@ export function makeClient(options: ApiClientOptions = {}): MotoDiagApi {
     if (response.status === 401 && apiKey !== null && isSignInToken(apiKey)) {
       if (await isInvalidApiKeyProblem(response)) {
         signInEnded(apiKey);
+      }
+    }
+
+    // Phase 334B — the terms switch. While the operator's
+    // MOTODIAG_TERMS_REQUIRED is on, every credentialed route answers 403
+    // ".../terms-not-accepted" until the user accepts the current
+    // version. Seen here, beside the hook above, so the terms box opens
+    // over any screen; termsEvents makes a burst of refusals open it
+    // once. Read from a clone, so each screen still gets its own error.
+    // The refused call is not repeated: the user tries it again.
+    if (response.status === 403) {
+      if (await isProblem(response, 'terms-not-accepted')) {
+        termsRequired();
       }
     }
     return response;
@@ -171,8 +193,15 @@ export function makeClient(options: ApiClientOptions = {}): MotoDiagApi {
 }
 
 async function isInvalidApiKeyProblem(response: Response): Promise<boolean> {
+  return isProblem(response, 'invalid-api-key');
+}
+
+async function isProblem(
+  response: Response,
+  slug: AuthProblemSlug | TermsProblemSlug,
+): Promise<boolean> {
   try {
-    return hasProblemSlug(await response.clone().json(), 'invalid-api-key');
+    return hasProblemSlug(await response.clone().json(), slug);
   } catch {
     return false;
   }

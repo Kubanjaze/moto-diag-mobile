@@ -20,7 +20,7 @@ export {
   hasProblemSlug,
   isProblemDetail,
 } from './errors';
-export type {AuthProblemSlug, ProblemDetail} from './errors';
+export type {AuthProblemSlug, ProblemDetail, TermsProblemSlug} from './errors';
 
 export {
   checkServerUrlFormat,
