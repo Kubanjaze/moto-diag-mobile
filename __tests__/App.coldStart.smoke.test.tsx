@@ -106,6 +106,13 @@ jest.mock('../src/contexts/ApiKeyProvider', () => ({
 jest.mock('../src/navigation/RootNavigator', () => ({
   RootNavigator: () => null,
 }));
+// Phase 303B — the sign-in host must be mounted near the root, or an
+// ended sign-in clears the slot with no box to say so (the integration-
+// gap family again: SignInHost exists AND App.tsx renders it).
+const mockSignInHost = jest.fn(() => null);
+jest.mock('../src/screens/SignInHost', () => ({
+  SignInHost: () => mockSignInHost(),
+}));
 
 import ReactTestRenderer from 'react-test-renderer';
 import App from '../App';
@@ -119,6 +126,20 @@ beforeEach(() => {
   mockCleanupOldPhotos.mockClear();
   mockCleanupOldAudio.mockClear();
   mockClearActiveShopId.mockClear();
+  mockSignInHost.mockClear();
+});
+
+describe('App renders the sign-in host (Phase 303B)', () => {
+  it('mounts SignInHost beside the navigation', () => {
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(<App />);
+    });
+    expect(mockSignInHost).toHaveBeenCalled();
+    ReactTestRenderer.act(() => {
+      renderer.unmount();
+    });
+  });
 });
 
 describe('App cold-mount sweep wiring', () => {

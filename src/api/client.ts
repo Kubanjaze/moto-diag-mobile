@@ -21,8 +21,10 @@
 import createClient, {type Client} from 'openapi-fetch';
 
 import type {paths} from '../api-types';
-import {applyAuth, getApiKey} from './auth';
+import {applyAuth, getApiKey, isSignInToken} from './auth';
+import {hasProblemSlug} from './errors';
 import {getServerUrl} from './serverUrl';
+import {notifySignInEnded} from './signInEvents';
 
 export interface ApiClientOptions {
   /** Pin every request to this address. Tests pass a mock server URL.
@@ -36,6 +38,9 @@ export interface ApiClientOptions {
   /** Override the underlying fetch. Tests inject a mock; production
    *  uses the global fetch from the React Native runtime. */
   fetchImpl?: typeof fetch;
+  /** Phase 303B: told when a request that carried a sign-in token comes
+   *  back 401 invalid-api-key. Default: signInEvents.notifySignInEnded. */
+  onSignInEnded?: (token: string) => void;
 }
 
 export type MotoDiagApi = Client<paths>;
@@ -65,6 +70,8 @@ export function makeClient(options: ApiClientOptions = {}): MotoDiagApi {
   // inspector) should still be the one used.
   const fetchImpl: typeof fetch =
     options.fetchImpl ?? ((input, init) => fetch(input, init));
+
+  const signInEnded = options.onSignInEnded ?? notifySignInEnded;
 
   const customFetch: typeof fetch = async (input, init) => {
     const apiKey = await resolveKey();
@@ -98,7 +105,21 @@ export function makeClient(options: ApiClientOptions = {}): MotoDiagApi {
       apiKey,
     );
 
-    return fetchImpl(input, {...init, headers: finalHeaders});
+    const response = await fetchImpl(input, {...init, headers: finalHeaders});
+
+    // Phase 303B — an ended sign-in. A sign-in token that the server no
+    // longer resolves (expired, or ended elsewhere) answers 401
+    // ".../invalid-api-key" on every route. Seen here once, rather than
+    // in each screen's hook. A pasted key's 401 is left to the screens,
+    // as before; login-failed (a wrong password) is a different type and
+    // never matches. The body is read from a clone, so the caller still
+    // gets it.
+    if (response.status === 401 && apiKey !== null && isSignInToken(apiKey)) {
+      if (await isInvalidApiKeyProblem(response)) {
+        signInEnded(apiKey);
+      }
+    }
+    return response;
   };
 
   // Built without a base URL on purpose. Every call below passes the
@@ -147,6 +168,14 @@ export function makeClient(options: ApiClientOptions = {}): MotoDiagApi {
     use: (...middleware) => inner.use(...middleware),
     eject: (...middleware) => inner.eject(...middleware),
   };
+}
+
+async function isInvalidApiKeyProblem(response: Response): Promise<boolean> {
+  try {
+    return hasProblemSlug(await response.clone().json(), 'invalid-api-key');
+  } catch {
+    return false;
+  }
 }
 
 // Module-level singleton for app-wide use. It holds no address: each

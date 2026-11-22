@@ -126,3 +126,20 @@ export function describeError(err: unknown): string {
   if (err instanceof Error) return err.message;
   return String(err);
 }
+
+// ---------------------------------------------------------------
+// Problem types the sign-in code acts on (Phase 303B)
+// ---------------------------------------------------------------
+
+/** The problem-type endings the sign-in code acts on, as the server's
+ *  api/errors.py spells them (".../problems/<slug>"). */
+export type AuthProblemSlug = 'login-failed' | 'invalid-api-key' | 'not-a-session';
+
+/** True when `err` is a problem body whose `type` ends with `/slug`. */
+export function hasProblemSlug(err: unknown, slug: AuthProblemSlug): boolean {
+  if (typeof err !== 'object' || err === null) {
+    return false;
+  }
+  const type = (err as Record<string, unknown>).type;
+  return typeof type === 'string' && type.endsWith(`/${slug}`);
+}

@@ -8,6 +8,7 @@ import {ThemeProvider} from './src/theme/ThemeProvider';
 import {toNavigationTheme} from './src/theme/navigationTheme';
 import {useTheme} from './src/theme/useTheme';
 import {RootNavigator} from './src/navigation/RootNavigator';
+import {SignInHost} from './src/screens/SignInHost';
 import {clearActiveShopId} from './src/services/activeShopStorage';
 import {startOfflineBoot} from './src/services/offlineBoot';
 import {startPushRegistration} from './src/services/pushRegistration';
@@ -22,6 +23,8 @@ import {cleanupOldShares} from './src/services/shareTempCleanup';
 //                     read useApiKey at render time)
 //       NavigationContainer
 //         RootNavigator
+//       SignInHost (Phase 303B — the sign-in and key boxes, beside the
+//                   navigation so they open over any screen)
 function App() {
   // Phase 192B Commit 2 — share-temp orphan sweep on cold start.
   // Belt-and-suspenders: per-share unlink in useReportShare is the
@@ -119,6 +122,7 @@ function Themed() {
       <NavigationContainer theme={toNavigationTheme(theme)}>
         <RootNavigator />
       </NavigationContainer>
+      <SignInHost />
     </>
   );
 }

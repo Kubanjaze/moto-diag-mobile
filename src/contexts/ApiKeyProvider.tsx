@@ -23,6 +23,7 @@ import {
   getApiKey as keychainGet,
   setApiKey as keychainSet,
 } from '../api/auth';
+import {onSignInEnded} from '../api/signInEvents';
 
 export interface ApiKeyContextValue {
   apiKey: string | null;
@@ -57,6 +58,21 @@ export function ApiKeyProvider({children}: Props) {
     return () => {
       alive = false;
     };
+  }, []);
+
+  // Phase 303B — an ended sign-in (the client saw 401 invalid-api-key
+  // on a sign-in token) clears the slot, so every screen sees "no
+  // credential". The Keychain is read again rather than compared with
+  // state captured here, and cleared only if it still holds that token:
+  // a credential stored since then is left alone.
+  useEffect(() => {
+    return onSignInEnded(async token => {
+      const stored = await keychainGet();
+      if (stored === token) {
+        await keychainClear();
+        setApiKeyState(null);
+      }
+    });
   }, []);
 
   const setApiKey = useCallback(async (key: string) => {

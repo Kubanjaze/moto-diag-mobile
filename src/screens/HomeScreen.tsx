@@ -8,6 +8,10 @@
 //    are all wired correctly.
 // 2. Auth — reads useApiKey(); offers Set/Replace/Clear buttons
 //    that wire to ApiKeyModal. Stored in Keychain.
+//    Phase 303B: with no credential it offers "Sign in" (the staff
+//    sign-in box) and "Use an API key instead"; with a sign-in token it
+//    says who is signed in and offers "Sign out"; a pasted key keeps
+//    this view. Both boxes are rendered once by SignInHost (App.tsx).
 // 3. Authed smoke — "Test /v1/vehicles" hits the authed endpoint
 //    and shows count + first 3 entries (make/model/year). 401 on
 //    missing key surfaces as a friendly ProblemDetail message.
@@ -20,7 +24,7 @@
 // string[]. The runtime behavior was always correct because Metro
 // uses Babel (strips types without checking).
 
-import React, {useCallback, useState, type ReactNode} from 'react';
+import React, {useCallback, useEffect, useState, type ReactNode} from 'react';
 import {
   Alert,
   PermissionsAndroid,
@@ -36,18 +40,20 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
-import {api, describeError, NoServerSetError} from '../api';
+import {api, describeError, isSignInToken, NoServerSetError} from '../api';
+import {displayName, endSignIn, fetchSignedInUser} from '../api/signIn';
+import {
+  openApiKeyEntry,
+  openSignIn,
+  suppressSignInEnded,
+} from '../api/signInEvents';
 import {bleService} from '../ble/BleService';
 import {OBD_SUPPORT} from '../config/features';
 import {useApiKey} from '../hooks/useApiKey';
-import {
-  deregisterPushToken,
-  resyncPushRegistration,
-} from '../services/pushRegistration';
+import {deregisterPushToken} from '../services/pushRegistration';
 import {version as appVersion} from '../../package.json';
 import type {HomeStackParamList} from '../navigation/types';
 import type {VehicleListResponse, VersionResponse} from '../types/api';
-import {ApiKeyModal} from './ApiKeyModal';
 import {createThemedStyles} from '../theme/createThemedStyles';
 
 type HomeNav = NativeStackNavigationProp<HomeStackParamList, 'Home'>;
@@ -69,7 +75,7 @@ const SCAN_DURATION_MS = 10_000;
 export function HomeScreen() {
   const styles = useStyles();
   const navigation = useNavigation<HomeNav>();
-  const {apiKey, isLoading: keyLoading, setApiKey, clearApiKey} = useApiKey();
+  const {apiKey, isLoading: keyLoading, clearApiKey} = useApiKey();
 
   const [versionState, setVersionState] = useState<FetchState<VersionResponse>>(
     {kind: 'idle'},
@@ -77,7 +83,11 @@ export function HomeScreen() {
   const [vehiclesState, setVehiclesState] = useState<
     FetchState<VehicleListResponse>
   >({kind: 'idle'});
-  const [keyModalVisible, setKeyModalVisible] = useState<boolean>(false);
+  // Phase 303B — who a sign-in token belongs to: undefined while it is
+  // being read, null when /v1/auth/me failed (shown as "Signed in").
+  const [signedInName, setSignedInName] = useState<string | null | undefined>(
+    undefined,
+  );
 
   // Phase 186 BLE state preserved.
   const [scanStatus, setScanStatus] = useState<string>('idle');
@@ -121,19 +131,30 @@ export function HomeScreen() {
   // Auth (useApiKey + ApiKeyModal)
   // ---------------------------------------------------------------
 
-  const handleSubmitKey = useCallback(
-    async (key: string) => {
-      await setApiKey(key);
-      // Phase 199 — the APNs token usually lands before a key exists
-      // (first launch → that POST 401s); re-register it now that the
-      // key is stored. Best-effort, logged inside the service.
-      void resyncPushRegistration();
-      setKeyModalVisible(false);
-      // Reset the smoke result so the user can re-test against the new key.
-      setVehiclesState({kind: 'idle'});
-    },
-    [setApiKey],
-  );
+  // Storing a key or a sign-in token is SignInHost's (App.tsx), which
+  // resyncs the push token as handleSubmitKey did here. A new credential,
+  // or none, resets the smoke result so it is re-tested against it.
+  useEffect(() => {
+    setVehiclesState({kind: 'idle'});
+  }, [apiKey]);
+
+  // Phase 303B — read who is signed in, for a sign-in token only.
+  useEffect(() => {
+    if (!isSignInToken(apiKey)) {
+      setSignedInName(undefined);
+      return;
+    }
+    let alive = true;
+    setSignedInName(undefined);
+    void fetchSignedInUser().then(me => {
+      if (alive) {
+        setSignedInName(me ? displayName(me.user) : null);
+      }
+    });
+    return () => {
+      alive = false;
+    };
+  }, [apiKey]);
 
   const handleClearKey = useCallback(async () => {
     Alert.alert('Clear API key?', 'Stored key will be removed from Keychain.', [
@@ -152,6 +173,31 @@ export function HomeScreen() {
       },
     ]);
   }, [clearApiKey]);
+
+  // Phase 303B — signing out of a sign-in: deregister the push token
+  // while the token still works, end the sign-in on the server, then
+  // clear the slot. A failed logout is logged inside endSignIn and
+  // signing out goes on, so a dead network never leaves anyone stuck
+  // signed in. The token is marked first so that a 401 from these
+  // calls (a sign-in the server already ended) does not pop the "has
+  // ended" box at someone who is leaving.
+  const handleSignOut = useCallback(() => {
+    Alert.alert('Sign out?', 'You will need to sign in again to use the app.', [
+      {text: 'Cancel', style: 'cancel'},
+      {
+        text: 'Sign out',
+        style: 'destructive',
+        onPress: async () => {
+          if (apiKey !== null) {
+            suppressSignInEnded(apiKey);
+          }
+          await deregisterPushToken();
+          await endSignIn();
+          await clearApiKey();
+        },
+      },
+    ]);
+  }, [apiKey, clearApiKey]);
 
   // ---------------------------------------------------------------
   // Authed smoke (/v1/vehicles)
@@ -253,8 +299,11 @@ export function HomeScreen() {
           <AuthBlock
             apiKey={apiKey}
             isLoading={keyLoading}
-            onSet={() => setKeyModalVisible(true)}
+            signedInName={signedInName}
+            onSignIn={() => openSignIn()}
+            onSet={openApiKeyEntry}
             onClear={handleClearKey}
+            onSignOut={handleSignOut}
           />
         </Section>
 
@@ -334,13 +383,6 @@ export function HomeScreen() {
             entry path. useCameraPermissions still lives in
             src/hooks/ for VideoCaptureScreen's permission gate. */}
       </ScrollView>
-
-      <ApiKeyModal
-        visible={keyModalVisible}
-        initialValue={apiKey}
-        onSubmit={handleSubmitKey}
-        onCancel={() => setKeyModalVisible(false)}
-      />
     </SafeAreaView>
   );
 }
@@ -421,13 +463,19 @@ function BackendBlock({
 function AuthBlock({
   apiKey,
   isLoading,
+  signedInName,
+  onSignIn,
   onSet,
   onClear,
+  onSignOut,
 }: {
   apiKey: string | null;
   isLoading: boolean;
+  signedInName: string | null | undefined;
+  onSignIn: () => void;
   onSet: () => void;
   onClear: () => void;
+  onSignOut: () => void;
 }) {
   const styles = useStyles();
   if (isLoading) {
@@ -436,9 +484,43 @@ function AuthBlock({
   if (apiKey === null) {
     return (
       <View>
-        <Text style={styles.statusLine}>Not authenticated.</Text>
-        <TouchableOpacity style={styles.button} onPress={onSet} testID="auth-set-button">
-          <Text style={styles.buttonText}>Set API key</Text>
+        <Text style={styles.statusLine} testID="auth-signed-out">
+          Not signed in.
+        </Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={onSignIn}
+          accessibilityRole="button"
+          testID="auth-sign-in-button">
+          <Text style={styles.buttonText}>Sign in</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.smallButton}
+          onPress={onSet}
+          accessibilityRole="button"
+          testID="auth-set-button">
+          <Text style={styles.smallButtonText}>Use an API key instead</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+  if (isSignInToken(apiKey)) {
+    // The token itself is never shown, masked or not.
+    return (
+      <View>
+        <Text style={[styles.statusLine, styles.successText]} testID="auth-signed-in">
+          {signedInName === undefined
+            ? 'Signed in…'
+            : signedInName === null
+              ? '✓ Signed in'
+              : `✓ Signed in as ${signedInName}`}
+        </Text>
+        <TouchableOpacity
+          style={[styles.smallButton, styles.signOutButton]}
+          onPress={onSignOut}
+          accessibilityRole="button"
+          testID="auth-sign-out-button">
+          <Text style={styles.dangerButtonText}>Sign out</Text>
         </TouchableOpacity>
       </View>
     );
@@ -596,5 +678,6 @@ const useStyles = createThemedStyles((t) => ({
   buttonRow: {flexDirection: 'row', gap: 8, marginTop: 4},
   replaceButton: {flex: 1},
   dangerButton: {backgroundColor: t.severity.critical.bg, flex: 1},
+  signOutButton: {backgroundColor: t.severity.critical.bg},
   dangerButtonText: {color: t.danger, fontSize: 16, fontWeight: '600'},
 }));
