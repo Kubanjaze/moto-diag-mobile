@@ -13,19 +13,28 @@
 // before this phase: setApiKey, then resyncPushRegistration() (the APNs
 // token usually lands before any credential exists, so its first POST
 // 401s; it is re-sent now).
+//
+// Phase 334B — the terms box is rendered here too. It opens only when
+// the server asks: the client saw a 403 terms-not-accepted and
+// termsEvents told this host (never at start-up, K128). It closes when
+// the user agrees or signs out (the shared signOut() in signIn.ts), and
+// tells termsEvents so a later refusal opens it again.
 
 import React, {useCallback, useEffect, useState} from 'react';
 
 import {isSignInToken} from '../api/auth';
+import {signOut} from '../api/signIn';
 import {
   ENDED_SIGN_IN_MESSAGE,
   onSignInEnded,
   onSignInUiRequest,
 } from '../api/signInEvents';
+import {onTermsRequired, termsBoxClosed} from '../api/termsEvents';
 import {useApiKey} from '../hooks/useApiKey';
 import {resyncPushRegistration} from '../services/pushRegistration';
 import {ApiKeyModal} from './ApiKeyModal';
 import {SignInModal} from './SignInModal';
+import {TermsModal} from './TermsModal';
 
 type Open =
   | {kind: 'none'}
@@ -33,8 +42,9 @@ type Open =
   | {kind: 'api-key'};
 
 export function SignInHost() {
-  const {apiKey, setApiKey} = useApiKey();
+  const {apiKey, setApiKey, clearApiKey} = useApiKey();
   const [open, setOpen] = useState<Open>({kind: 'none'});
+  const [termsOpen, setTermsOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const offUi = onSignInUiRequest(request => {
@@ -47,11 +57,23 @@ export function SignInHost() {
     const offEnded = onSignInEnded(() => {
       setOpen({kind: 'sign-in', notice: ENDED_SIGN_IN_MESSAGE});
     });
+    const offTerms = onTermsRequired(() => setTermsOpen(true));
     return () => {
       offUi();
       offEnded();
+      offTerms();
     };
   }, []);
+
+  const closeTerms = useCallback(() => {
+    setTermsOpen(false);
+    termsBoxClosed();
+  }, []);
+
+  const signOutFromTerms = useCallback(async () => {
+    await signOut(apiKey, clearApiKey);
+    closeTerms();
+  }, [apiKey, clearApiKey, closeTerms]);
 
   const close = useCallback(() => setOpen({kind: 'none'}), []);
 
@@ -79,6 +101,11 @@ export function SignInHost() {
         initialValue={isSignInToken(apiKey) ? null : apiKey}
         onSubmit={store}
         onCancel={close}
+      />
+      <TermsModal
+        visible={termsOpen}
+        onAgreed={closeTerms}
+        onSignOut={signOutFromTerms}
       />
     </>
   );

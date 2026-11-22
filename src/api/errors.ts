@@ -135,8 +135,17 @@ export function describeError(err: unknown): string {
  *  api/errors.py spells them (".../problems/<slug>"). */
 export type AuthProblemSlug = 'login-failed' | 'invalid-api-key' | 'not-a-session';
 
+/** Phase 334B — the problem-type endings the terms code acts on, as the
+ *  server's api/errors.py spells them: the switch's 403, and the 422 for
+ *  a version that is not the current one (a ProblemDetail, not FastAPI's
+ *  validation 422). */
+export type TermsProblemSlug = 'terms-not-accepted' | 'terms-version-stale';
+
 /** True when `err` is a problem body whose `type` ends with `/slug`. */
-export function hasProblemSlug(err: unknown, slug: AuthProblemSlug): boolean {
+export function hasProblemSlug(
+  err: unknown,
+  slug: AuthProblemSlug | TermsProblemSlug,
+): boolean {
   if (typeof err !== 'object' || err === null) {
     return false;
   }

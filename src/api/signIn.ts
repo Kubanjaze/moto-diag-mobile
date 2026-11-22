@@ -8,6 +8,9 @@
 //                         ".../not-a-session" for an API key, so it is
 //                         only ever called for a sign-in token)
 //
+// Phase 334B: signOut(), the one sign-out the home screen and the terms
+// box both call.
+//
 // The generated types (api-types.ts) give these responses as untyped
 // objects (the server returns plain dicts), so the shapes the app reads
 // are narrowed here, at the boundary, and nowhere else.
@@ -18,8 +21,11 @@
 import {Platform} from 'react-native';
 
 import {version as appVersion} from '../../package.json';
+import {deregisterPushToken} from '../services/pushRegistration';
+import {isSignInToken} from './auth';
 import {api, type MotoDiagApi} from './client';
 import {describeError, hasProblemSlug} from './errors';
+import {suppressSignInEnded} from './signInEvents';
 
 /** The server's own limit on LoginRequest.client (max_length=64). */
 export const CLIENT_LABEL_MAX_LENGTH = 64;
@@ -129,6 +135,35 @@ export async function endSignIn(client: MotoDiagApi = api): Promise<boolean> {
     console.log(`[signIn] logout FAILED: ${describeError(err)}`);
     return false;
   }
+}
+
+/**
+ * Sign the stored credential out: the one sequence the home screen and
+ * the terms box share (Phase 334B; moved here from HomeScreen.tsx).
+ *
+ * - A sign-in: mark the token first, so a 401 from these calls (a
+ *   sign-in the server already ended) does not pop the "has ended" box
+ *   at someone who is leaving; deregister the push token while the
+ *   token still works; end the sign-in on the server; clear the slot.
+ *   A failed logout is logged inside endSignIn and signing out goes on,
+ *   so a dead network never leaves anyone stuck signed in.
+ * - A pasted key: deregister the push token and clear. Never logout:
+ *   the server answers 400 not-a-session for a key.
+ */
+export async function signOut(
+  credential: string | null,
+  clearCredential: () => Promise<void>,
+  client: MotoDiagApi = api,
+): Promise<void> {
+  const signedIn = credential !== null && isSignInToken(credential);
+  if (signedIn) {
+    suppressSignInEnded(credential);
+  }
+  await deregisterPushToken();
+  if (signedIn) {
+    await endSignIn(client);
+  }
+  await clearCredential();
 }
 
 function toUser(value: unknown): SignedInUser | null {

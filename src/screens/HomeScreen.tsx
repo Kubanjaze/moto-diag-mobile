@@ -41,16 +41,11 @@ import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 import {api, describeError, isSignInToken, NoServerSetError} from '../api';
-import {displayName, endSignIn, fetchSignedInUser} from '../api/signIn';
-import {
-  openApiKeyEntry,
-  openSignIn,
-  suppressSignInEnded,
-} from '../api/signInEvents';
+import {displayName, fetchSignedInUser, signOut} from '../api/signIn';
+import {openApiKeyEntry, openSignIn} from '../api/signInEvents';
 import {bleService} from '../ble/BleService';
 import {OBD_SUPPORT} from '../config/features';
 import {useApiKey} from '../hooks/useApiKey';
-import {deregisterPushToken} from '../services/pushRegistration';
 import {version as appVersion} from '../../package.json';
 import type {HomeStackParamList} from '../navigation/types';
 import type {VehicleListResponse, VersionResponse} from '../types/api';
@@ -166,13 +161,13 @@ export function HomeScreen() {
           // Phase 199 — sign-out hygiene: DELETE the device token
           // while the key is still valid (the endpoint is authed), so
           // this phone stops receiving the outgoing user's pushes.
-          await deregisterPushToken();
-          await clearApiKey();
+          // Phase 334B: the sequence lives in signIn.ts signOut().
+          await signOut(apiKey, clearApiKey);
           setVehiclesState({kind: 'idle'});
         },
       },
     ]);
-  }, [clearApiKey]);
+  }, [apiKey, clearApiKey]);
 
   // Phase 303B — signing out of a sign-in: deregister the push token
   // while the token still works, end the sign-in on the server, then
@@ -180,7 +175,8 @@ export function HomeScreen() {
   // signing out goes on, so a dead network never leaves anyone stuck
   // signed in. The token is marked first so that a 401 from these
   // calls (a sign-in the server already ended) does not pop the "has
-  // ended" box at someone who is leaving.
+  // ended" box at someone who is leaving. Phase 334B: the sequence
+  // lives in signIn.ts signOut(), shared with the terms box.
   const handleSignOut = useCallback(() => {
     Alert.alert('Sign out?', 'You will need to sign in again to use the app.', [
       {text: 'Cancel', style: 'cancel'},
@@ -188,12 +184,7 @@ export function HomeScreen() {
         text: 'Sign out',
         style: 'destructive',
         onPress: async () => {
-          if (apiKey !== null) {
-            suppressSignInEnded(apiKey);
-          }
-          await deregisterPushToken();
-          await endSignIn();
-          await clearApiKey();
+          await signOut(apiKey, clearApiKey);
         },
       },
     ]);
@@ -571,7 +562,7 @@ function VehiclesBlock({
         </Text>
       </TouchableOpacity>
       {disabled ? (
-        <Text style={styles.helpText}>Set an API key first.</Text>
+        <Text style={styles.helpText}>Sign in first.</Text>
       ) : null}
       {state.kind === 'error' ? (
         <Text style={[styles.statusLine, styles.errorText]} testID="vehicles-error">
