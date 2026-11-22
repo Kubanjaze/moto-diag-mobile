@@ -5,14 +5,22 @@
 export {api, makeClient} from './client';
 export type {ApiClientOptions, MotoDiagApi} from './client';
 
-export {applyAuth, clearApiKey, getApiKey, setApiKey} from './auth';
+export {
+  applyAuth,
+  clearApiKey,
+  getApiKey,
+  isSignInToken,
+  setApiKey,
+  SIGN_IN_TOKEN_PREFIX,
+} from './auth';
 
 export {
   describeError,
   formatProblemDetail,
+  hasProblemSlug,
   isProblemDetail,
 } from './errors';
-export type {ProblemDetail} from './errors';
+export type {AuthProblemSlug, ProblemDetail} from './errors';
 
 export {
   checkServerUrlFormat,

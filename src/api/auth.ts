@@ -21,6 +21,21 @@ const KEYCHAIN_SERVICE = 'moto-diag-mobile';
 const KEYCHAIN_USERNAME = 'api-key';
 
 /**
+ * Phase 303B — what a sign-in token starts with. A staff sign-in
+ * (POST /v1/auth/login) answers a token that starts `mds_`; an API key
+ * starts `mdk_`. Both live in the one Keychain slot below and go out as
+ * X-API-Key, which the server reads for both. The app calls the token a
+ * "sign-in token", never a "session": "session" means a diagnostic
+ * session everywhere else in the app.
+ */
+export const SIGN_IN_TOKEN_PREFIX = 'mds_';
+
+/** True for a stored value that is a sign-in token, not a pasted key. */
+export function isSignInToken(value: string | null | undefined): boolean {
+  return typeof value === 'string' && value.startsWith(SIGN_IN_TOKEN_PREFIX);
+}
+
+/**
  * Read the stored API key from the Android Keystore / iOS Keychain.
  * Returns null if no key is stored or if Keychain access fails.
  *
