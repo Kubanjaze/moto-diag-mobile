@@ -141,10 +141,14 @@ export type AuthProblemSlug = 'login-failed' | 'invalid-api-key' | 'not-a-sessio
  *  validation 422). */
 export type TermsProblemSlug = 'terms-not-accepted' | 'terms-version-stale';
 
+/** Phase 372B — the problem-type ending the plan screen acts on: the
+ *  402 from the portal route when the user has no subscription yet. */
+export type BillingProblemSlug = 'subscription-required';
+
 /** True when `err` is a problem body whose `type` ends with `/slug`. */
 export function hasProblemSlug(
   err: unknown,
-  slug: AuthProblemSlug | TermsProblemSlug,
+  slug: AuthProblemSlug | TermsProblemSlug | BillingProblemSlug,
 ): boolean {
   if (typeof err !== 'object' || err === null) {
     return false;

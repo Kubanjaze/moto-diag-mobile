@@ -197,6 +197,26 @@ export function WorkOrderListScreen({navigation}: Props) {
         </View>
       </View>
 
+      {/* Phase 372B — the shop's payment screens start here. */}
+      <View style={styles.paymentsRow}>
+        <Button
+          title="Invoices"
+          variant="secondary"
+          compact
+          block={false}
+          onPress={() => navigation.navigate('Invoices', {shopId})}
+          testID="wo-list-invoices"
+        />
+        <Button
+          title="Card payments"
+          variant="secondary"
+          compact
+          block={false}
+          onPress={() => navigation.navigate('PaymentsSetup', {shopId})}
+          testID="wo-list-card-payments"
+        />
+      </View>
+
       <FlatList
         data={workOrders ?? []}
         keyExtractor={wo => String(wo.id)}
@@ -307,6 +327,15 @@ const useStyles = createThemedStyles((t) => ({
     backgroundColor: t.surface,
     paddingHorizontal: 16,
     paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: t.border,
+  },
+  paymentsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    backgroundColor: t.surface,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: t.border,
   },

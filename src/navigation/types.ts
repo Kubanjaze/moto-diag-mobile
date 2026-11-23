@@ -70,6 +70,10 @@ export type HomeStackParamList = {
    *  the `activeObdConnection` holder (providers are class instances
    *  — never route params). No params. */
   LiveData: undefined;
+  /** Phase 372B — the user's plan: choose one (Stripe Checkout) or
+   *  manage it (Stripe's customer portal). Reached from Settings, so a
+   *  user without the Shop tier, who has no Shop tab, can reach it. */
+  Plan: undefined;
 };
 
 export type GarageStackParamList = {
@@ -161,4 +165,18 @@ export type ShopStackParamList = {
    *  linked_symptom_id from KB catalog. Mobile Commit 2 adds the
    *  route. */
   TranscriptReview: {shopId: number; woId: number; transcriptId: number};
+  /** Phase 372B — the shop's Stripe account for card payments:
+   *  connect, continue onboarding, see whether it is ready. */
+  PaymentsSetup: {shopId: number};
+  /** Phase 372B — the shop's sent and overdue invoices. */
+  Invoices: {shopId: number};
+  /** Phase 372B — take one invoice's payment, at the card reader or
+   *  by a pay-link, and see how it ended. */
+  InvoicePayment: {
+    shopId: number;
+    invoiceId: number;
+    invoiceNumber: string;
+    totalCents: number;
+    currency: string;
+  };
 };
