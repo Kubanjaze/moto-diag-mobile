@@ -15,6 +15,7 @@
 
 import React, {useCallback, useEffect, useState} from 'react';
 import {ScrollView, Text, View} from 'react-native';
+import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {
@@ -26,6 +27,7 @@ import {
 } from '../api/serverUrl';
 import {Button} from '../components/Button';
 import {Field} from '../components/Field';
+import type {HomeStackParamList} from '../navigation/types';
 import {createThemedStyles} from '../theme/createThemedStyles';
 import {type ThemePreference} from '../theme/ThemeProvider';
 import {useTheme} from '../theme/useTheme';
@@ -53,7 +55,11 @@ const OPTIONS: Array<{
   },
 ];
 
-export function SettingsScreen() {
+type Props = NativeStackScreenProps<HomeStackParamList, 'Settings'>;
+
+/** Phase 372B — `navigation` is optional: tests render the screen
+ *  bare, outside a navigator. */
+export function SettingsScreen({navigation}: Partial<Props> = {}) {
   const styles = useStyles();
   const {preference, scheme, setPreference} = useTheme();
 
@@ -72,6 +78,20 @@ export function SettingsScreen() {
         <Text style={styles.title}>Settings</Text>
 
         <ServerSection />
+
+        {/* Phase 372B — the plan: choose one or manage it. */}
+        <View style={[styles.card, styles.cardSpacing]}>
+          <Text style={styles.sectionTitle}>Plan</Text>
+          <Text style={styles.sectionHint}>
+            See your plan, choose one, or manage it with Stripe.
+          </Text>
+          <Button
+            title="Your plan"
+            variant="secondary"
+            onPress={() => navigation?.navigate('Plan')}
+            testID="settings-plan"
+          />
+        </View>
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Appearance</Text>

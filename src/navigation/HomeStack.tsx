@@ -12,6 +12,7 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {OBD_SUPPORT} from '../config/features';
 import {DTCDetailScreen} from '../screens/DTCDetailScreen';
 import {DTCSearchScreen} from '../screens/DTCSearchScreen';
+import {PlanScreen} from '../screens/PlanScreen';
 import {SettingsScreen} from '../screens/SettingsScreen';
 import {HomeScreen} from '../screens/HomeScreen';
 import {ObdConnectScreen} from '../screens/ObdConnectScreen';
@@ -32,6 +33,12 @@ export function HomeStack() {
         name="Settings"
         component={SettingsScreen}
         options={{title: 'Settings'}}
+      />
+      {/* Phase 372B — reached from Settings. */}
+      <Stack.Screen
+        name="Plan"
+        component={PlanScreen}
+        options={{title: 'Plan'}}
       />
       <Stack.Screen
         name="DTCSearch"
