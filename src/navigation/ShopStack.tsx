@@ -17,6 +17,7 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
 import {ClassifyPhotosScreen} from '../screens/ClassifyPhotosScreen';
 import {PartsBrowseScreen} from '../screens/PartsBrowseScreen';
+import {PaymentsSetupScreen} from '../screens/PaymentsSetupScreen';
 import {PhotoCaptureScreen} from '../screens/PhotoCaptureScreen';
 import {ShopPickerScreen} from '../screens/ShopPickerScreen';
 import {TranscriptReviewScreen} from '../screens/TranscriptReviewScreen';
@@ -64,6 +65,11 @@ export function ShopStack() {
         name="TranscriptReview"
         component={TranscriptReviewScreen}
         options={{title: 'Review transcript', headerShown: true}}
+      />
+      <Stack.Screen
+        name="PaymentsSetup"
+        component={PaymentsSetupScreen}
+        options={{title: 'Card payments'}}
       />
       <Stack.Screen
         name="ShopPicker"
