@@ -16,6 +16,8 @@ import React from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
 import {ClassifyPhotosScreen} from '../screens/ClassifyPhotosScreen';
+import {InvoicePaymentScreen} from '../screens/InvoicePaymentScreen';
+import {InvoicesScreen} from '../screens/InvoicesScreen';
 import {PartsBrowseScreen} from '../screens/PartsBrowseScreen';
 import {PaymentsSetupScreen} from '../screens/PaymentsSetupScreen';
 import {PhotoCaptureScreen} from '../screens/PhotoCaptureScreen';
@@ -70,6 +72,16 @@ export function ShopStack() {
         name="PaymentsSetup"
         component={PaymentsSetupScreen}
         options={{title: 'Card payments'}}
+      />
+      <Stack.Screen
+        name="Invoices"
+        component={InvoicesScreen}
+        options={{title: 'Invoices'}}
+      />
+      <Stack.Screen
+        name="InvoicePayment"
+        component={InvoicePaymentScreen}
+        options={{title: 'Take payment'}}
       />
       <Stack.Screen
         name="ShopPicker"

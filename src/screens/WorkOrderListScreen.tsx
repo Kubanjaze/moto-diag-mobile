@@ -200,6 +200,14 @@ export function WorkOrderListScreen({navigation}: Props) {
       {/* Phase 372B — the shop's payment screens start here. */}
       <View style={styles.paymentsRow}>
         <Button
+          title="Invoices"
+          variant="secondary"
+          compact
+          block={false}
+          onPress={() => navigation.navigate('Invoices', {shopId})}
+          testID="wo-list-invoices"
+        />
+        <Button
           title="Card payments"
           variant="secondary"
           compact
