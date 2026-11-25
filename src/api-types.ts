@@ -1409,6 +1409,186 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shop/{shop_id}/manuals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The shop's manuals, of every status, by bike */
+        get: operations["list_shop_manuals_v1_shop__shop_id__manuals_get"];
+        put?: never;
+        /**
+         * Upload a PDF manual or parts book the shop owns
+         * @description Multipart ``file`` (the PDF) and ``metadata`` (its tag, JSON). The
+         *     owner and the service writer upload (``manage_shop``). The manual waits
+         *     for review before anyone can open it.
+         */
+        post: operations["upload_manual_v1_shop__shop_id__manuals_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/manuals/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The shop's manual storage: used, its plan's limit, the file cap */
+        get: operations["manual_usage_v1_shop__shop_id__manuals_usage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/manuals/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Find the page with the words, in the shop's approved manuals */
+        get: operations["search_shop_manuals_v1_shop__shop_id__manuals_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/manuals/{manual_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One of the shop's manuals, any status */
+        get: operations["get_shop_manual_v1_shop__shop_id__manuals__manual_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a manual: its file, its page images and its rows
+         * @description Idempotent: a manual already gone is 204 again.
+         */
+        delete: operations["delete_shop_manual_v1_shop__shop_id__manuals__manual_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/manuals/{manual_id}/pages/{n}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A page of an approved manual, as a JPEG */
+        get: operations["get_shop_manual_page_v1_shop__shop_id__manuals__manual_id__pages__n__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shop/{shop_id}/manuals/{manual_id}/flag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send an approved manual back for review, naming a page and why */
+        post: operations["flag_shop_manual_v1_shop__shop_id__manuals__manual_id__flag_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/review/manuals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The review queue across every shop, oldest first */
+        get: operations["review_queue_v1_review_manuals_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/review/manuals/{manual_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One uploaded manual, any status, any shop */
+        get: operations["review_manual_v1_review_manuals__manual_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/review/manuals/{manual_id}/pages/{n}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A page of any uploaded manual, as a JPEG */
+        get: operations["review_manual_page_v1_review_manuals__manual_id__pages__n__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/review/manuals/{manual_id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve, fix the tag and approve, reject, or take down */
+        post: operations["review_decision_v1_review_manuals__manual_id__decision_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shop/{shop_id}/work-orders/{wo_id}/transcripts": {
         parameters: {
             query?: never;
@@ -1900,6 +2080,13 @@ export interface components {
              */
             question: string;
         };
+        /** Body_upload_manual_v1_shop__shop_id__manuals_post */
+        Body_upload_manual_v1_shop__shop_id__manuals_post: {
+            /** File */
+            file: string;
+            /** Metadata */
+            metadata: string;
+        };
         /** Body_upload_video_v1_sessions__session_id__videos_post */
         Body_upload_video_v1_sessions__session_id__videos_post: {
             /** File */
@@ -2383,6 +2570,83 @@ export interface components {
             /** Client */
             client?: string | null;
         };
+        /** ManualFlagRequest */
+        ManualFlagRequest: {
+            /** Page Number */
+            page_number: number;
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * ManualResponse
+         * @description A manual as the shop sees it: its tag, its review and its pages;
+         *     never where the file is stored or its hash.
+         */
+        ManualResponse: {
+            /** Id */
+            id: number;
+            /** Shop Id */
+            shop_id: number;
+            /** Title */
+            title: string;
+            /** Kind */
+            kind: ("service_manual" | "parts_catalog" | "wiring" | "other") | null;
+            /** Source */
+            source: string;
+            /** Publisher */
+            publisher: string | null;
+            /** Make */
+            make: string | null;
+            /** Model */
+            model: string | null;
+            /** Year Start */
+            year_start: number | null;
+            /** Year End */
+            year_end: number | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending_review" | "approved" | "rejected" | "taken_down";
+            /** Review Reason */
+            review_reason: string | null;
+            /** Reviewed At */
+            reviewed_at: string | null;
+            /** Page Count */
+            page_count: number | null;
+            /** Rendered Pages */
+            rendered_pages: number;
+            /** Render Error */
+            render_error: string | null;
+            /** File Size Bytes */
+            file_size_bytes: number | null;
+            /** Uploaded By User Id */
+            uploaded_by_user_id: number | null;
+            /** Created At */
+            created_at: string | null;
+        };
+        /** ManualSearchHit */
+        ManualSearchHit: {
+            /** Manual Id */
+            manual_id: number;
+            /** Title */
+            title: string;
+            /** Page Number */
+            page_number: number;
+            /** Snippet */
+            snippet: string;
+        };
+        /** ManualUsageResponse */
+        ManualUsageResponse: {
+            /** Plan */
+            plan: string | null;
+            /** Used Bytes */
+            used_bytes: number;
+            /** Limit Bytes */
+            limit_bytes: number | null;
+            /** File Cap Bytes */
+            file_cap_bytes: number;
+        };
         /** MemberAddRequest */
         MemberAddRequest: {
             /** User Id */
@@ -2695,6 +2959,84 @@ export interface components {
             wo_ids?: number[] | null;
             /** Notes */
             notes?: string | null;
+        };
+        /**
+         * ReviewDecisionRequest
+         * @description A decision, with any tag fields the reviewer corrects first.
+         */
+        ReviewDecisionRequest: {
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "approved" | "rejected" | "taken_down";
+            /** Reason */
+            reason?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Kind */
+            kind?: ("service_manual" | "parts_catalog" | "wiring" | "other") | null;
+            /** Make */
+            make?: string | null;
+            /** Model */
+            model?: string | null;
+            /** Year Start */
+            year_start?: number | null;
+            /** Year End */
+            year_end?: number | null;
+        };
+        /**
+         * ReviewQueueItem
+         * @description A manual in the reviewer's queue, with whose it is.
+         */
+        ReviewQueueItem: {
+            /** Id */
+            id: number;
+            /** Shop Id */
+            shop_id: number;
+            /** Title */
+            title: string;
+            /** Kind */
+            kind: ("service_manual" | "parts_catalog" | "wiring" | "other") | null;
+            /** Source */
+            source: string;
+            /** Publisher */
+            publisher: string | null;
+            /** Make */
+            make: string | null;
+            /** Model */
+            model: string | null;
+            /** Year Start */
+            year_start: number | null;
+            /** Year End */
+            year_end: number | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending_review" | "approved" | "rejected" | "taken_down";
+            /** Review Reason */
+            review_reason: string | null;
+            /** Reviewed At */
+            reviewed_at: string | null;
+            /** Page Count */
+            page_count: number | null;
+            /** Rendered Pages */
+            rendered_pages: number;
+            /** Render Error */
+            render_error: string | null;
+            /** File Size Bytes */
+            file_size_bytes: number | null;
+            /** Uploaded By User Id */
+            uploaded_by_user_id: number | null;
+            /** Created At */
+            created_at: string | null;
+            /** Shop Name */
+            shop_name?: string | null;
+            /** Uploader Username */
+            uploader_username?: string | null;
+            /** Reviewed By User Id */
+            reviewed_by_user_id?: number | null;
         };
         /** SessionCreateRequest */
         SessionCreateRequest: {
@@ -7188,6 +7530,495 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                     "image/jpeg": unknown;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    list_shop_manuals_v1_shop__shop_id__manuals_get: {
+        parameters: {
+            query?: {
+                make?: string | null;
+                model?: string | null;
+                year?: number | null;
+                kind?: ("service_manual" | "parts_catalog" | "wiring" | "other") | null;
+                status?: ("pending_review" | "approved" | "rejected" | "taken_down") | null;
+            };
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualResponse"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    upload_manual_v1_shop__shop_id__manuals_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_manual_v1_shop__shop_id__manuals_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    manual_usage_v1_shop__shop_id__manuals_usage_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualUsageResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    search_shop_manuals_v1_shop__shop_id__manuals_search_get: {
+        parameters: {
+            query: {
+                q: string;
+                make?: string | null;
+                model?: string | null;
+                year?: number | null;
+                limit?: number;
+            };
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualSearchHit"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_shop_manual_v1_shop__shop_id__manuals__manual_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                manual_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    delete_shop_manual_v1_shop__shop_id__manuals__manual_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                manual_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    get_shop_manual_page_v1_shop__shop_id__manuals__manual_id__pages__n__get: {
+        parameters: {
+            query?: {
+                size?: "full" | "thumb";
+            };
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                manual_id: number;
+                n: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "image/jpeg": unknown;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    flag_shop_manual_v1_shop__shop_id__manuals__manual_id__flag_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                shop_id: number;
+                manual_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualFlagRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    review_queue_v1_review_manuals_get: {
+        parameters: {
+            query?: {
+                status?: "pending_review" | "approved" | "rejected" | "taken_down";
+            };
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewQueueItem"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    review_manual_v1_review_manuals__manual_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                manual_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewQueueItem"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    review_manual_page_v1_review_manuals__manual_id__pages__n__get: {
+        parameters: {
+            query?: {
+                size?: "full" | "thumb";
+            };
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                manual_id: number;
+                n: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "image/jpeg": unknown;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            429: components["responses"]["RateLimitExceeded"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    review_decision_v1_review_manuals__manual_id__decision_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                manual_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewQueueItem"];
                 };
             };
             401: components["responses"]["Unauthorized"];
