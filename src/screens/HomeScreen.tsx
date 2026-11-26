@@ -275,7 +275,7 @@ export function HomeScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         contentInsetAdjustmentBehavior="automatic">
-        <Text style={styles.title}>MotoDiag</Text>
+        <Text style={styles.title}>Mekno</Text>
         <Text style={styles.subtitle}>v{appVersion} · Phase 191</Text>
 
         <Section title="Backend">

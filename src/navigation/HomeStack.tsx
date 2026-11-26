@@ -27,7 +27,7 @@ export function HomeStack() {
       <Stack.Screen
         name="Home"
         component={HomeScreen}
-        options={{title: 'MotoDiag'}}
+        options={{title: 'Mekno'}}
       />
       <Stack.Screen
         name="Settings"

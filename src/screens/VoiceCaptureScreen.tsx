@@ -253,7 +253,7 @@ export function VoiceCaptureScreen({navigation, route}: Props) {
             Microphone permission required
           </Text>
           <Text style={styles.permissionBody}>
-            MotoDiag needs microphone access to capture voice memos.
+            Mekno needs microphone access to capture voice memos.
             Open Settings to allow microphone access, then return.
           </Text>
           <Button

@@ -262,13 +262,13 @@ export async function validateServerUrl(
   if (response.status !== 200) {
     return {
       ok: false,
-      reason: `${url} answered HTTP ${response.status}. Is that a MotoDiag server?`,
+      reason: `${url} answered HTTP ${response.status}. Is that a Mekno server?`,
     };
   }
   if (health.status !== 'ok' || typeof health.schema_version !== 'number') {
     return {
       ok: false,
-      reason: `${url} answered, but not like a MotoDiag server.`,
+      reason: `${url} answered, but not like a Mekno server.`,
     };
   }
   return {ok: true, url, schemaVersion: health.schema_version};
