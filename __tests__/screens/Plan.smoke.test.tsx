@@ -19,9 +19,13 @@ jest.mock('../../src/api', () => ({
   api: {POST: jest.fn()},
 }));
 let mockTier: string | null = 'shop';
+// Phase 210B (F304): `plan` is null when there is no plan, while `tier`
+// reads 'individual' then, as useTier has always done.
+let mockPlan: string | null = 'shop';
 jest.mock('../../src/hooks/useTier', () => ({
   useTier: () => ({
-    tier: mockTier, isLoading: false, error: null, refetch: jest.fn(),
+    tier: mockTier, plan: mockPlan, isLoading: false, error: null,
+    refetch: jest.fn(),
   }),
 }));
 
@@ -39,6 +43,7 @@ let openURL: jest.SpyInstance;
 
 beforeEach(() => {
   mockTier = 'shop';
+  mockPlan = 'shop';
   mockApi.POST.mockReset();
   openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true as never);
   openURL.mockClear();
@@ -168,4 +173,41 @@ it('Settings leads to the plan screen', async () => {
     tree.root.findByProps({testID: 'settings-plan'}).props.onPress();
   });
   expect(navigation.navigate).toHaveBeenCalledWith('Plan');
+});
+
+// Phase 210B item 4 (F304) — the plan screen before any plan.
+describe('with no plan', () => {
+  beforeEach(() => {
+    // What useTier gives for the server's 200 with tier null, a 402 or
+    // a 404: tier reads 'individual', plan is null.
+    mockTier = 'individual';
+    mockPlan = null;
+  });
+
+  it('says "No plan yet", marks no plan "(your plan)" and offers no "Manage plan"', async () => {
+    const tree = await render();
+    expect(JSON.stringify(
+      tree.root.findByProps({testID: 'plan-current'}).props.children,
+    )).toContain('No plan yet');
+    expect(allText(tree)).not.toContain('(your plan)');
+    expect(tree.root.findAllByProps({testID: 'plan-manage'})).toHaveLength(0);
+  });
+
+  it('still offers every plan to choose', async () => {
+    const tree = await render();
+    for (const p of PLANS) {
+      expect(tree.root.findAllByProps({testID: `plan-choose-${p.tier}`}).length)
+        .toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('with the Shop plan', () => {
+  it('shows "Shop (your plan)" and "Manage plan"', async () => {
+    const tree = await render();
+    expect(allText(tree)).toContain('Shop (your plan)');
+    expect(allText(tree)).not.toContain('Individual: for your own bikes (your plan)');
+    expect(tree.root.findAllByProps({testID: 'plan-manage'}).length)
+      .toBeGreaterThan(0);
+  });
 });

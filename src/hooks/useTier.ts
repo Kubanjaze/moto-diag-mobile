@@ -59,7 +59,15 @@ export function hasShopAccess(
 }
 
 export interface UseTierResult {
+  /** The tier the app's surfaces follow. No active plan (the server's
+   *  200 with tier null, a 402 or a 404) and an unknown tier read as
+   *  'individual', the free baseline; signed out reads as null. */
   tier: SubscriptionTier | null;
+  /** Phase 210B (F304): the tier of the active plan the server
+   *  reported, or null when there is none: no plan (200 with tier null,
+   *  402, 404), a tier the app does not know, or signed out. What the
+   *  plan screen shows, so "no plan" is not mistaken for Individual. */
+  plan: SubscriptionTier | null;
   /** True while the initial fetch is in flight; false on subsequent
    *  refetches (UI shouldn't flash a loading state on every
    *  AppState transition — only on initial mount). */
@@ -75,6 +83,7 @@ export interface UseTierResult {
 export function useTier(): UseTierResult {
   const {apiKey} = useApiKey();
   const [tier, setTier] = useState<SubscriptionTier | null>(null);
+  const [plan, setPlan] = useState<SubscriptionTier | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [hasFetchedOnce, setHasFetchedOnce] = useState<boolean>(false);
@@ -84,6 +93,7 @@ export function useTier(): UseTierResult {
     // (covers the sign-out path).
     if (!apiKey) {
       setTier(null);
+      setPlan(null);
       setError(null);
       setIsLoading(false);
       setHasFetchedOnce(true);
@@ -110,9 +120,11 @@ export function useTier(): UseTierResult {
         const status = typeof r.status === 'number' ? r.status : 0;
         if (status === 402 || status === 404) {
           setTier('individual');
+          setPlan(null);
         } else {
           setError(typeof r.title === 'string' ? r.title : 'Tier fetch failed');
           setTier(null);
+          setPlan(null);
         }
       } else if (data) {
         const raw = data.tier;
@@ -127,8 +139,10 @@ export function useTier(): UseTierResult {
           raw === 'company'
         ) {
           setTier(raw);
+          setPlan(raw);
         } else {
           setTier('individual');
+          setPlan(null);
         }
       }
     } catch (thrown) {
@@ -164,5 +178,5 @@ export function useTier(): UseTierResult {
     };
   }, [fetchTier]);
 
-  return {tier, isLoading, error, refetch: fetchTier};
+  return {tier, plan, isLoading, error, refetch: fetchTier};
 }

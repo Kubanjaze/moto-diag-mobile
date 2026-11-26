@@ -2716,6 +2716,20 @@ Individual, says "No plan yet", and hides or disables Manage plan until
 there is a plan, with a test. The Shop tab's rule (`hasShopAccess`) does
 not change.
 
+Closed by Phase 210B (2026-11-26, branch
+`phase-210B-the-apps-icon-name-and-day-one-fixes`). `useTier` keeps
+`tier` as it was, so the Shop tab's rule and every other use of it are
+unchanged, and also returns `plan`: the tier of the active plan the
+server reported, or null for the server's 200 with tier null, a 402, a
+404, a tier the app does not know, or signed out. `PlanScreen.tsx` reads
+`plan`: with none it says "No plan yet", marks no plan "(your plan)" and
+shows no "Manage plan" (hidden, not disabled; also hidden while the plan
+is still being checked). With the Shop plan it shows "Shop (your plan)"
+and "Manage plan", as before. Tests: `__tests__/hooks/useTier.test.ts`
+(the `plan` cases; on main its 8 new cases fail) and
+`__tests__/screens/Plan.smoke.test.tsx` (the no-plan case fails on main;
+the Shop-plan case pins what already held).
+
 ### F305
 
 **A paid invoice drops out of Invoices, so it looks deleted**
