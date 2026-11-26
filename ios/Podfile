@@ -8,6 +8,14 @@
 # first. The project declares the truth in Info.plist
 # (RCTNewArchEnabled=true). See docs/adr/002-*.md. (Phase 208)
 
+# The app never asks the camera for a location, but
+# react-native-vision-camera builds its location code (CLLocationManager)
+# unless this is false, and Apple flagged build 1 for it: ITMS-90683,
+# a missing NSLocationWhenInUseUsageDescription. Turning the library's
+# location off removes the cause; no purpose string is added, because
+# the app does not use location. (Phase 210C, K148)
+$VCEnableLocation = false
+
 # Resolve react_native_pods.rb with node to allow for hoisting
 require Pod::Executable.execute_command('node', ['-p',
   'require.resolve(
