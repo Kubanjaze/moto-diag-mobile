@@ -95,7 +95,7 @@ export function describeObdError(error: ObdConnectionError): ObdErrorCopy {
         title: 'Bluetooth permission needed',
         message:
           error.message ||
-          'MotoDiag needs Bluetooth permission to find your OBD-II adapter. Open Settings to allow it, then return.',
+          'Mekno needs Bluetooth permission to find your OBD-II adapter. Open Settings to allow it, then return.',
         canRetry: false,
         needsSettings: true,
       };

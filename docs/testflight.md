@@ -74,7 +74,7 @@ network**, not the shop wifi.
 None of this can be done from here, and none of it should be — it all
 requires Apple credentials.
 
-1. **An App Store Connect app record** for `com.bandithero.motodiag`,
+1. **An App Store Connect app record** for `com.getmekno.app`,
    with the Push Notifications capability enabled on the App ID.
 2. **Agreements.** A new team usually has an unsigned Paid Apps or
    updated Program Licence Agreement; uploads silently fail until it is

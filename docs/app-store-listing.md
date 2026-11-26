@@ -11,7 +11,7 @@ your app name is 31 characters at upload time is a wasted round trip.
 |---|---|---|
 | **Name** | `MotoDiag` | 30 |
 | **Subtitle** | `Motorcycle diagnostics & shop` | 30 |
-| **Bundle ID** | `com.bandithero.motodiag` | — |
+| **Bundle ID** | `com.getmekno.app` (iOS) | — |
 | **Primary category** | Business | — |
 | **Secondary category** | Productivity | — |
 | **Age rating** | 4+ | — |

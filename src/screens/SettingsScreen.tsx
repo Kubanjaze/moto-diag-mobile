@@ -14,7 +14,7 @@
 // in the app can work, including with no API key stored.
 
 import React, {useCallback, useEffect, useState} from 'react';
-import {ScrollView, Text, View} from 'react-native';
+import {KeyboardAvoidingView, Platform, ScrollView, Text, View} from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -72,51 +72,58 @@ export function SettingsScreen({navigation}: Partial<Props> = {}) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        testID="settings-scroll">
-        <Text style={styles.title}>Settings</Text>
+      {/* Phase 210B (F303): the server address box stays above the
+          keyboard, as the four screens with KeyboardAvoidingView do. */}
+      <KeyboardAvoidingView
+        style={styles.kav}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          testID="settings-scroll">
+          <Text style={styles.title}>Settings</Text>
 
-        <ServerSection />
+          <ServerSection />
 
-        {/* Phase 372B — the plan: choose one or manage it. */}
-        <View style={[styles.card, styles.cardSpacing]}>
-          <Text style={styles.sectionTitle}>Plan</Text>
-          <Text style={styles.sectionHint}>
-            See your plan, choose one, or manage it with Stripe.
-          </Text>
-          <Button
-            title="Your plan"
-            variant="secondary"
-            onPress={() => navigation?.navigate('Plan')}
-            testID="settings-plan"
-          />
-        </View>
+          {/* Phase 372B — the plan: choose one or manage it. */}
+          <View style={[styles.card, styles.cardSpacing]}>
+            <Text style={styles.sectionTitle}>Plan</Text>
+            <Text style={styles.sectionHint}>
+              See your plan, choose one, or manage it with Stripe.
+            </Text>
+            <Button
+              title="Your plan"
+              variant="secondary"
+              onPress={() => navigation?.navigate('Plan')}
+              testID="settings-plan"
+            />
+          </View>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Appearance</Text>
-          <Text style={styles.sectionHint}>
-            Currently showing the {scheme} theme.
-          </Text>
-          {OPTIONS.map((option) => {
-            const selected = preference === option.value;
-            return (
-              <View key={option.value} style={styles.option}>
-                <Button
-                  title={selected ? `${option.label}  ✓` : option.label}
-                  variant={selected ? 'primary' : 'secondary'}
-                  onPress={() => choose(option.value)}
-                  testID={`settings-theme-${option.value}`}
-                  accessibilityLabel={`${option.label} appearance${
-                    selected ? ', selected' : ''
-                  }`}
-                />
-                <Text style={styles.optionHint}>{option.hint}</Text>
-              </View>
-            );
-          })}
-        </View>
-      </ScrollView>
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Appearance</Text>
+            <Text style={styles.sectionHint}>
+              Currently showing the {scheme} theme.
+            </Text>
+            {OPTIONS.map((option) => {
+              const selected = preference === option.value;
+              return (
+                <View key={option.value} style={styles.option}>
+                  <Button
+                    title={selected ? `${option.label}  ✓` : option.label}
+                    variant={selected ? 'primary' : 'secondary'}
+                    onPress={() => choose(option.value)}
+                    testID={`settings-theme-${option.value}`}
+                    accessibilityLabel={`${option.label} appearance${
+                      selected ? ', selected' : ''
+                    }`}
+                  />
+                  <Text style={styles.optionHint}>{option.hint}</Text>
+                </View>
+              );
+            })}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -255,6 +262,7 @@ function ServerSection() {
 
 const useStyles = createThemedStyles((t) => ({
   safe: {flex: 1, backgroundColor: t.background},
+  kav: {flex: 1},
   scroll: {padding: 16, paddingBottom: 48},
   title: {
     fontSize: type.title,

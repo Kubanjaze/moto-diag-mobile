@@ -238,3 +238,49 @@ describe('useTier', () => {
     expect(result.current.tier).toBe('shop');
   });
 });
+
+// Phase 210B item 4 (F304) — "no plan" told apart from Individual.
+//
+// `tier` keeps its old meaning (no plan reads as the 'individual'
+// baseline), so the Shop tab's rule and every other use are unchanged.
+// `plan` is the tier of an active plan the server reported, and null
+// when there is none: what the plan screen shows.
+describe('useTier — plan, told apart from "no plan"', () => {
+  async function settle() {
+    const {result} = trackedRenderHook<UseTierResult>(() => useTier());
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+    return result.current;
+  }
+
+  it.each([
+    ['200 with tier null', () => ok({tier: null, status: null})],
+    ['402', () => err(402, {title: 'Subscription required', status: 402})],
+    ['404', () => err(404, {title: 'Not Found', status: 404})],
+    ['an unknown tier string', () => ok({tier: 'enterprise_plus_pro'})],
+  ])('%s: no plan, while tier stays individual', async (_label, reply) => {
+    getMock.mockImplementation(reply);
+    const r = await settle();
+    expect(r.plan).toBeNull();
+    expect(r.tier).toBe('individual');
+    expect(r.error).toBeNull();
+  });
+
+  it.each<SubscriptionTier>(['individual', 'shop', 'company'])(
+    'an active %s plan is that plan',
+    async (t) => {
+      getMock.mockImplementation(() => ok({tier: t, status: 'active'}));
+      const r = await settle();
+      expect(r.plan).toBe(t);
+      expect(r.tier).toBe(t);
+    },
+  );
+
+  it('signed out is no plan', async () => {
+    mockApiKey = null;
+    const r = await settle();
+    expect(r.plan).toBeNull();
+    expect(r.tier).toBeNull();
+  });
+});

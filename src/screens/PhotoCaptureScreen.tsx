@@ -167,7 +167,7 @@ export function PhotoCaptureScreen({navigation, route}: Props) {
         <View style={styles.permissionPane}>
           <Text style={styles.permissionTitle}>Camera permission required</Text>
           <Text style={styles.permissionBody}>
-            MotoDiag needs camera access to capture photos for work
+            Mekno needs camera access to capture photos for work
             orders. Open Settings to allow camera access, then return.
           </Text>
           <Button

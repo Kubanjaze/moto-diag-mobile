@@ -218,11 +218,11 @@ describe('validateServerUrl', () => {
 
   it.each([
     ['a degraded server', 503, {status: 'degraded', detail: 'db unreachable: locked'}, /isn't healthy: db unreachable: locked/],
-    ['a 404', 404, {detail: 'Not Found'}, /answered HTTP 404/],
+    ['a 404', 404, {detail: 'Not Found'}, /answered HTTP 404\. Is that a Mekno server\?/],
     ['a 401', 401, {title: 'Invalid or missing API key'}, /answered HTTP 401/],
-    ['a web page', 200, '<html>hello</html>', /not like a MotoDiag server/],
-    ['ok without a schema version', 200, {status: 'ok'}, /not like a MotoDiag server/],
-    ['some other JSON', 200, {hello: 'world'}, /not like a MotoDiag server/],
+    ['a web page', 200, '<html>hello</html>', /not like a Mekno server/],
+    ['ok without a schema version', 200, {status: 'ok'}, /not like a Mekno server/],
+    ['some other JSON', 200, {hello: 'world'}, /not like a Mekno server/],
   ])('refuses %s', async (_label, status, body, reason) => {
     const result = await validateServerUrl('https://api.example.com', {
       fetchImpl: respond(status, body) as unknown as typeof fetch,

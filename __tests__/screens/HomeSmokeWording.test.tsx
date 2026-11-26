@@ -73,3 +73,18 @@ describe('Home "Authed smoke" block — nothing stored', () => {
     expect(text).not.toContain('Set an API key first.');
   });
 });
+
+// Phase 210B item 2 — the home screen's heading is the app's name, Mekno.
+describe('Home heading — the app is called Mekno', () => {
+  it('shows "Mekno" and not "MotoDiag"', async () => {
+    let tree!: ReactTestRenderer.ReactTestRenderer;
+    await act(async () => {
+      tree = ReactTestRenderer.create(withTheme(<HomeScreen />));
+    });
+    const texts = tree.root
+      .findAllByType(Text)
+      .map(n => [n.props.children].flat().join(''));
+    expect(texts).toContain('Mekno');
+    expect(texts.join('\n')).not.toContain('MotoDiag');
+  });
+});

@@ -43,6 +43,12 @@ function planName(tier: SubscriptionTier | null): string {
   return plan !== undefined ? plan.name : 'No plan yet';
 }
 
+/** True when the user has a plan this screen lists, so there is one to
+ *  manage. */
+function hasPlanToManage(tier: SubscriptionTier | null): boolean {
+  return PLANS.some((p) => p.tier === tier);
+}
+
 function refusalSentence(apiError: unknown, status: number): string {
   if (status === 402 && hasProblemSlug(apiError, 'subscription-required')) {
     return CHOOSE_A_PLAN_FIRST;
@@ -57,7 +63,9 @@ function refusalSentence(apiError: unknown, status: number): string {
 
 export function PlanScreen(_props: Props) {
   const styles = useStyles();
-  const {tier, isLoading} = useTier();
+  // Phase 210B (F304): `plan`, not `tier`, which reads 'individual'
+  // when there is no plan.
+  const {plan: current, isLoading} = useTier();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -110,17 +118,19 @@ export function PlanScreen(_props: Props) {
         <View style={[styles.card, styles.cardSpacing]}>
           <Text style={styles.sectionTitle}>Your plan</Text>
           <Text style={styles.current} testID="plan-current">
-            {isLoading ? 'Checking…' : planName(tier)}
+            {isLoading ? 'Checking…' : planName(current)}
           </Text>
-          <View style={styles.action}>
-            <Button
-              title="Manage plan"
-              variant="secondary"
-              onPress={onManage}
-              disabled={busy}
-              testID="plan-manage"
-            />
-          </View>
+          {!isLoading && hasPlanToManage(current) ? (
+            <View style={styles.action}>
+              <Button
+                title="Manage plan"
+                variant="secondary"
+                onPress={onManage}
+                disabled={busy}
+                testID="plan-manage"
+              />
+            </View>
+          ) : null}
           {error !== null ? (
             <Text style={styles.errorLine} testID="plan-error">
               {error}
@@ -133,7 +143,7 @@ export function PlanScreen(_props: Props) {
           {PLANS.map((plan) => (
             <View key={plan.tier} style={styles.planRow}>
               <Text style={styles.planName}>
-                {plan.tier === tier ? `${plan.name} (your plan)` : plan.name}
+                {plan.tier === current ? `${plan.name} (your plan)` : plan.name}
               </Text>
               <Button
                 title="Choose"

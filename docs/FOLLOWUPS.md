@@ -2685,6 +2685,18 @@ on a shop's first day, so it shows on day one. What would close it: both
 keep the box being typed in above the keyboard, as those four do, checked
 on a phone.
 
+Closed by Phase 210B (2026-11-26, branch
+`phase-210B-the-apps-icon-name-and-day-one-fixes`). `SignInModal.tsx`'s
+backdrop is now a `KeyboardAvoidingView`, so the sheet rises with the
+keyboard. Settings' `ScrollView` sits inside one, and keeps taps while the
+keyboard is up (`keyboardShouldPersistTaps="handled"`), as the four
+screens do. Both use the same `behavior` as those four: `padding` on iOS,
+none on Android. Test: `__tests__/screens/KeyboardAvoid.test.tsx`, which
+checks on the rendered tree that the sign-in boxes, its Sign in button,
+the server address box and its Save button each sit inside a
+`KeyboardAvoidingView` with padding; on main its 5 cases fail. The check on
+a phone is the operator's cable install after the merge.
+
 ### F304
 
 **The plan screen says "Individual (your plan)" to an owner who has not paid, and offers "Manage plan"**
@@ -2703,6 +2715,20 @@ What would close it: the plan screen tells "no plan" apart from
 Individual, says "No plan yet", and hides or disables Manage plan until
 there is a plan, with a test. The Shop tab's rule (`hasShopAccess`) does
 not change.
+
+Closed by Phase 210B (2026-11-26, branch
+`phase-210B-the-apps-icon-name-and-day-one-fixes`). `useTier` keeps
+`tier` as it was, so the Shop tab's rule and every other use of it are
+unchanged, and also returns `plan`: the tier of the active plan the
+server reported, or null for the server's 200 with tier null, a 402, a
+404, a tier the app does not know, or signed out. `PlanScreen.tsx` reads
+`plan`: with none it says "No plan yet", marks no plan "(your plan)" and
+shows no "Manage plan" (hidden, not disabled; also hidden while the plan
+is still being checked). With the Shop plan it shows "Shop (your plan)"
+and "Manage plan", as before. Tests: `__tests__/hooks/useTier.test.ts`
+(the `plan` cases; on main its 8 new cases fail) and
+`__tests__/screens/Plan.smoke.test.tsx` (the no-plan case fails on main;
+the Shop-plan case pins what already held).
 
 ### F305
 
