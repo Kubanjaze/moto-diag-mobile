@@ -2685,6 +2685,18 @@ on a shop's first day, so it shows on day one. What would close it: both
 keep the box being typed in above the keyboard, as those four do, checked
 on a phone.
 
+Closed by Phase 210B (2026-11-26, branch
+`phase-210B-the-apps-icon-name-and-day-one-fixes`). `SignInModal.tsx`'s
+backdrop is now a `KeyboardAvoidingView`, so the sheet rises with the
+keyboard. Settings' `ScrollView` sits inside one, and keeps taps while the
+keyboard is up (`keyboardShouldPersistTaps="handled"`), as the four
+screens do. Both use the same `behavior` as those four: `padding` on iOS,
+none on Android. Test: `__tests__/screens/KeyboardAvoid.test.tsx`, which
+checks on the rendered tree that the sign-in boxes, its Sign in button,
+the server address box and its Save button each sit inside a
+`KeyboardAvoidingView` with padding; on main its 5 cases fail. The check on
+a phone is the operator's cable install after the merge.
+
 ### F304
 
 **The plan screen says "Individual (your plan)" to an owner who has not paid, and offers "Manage plan"**

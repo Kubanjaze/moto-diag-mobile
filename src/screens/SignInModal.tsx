@@ -12,6 +12,7 @@
 
 import React, {useCallback, useEffect, useState} from 'react';
 import {
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Text,
@@ -103,7 +104,11 @@ export function SignInModal({
       transparent
       animationType="slide"
       onRequestClose={onCancel}>
-      <View style={styles.backdrop}>
+      {/* Phase 210B (F303): the sheet rises with the keyboard, as the
+          four screens with KeyboardAvoidingView do. */}
+      <KeyboardAvoidingView
+        style={styles.backdrop}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.sheet}>
           <Text style={styles.title}>Sign in</Text>
           {notice ? (
@@ -176,7 +181,7 @@ export function SignInModal({
             <Text style={styles.linkText}>Use an API key instead</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
