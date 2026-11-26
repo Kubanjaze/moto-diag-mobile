@@ -310,7 +310,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.bandithero.motodiag;
+				PRODUCT_BUNDLE_IDENTIFIER = com.getmekno.app;
 				PRODUCT_NAME = MotoDiag;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -342,7 +342,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.bandithero.motodiag;
+				PRODUCT_BUNDLE_IDENTIFIER = com.getmekno.app;
 				PRODUCT_NAME = MotoDiag;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_OBJC_BRIDGING_HEADER = "MotoDiag/MotoDiag-Bridging-Header.h";

@@ -34,7 +34,8 @@ required — the app is a client.
 - **`react-native-ble-plx`** + **`react-native-bluetooth-classic`** for OBD
 - **`react-native-config`** for env vars — mind the rebuild gotcha below
 
-Minimum iOS 15.1. Bundle id `com.bandithero.motodiag`.
+Minimum iOS 15.1. Bundle id `com.getmekno.app` on iOS (Phase 210B,
+K147); Android's applicationId is still `com.bandithero.motodiag`.
 
 > Android source is present and builds have been exercised historically,
 > but iOS is the shipped and smoke-tested target. Treat Android as
