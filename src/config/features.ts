@@ -25,6 +25,17 @@
  */
 export const OBD_SUPPORT: boolean = __DEV__;
 
+/**
+ * Developer panels on the home screen (Phase 210C, K148).
+ *
+ * The subtitle line ("v… · Phase 191") and the "Backend", "Authed smoke"
+ * and "BLE scan" sections are tools for building the app, not for a
+ * shop. ON in development builds so the team keeps them; OFF in release
+ * builds (TestFlight, App Store, cable installs), where the home screen
+ * shows Auth, Settings and DTC lookup only.
+ */
+export const DEV_PANELS: boolean = __DEV__;
+
 // ⚠️ BEFORE FLIPPING THIS TO `true` FOR RELEASE — read F56.
 //
 // The BLE transport's connect + handshake has NEVER run against real
