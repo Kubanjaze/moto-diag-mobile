@@ -44,7 +44,7 @@ import {api, describeError, isSignInToken, NoServerSetError} from '../api';
 import {displayName, fetchSignedInUser, signOut} from '../api/signIn';
 import {openApiKeyEntry, openSignIn} from '../api/signInEvents';
 import {bleService} from '../ble/BleService';
-import {OBD_SUPPORT} from '../config/features';
+import {DEV_PANELS, OBD_SUPPORT} from '../config/features';
 import {useApiKey} from '../hooks/useApiKey';
 import {version as appVersion} from '../../package.json';
 import type {HomeStackParamList} from '../navigation/types';
@@ -276,15 +276,23 @@ export function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         contentInsetAdjustmentBehavior="automatic">
         <Text style={styles.title}>Mekno</Text>
-        <Text style={styles.subtitle}>v{appVersion} · Phase 191</Text>
+        {/* Phase 210C — the subtitle line and the Backend, Authed smoke
+            and BLE scan sections are developer panels: they render only
+            when DEV_PANELS is on (development builds), never in the
+            shop's build. */}
+        {DEV_PANELS ? (
+          <>
+            <Text style={styles.subtitle}>v{appVersion} · Phase 191</Text>
 
-        <Section title="Backend">
-          <BackendBlock
-            state={versionState}
-            onRetry={fetchVersion}
-            onOpenSettings={() => navigation.navigate('Settings')}
-          />
-        </Section>
+            <Section title="Backend">
+              <BackendBlock
+                state={versionState}
+                onRetry={fetchVersion}
+                onOpenSettings={() => navigation.navigate('Settings')}
+              />
+            </Section>
+          </>
+        ) : null}
 
         <Section title="Auth">
           <AuthBlock
@@ -298,13 +306,15 @@ export function HomeScreen() {
           />
         </Section>
 
-        <Section title="Authed smoke (/v1/vehicles)">
-          <VehiclesBlock
-            state={vehiclesState}
-            onTest={testVehicles}
-            disabled={apiKey === null}
-          />
-        </Section>
+        {DEV_PANELS ? (
+          <Section title="Authed smoke (/v1/vehicles)">
+            <VehiclesBlock
+              state={vehiclesState}
+              onTest={testVehicles}
+              disabled={apiKey === null}
+            />
+          </Section>
+        ) : null}
 
         {/* Phase 203 — the app's first Settings entry point. Placed
             above the diagnostic tools because appearance is something a
@@ -336,16 +346,18 @@ export function HomeScreen() {
           </TouchableOpacity>
         </Section>
 
-        <Section title="BLE scan (Phase 186)">
-          <TouchableOpacity
-            style={styles.button}
-            onPress={onScanPress}
-            testID="ble-scan-button">
-            <Text style={styles.buttonText}>Test BLE scan</Text>
-          </TouchableOpacity>
-          <Text style={styles.statusLine}>Status: {scanStatus}</Text>
-          <Text style={styles.statusLine}>Devices seen: {deviceCount}</Text>
-        </Section>
+        {DEV_PANELS ? (
+          <Section title="BLE scan (Phase 186)">
+            <TouchableOpacity
+              style={styles.button}
+              onPress={onScanPress}
+              testID="ble-scan-button">
+              <Text style={styles.buttonText}>Test BLE scan</Text>
+            </TouchableOpacity>
+            <Text style={styles.statusLine}>Status: {scanStatus}</Text>
+            <Text style={styles.statusLine}>Devices seen: {deviceCount}</Text>
+          </Section>
+        ) : null}
 
         {/* Phase 196 — OBD-II adapter connection launcher. Gated on
             the OBD_SUPPORT feature flag: this whole section renders
