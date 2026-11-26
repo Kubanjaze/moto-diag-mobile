@@ -22,8 +22,8 @@ about backend code. Nothing older was moved.
 assigning. A number is never reused and never renumbered when a finding moves
 repos.
 
-At the time of writing the highest assigned is **F181** (this file);
-the backend file's highest is **F180**.
+At the time of writing the highest assigned is **F306** (this file);
+the backend file's highest is **F307**.
 
 ---
 
@@ -2664,3 +2664,76 @@ Vehicles are not kept offline (the Phase 198 store holds the DTC catalog and
 queued session writes only), so no device holds a cached hybrid variant. A
 bike already stored with an old value on the server (none live) shows it raw
 and keeps it until someone picks a new one.
+
+### F303
+
+**The sign-in sheet and the server address box sit under the keyboard, so you cannot see what you type**
+
+Found in moto-diag Phase 372B's check on a phone on 2026-11-26 (an iPhone,
+the app's main `0b6481e`), finding 1 of the check's report
+(`moto-diag` `docs/reports/2026-11-26_372B_phone_check_report.md`). Filed
+by the advisor session. On the sign-in screen and the server-address
+screen, the text box does not move above the keyboard. In the code:
+`src/screens/SignInModal.tsx` is a sheet at the bottom of a `Modal` (its
+backdrop is `justifyContent: 'flex-end'`), and nothing moves it for the
+keyboard. The server address box is in Settings' `ScrollView`
+(`src/screens/SettingsScreen.tsx`, `settings-server-input`), which does
+not adjust for the keyboard either. Four screens already do:
+`NewSessionScreen`, `NewVehicleScreen`, `SessionDetailScreen` and
+`VehicleDetailScreen` use `KeyboardAvoidingView`. Every mechanic signs in
+on a shop's first day, so it shows on day one. What would close it: both
+keep the box being typed in above the keyboard, as those four do, checked
+on a phone.
+
+### F304
+
+**The plan screen says "Individual (your plan)" to an owner who has not paid, and offers "Manage plan"**
+
+Same check, finding 2. A new owner with no subscription saw "Your plan:
+Individual", Individual marked "(your plan)", and Manage plan enabled. In
+the code, `useTier` (`src/hooks/useTier.ts`) turns the server's "no active
+subscription" (a 402 or 404) and any tier it does not know, `null`
+included, into `'individual'`, "the implicit free baseline". So
+`PlanScreen.tsx`'s `planName`, which says "No plan yet" only for `null`,
+never says it to a signed-in user. Manage plan is disabled only while a
+request is in flight (`disabled={busy}`). A shop's owner opens this screen
+on the first day to choose the Shop plan (moto-diag's
+`docs/handoffs/2026-11-25_210_closed.md`, the onboarding day, step 2).
+What would close it: the plan screen tells "no plan" apart from
+Individual, says "No plan yet", and hides or disables Manage plan until
+there is a plan, with a test. The Shop tab's rule (`hasShopAccess`) does
+not change.
+
+### F305
+
+**A paid invoice drops out of Invoices, so it looks deleted**
+
+Same check, finding 4. Once its pay-link was paid, the invoice was gone
+from the Invoices screen, and it read as "it got wiped". In the code, the
+screen lists only the statuses a payment can be taken for,
+`PAYABLE_INVOICE_STATUSES = ['sent', 'overdue']`
+(`src/hooks/useShopPayments.ts`, line 38), asked for one at a time (line
+228); `src/screens/InvoicesScreen.tsx` says so at its top. The invoice
+itself is kept, marked `paid`, on the server. What would close it:
+Invoices also shows paid invoices, marked paid or in a "Paid" section and
+with no payment offered for them, with a test that a paid invoice stays on
+the screen.
+
+### F306
+
+**Nothing tells a new owner where Card payments and Invoices are before they choose a plan**
+
+Same check, finding 5. The Shop tab, which holds Card payments and
+Invoices, appears only once the plan is Shop or Company:
+`src/navigation/RootNavigator.tsx` shows it when `hasShopAccess(tier)`
+(`src/hooks/useTier.ts`). That is by design, since every shop screen
+answers "plan required" (402) until the owner has a plan. But before
+paying, an owner sees no Shop tab and no word that one comes. What would
+close it: the plan screen, or wherever an owner with no plan lands, says
+that the Shop plan brings the Shop tab with card payments and invoices.
+The tab's rule does not change.
+
+**Filed in moto-diag, from the same check:** F307, Card payments says how
+many things Stripe still needs and not which. The server keeps only a
+count, so its fix lands there first; this app's `PaymentsSetupScreen.tsx`
+shows the names once the API carries them.
