@@ -220,10 +220,9 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Fetch a shop profile by id
-         * @description Return the shop row, or 404 via
-         *     :class:`ShopNotFoundError` (mapped by the global exception
-         *     handler to an RFC 7807 ProblemDetail).
+         * Fetch a shop profile by id (members only)
+         * @description Return the shop row to an active member, else 403; 404 via
+         *     :class:`ShopNotFoundError` only if a member's shop is gone.
          */
         get: operations["get_shop_endpoint_v1_shops__shop_id__get"];
         put?: never;
@@ -4236,7 +4235,10 @@ export interface operations {
     get_shop_endpoint_v1_shops__shop_id__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+                authorization?: string | null;
+            };
             path: {
                 shop_id: number;
             };

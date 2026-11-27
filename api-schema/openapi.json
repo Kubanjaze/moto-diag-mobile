@@ -807,8 +807,8 @@
         "tags": [
           "shops"
         ],
-        "summary": "Fetch a shop profile by id",
-        "description": "Return the shop row, or 404 via\n:class:`ShopNotFoundError` (mapped by the global exception\nhandler to an RFC 7807 ProblemDetail).",
+        "summary": "Fetch a shop profile by id (members only)",
+        "description": "Return the shop row to an active member, else 403; 404 via\n:class:`ShopNotFoundError` only if a member's shop is gone.",
         "operationId": "get_shop_endpoint_v1_shops__shop_id__get",
         "parameters": [
           {
@@ -818,6 +818,38 @@
             "schema": {
               "type": "integer",
               "title": "Shop Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -834,6 +866,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -844,17 +882,11 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         },
         "security": [
