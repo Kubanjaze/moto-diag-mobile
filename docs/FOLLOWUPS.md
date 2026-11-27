@@ -22,7 +22,7 @@ about backend code. Nothing older was moved.
 assigning. A number is never reused and never renumbered when a finding moves
 repos.
 
-At the time of writing the highest assigned is **F306** (this file);
+At the time of writing the highest assigned is **F308** (this file);
 the backend file's highest is **F307**.
 
 ---
@@ -2763,3 +2763,38 @@ The tab's rule does not change.
 many things Stripe still needs and not which. The server keeps only a
 count, so its fix lands there first; this app's `PaymentsSetupScreen.tsx`
 shows the names once the API carries them.
+
+### F308
+
+**The app's tests fail now and then on a busy Mac: one test runs past its time limit, and an error inside a render is reported only as "window.dispatchEvent is not a function"**
+
+Seen three times on 2026-11-26, never twice in the same test, by the
+advisor on the Mac (backend Phases 210B and 210C):
+- **The cable install of `3fa252b`** (210B), right after `npm ci`:
+  `__tests__/screens/TermsModal.smoke.test.tsx`, "shows the version and
+  date from GET /v1/terms", ran past jest's 5 s limit (the file took
+  6.2 s): 1 failed, 1344 passed. In a scratch clone of the same tree the
+  file passed 5 times of 5 on its own, and the whole suite passed twice,
+  then once at `--maxWorkers=50%`. The install's second run, without
+  `npm ci` and at half the workers, passed all 1345.
+- **The review of pull request 16** (head `b611a3b`, `--maxWorkers=2`, the
+  Mac's load about 10 to 11 with the backend's regression beside it): the
+  first run failed `__tests__/hooks/useDTC.test.ts`, "starts loading,
+  transitions to success", and the second run failed
+  `__tests__/hooks/useVehicles.test.ts`, "exposes empty vehicles array on
+  empty list response", each with "TypeError: window.dispatchEvent is not a
+  function" from react-test-renderer's `reportGlobalError`. The third run,
+  at `--maxWorkers=50%`, passed: 122 suites, 1360 tests. A control on main
+  `3fa252b` at `--maxWorkers=2` passed all 1345 but printed the same
+  TypeError once.
+
+What it affects: a block that runs the app's tests before a build stops on
+it (210B's cable install did), and a review has to run the suite again to
+tell a timing failure from a defect. The TypeError hides the error that
+set it off, so neither failure can be read from its output.
+
+What would close it: the error behind the TypeError found and fixed, or the
+test environment made to report it; and the TermsModal test made to finish
+well inside its limit, or given a stated longer one. Then the whole suite
+passes five runs in a row at `--maxWorkers=2` on the Mac with a load beside
+it.
