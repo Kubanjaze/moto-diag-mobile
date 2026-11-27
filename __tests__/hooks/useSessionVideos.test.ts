@@ -528,3 +528,67 @@ describe('useSessionVideos — refresh + Phase 191B contract', () => {
     expect(v.analysisFindings!.cost_estimate_usd).toBe(0.0023);
   });
 });
+
+// ---------------------------------------------------------------
+// Phase 409 (backend): the public address's 100 MB limit
+// ---------------------------------------------------------------
+
+describe('useSessionVideos — a 413 from the connection, not the server', () => {
+  async function rejectionOf(post: () => Promise<unknown>): Promise<unknown> {
+    stubListResponse([]);
+    apiMock.POST.mockImplementation(post);
+    const {result} = renderHook<UseSessionVideosResult>(() =>
+      useSessionVideos(1),
+    );
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+    let caught: unknown;
+    await act(async () => {
+      try {
+        await result.current.addRecording(recordingFixture);
+      } catch (err) {
+        caught = err;
+      }
+    });
+    return caught;
+  }
+
+  it('names Cloudflare’s HTML 413 as the connection’s limit', async () => {
+    const caught = await rejectionOf(async () => ({
+      data: undefined,
+      error: '<html><head><title>413 Request Entity Too Large</title></head></html>',
+      response: {status: 413},
+    }));
+    expect(caught).toEqual({
+      type: 'about:blank',
+      title: 'video-too-large-for-connection',
+      status: 413,
+      detail: '',
+    });
+  });
+
+  it('passes the server’s own 413 ProblemDetail through unchanged (the control)', async () => {
+    const serverProblem = {
+      type: 'https://motodiag.dev/problems/video-too-large',
+      title: 'video-too-large',
+      status: 413,
+      detail: 'video exceeds 512 MB',
+    };
+    const caught = await rejectionOf(async () => ({
+      data: undefined,
+      error: serverProblem,
+      response: {status: 413},
+    }));
+    expect(caught).toBe(serverProblem);
+  });
+
+  it('leaves any other refusal as it was', async () => {
+    const caught = await rejectionOf(async () => ({
+      data: undefined,
+      error: '<html>502 Bad Gateway</html>',
+      response: {status: 502},
+    }));
+    expect(caught).toBe('<html>502 Bad Gateway</html>');
+  });
+});

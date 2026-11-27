@@ -23,7 +23,8 @@
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 
-import {api, describeError} from '../api';
+import {api, describeError, isProblemDetail} from '../api';
+import {VIDEO_TOO_LARGE_FOR_CONNECTION} from '../types/video';
 import {videoStorageCache} from '../services/videoStorageCache';
 import type {
   AnalysisState,
@@ -268,7 +269,7 @@ export function useSessionVideos(sessionId: number): UseSessionVideosResult {
           }),
         );
 
-        const {data, error: apiError} = await api.POST(
+        const {data, error: apiError, response} = await api.POST(
           '/v1/sessions/{session_id}/videos',
           {
             params: {path: {session_id: recording.sessionId}},
@@ -276,7 +277,22 @@ export function useSessionVideos(sessionId: number): UseSessionVideosResult {
             bodySerializer: (b: unknown) => b as BodyInit_,
           },
         );
-        if (apiError !== undefined) throw apiError;
+        if (apiError !== undefined) {
+          // Phase 409: through the public address, a body over 100 MB
+          // is refused by Cloudflare with its own HTML page, before the
+          // server sees it. The server's own 413 is a ProblemDetail;
+          // anything else at 413 is the connection's limit, named here
+          // so the screen can say so in plain words.
+          if (response?.status === 413 && !isProblemDetail(apiError)) {
+            throw {
+              type: 'about:blank',
+              title: VIDEO_TOO_LARGE_FOR_CONNECTION,
+              status: 413,
+              detail: '',
+            };
+          }
+          throw apiError;
+        }
         if (!data) throw new Error('Empty response from upload');
 
         // Adopt the local source file into the cache for offline

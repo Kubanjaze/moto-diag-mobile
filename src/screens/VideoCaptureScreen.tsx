@@ -52,7 +52,6 @@ import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {Camera, useCameraDevice} from 'react-native-vision-camera';
 
 import {Button} from '../components/Button';
-import {isProblemDetail} from '../api';
 import {useCameraPermissions} from '../hooks/useCameraPermissions';
 import {useSessionVideos} from '../hooks/useSessionVideos';
 import type {SessionsStackParamList} from '../navigation/types';
@@ -69,9 +68,11 @@ import {
   type SessionVideo,
 } from '../types/video';
 import {
+  classifyUploadError,
   classifyVisionCameraError,
   formatElapsed,
   formatFileSize,
+  quotaExceededCopy,
 } from './videoCaptureHelpers';
 import {
   initialRecordingState,
@@ -847,62 +848,6 @@ function FailedPane({
   );
 }
 
-/** Render the cap-disambiguated copy for a quota_exceeded error.
- *  Backend's ProblemDetail.detail string usually carries human-
- *  readable context; we surface it after the cap-specific lead. */
-function quotaExceededCopy(
-  cap: 'count' | 'size' | 'monthly',
-  serverMessage: string,
-): string {
-  const lead =
-    cap === 'count'
-      ? `Session is at its ${MAX_VIDEOS_PER_SESSION}-video limit. Delete a video to record more.`
-      : cap === 'size'
-        ? 'Session is at its 500 MB limit. Delete a video to free space.'
-        : 'Monthly upload limit reached. Upgrade your plan or wait until next month.';
-  return serverMessage ? `${lead}\n\n${serverMessage}` : lead;
-}
-
-// ---------------------------------------------------------------
-// Upload-error classification helpers
-// ---------------------------------------------------------------
-
-/** Classify an addRecording rejection into the discriminated union
- *  RecordingError kinds. The backend returns:
- *
- *    402 ProblemDetail with title "video-quota-exceeded" — count or
- *        monthly cap (the detail string disambiguates).
- *    413 ProblemDetail with title "video-too-large" — per-video size.
- *    Other 4xx — generic upload_failed (treat as retryable).
- *    Network / timeout / 5xx — generic upload_failed.
- *
- *  Per Q3 sign-off, the cap field on quota_exceeded is REQUIRED.
- *  We extract it from the title (count/size/monthly) so the UI
- *  copy doesn't have to parse the detail string. */
-function classifyUploadError(err: unknown): RecordingError {
-  if (isProblemDetail(err)) {
-    const title = err.title ?? '';
-    const detail = err.detail ?? '';
-    const message = detail || title;
-    if (err.status === 413 || title === 'video-too-large') {
-      return {kind: 'quota_exceeded', cap: 'size', message};
-    }
-    if (err.status === 402 || title === 'video-quota-exceeded') {
-      // Backend's title doesn't disambiguate count-vs-monthly directly;
-      // detail string conventionally includes "monthly" for the
-      // monthly-cap case. Default to count when ambiguous.
-      const cap: 'count' | 'monthly' = /monthly/i.test(detail)
-        ? 'monthly'
-        : 'count';
-      return {kind: 'quota_exceeded', cap, message};
-    }
-    return {kind: 'upload_failed', message: message || 'Upload failed.'};
-  }
-  if (err instanceof Error) {
-    return {kind: 'upload_failed', message: err.message};
-  }
-  return {kind: 'upload_failed', message: String(err)};
-}
 
 // ---------------------------------------------------------------
 // Styles
