@@ -35,6 +35,17 @@
  */
 export const MAX_VIDEOS_PER_SESSION = 5;
 
+/** Phase 409: the largest body the public address's front door
+ *  (Cloudflare's free tunnel) passes, in MB. Over the tailnet there is
+ *  no such limit; chunked uploads lift it (backend F310, dated before
+ *  the App Store release). */
+export const CONNECTION_UPLOAD_LIMIT_MB = 100;
+
+/** Phase 409: the ProblemDetail title the upload hook gives a 413 that
+ *  did not come from the server (no ProblemDetail body): the
+ *  connection's limit, not the shop's quota. */
+export const VIDEO_TOO_LARGE_FOR_CONNECTION = 'video-too-large-for-connection';
+
 /** Container format. Phase 191 always 'mp4' (locked per plan v1.0
  *  — H.265/MOV rejected for battery + iOS-Photo legacy reasons). */
 export type VideoFormat = 'mp4';
@@ -230,7 +241,10 @@ export type RecordingError =
   | {kind: 'upload_interrupted'; bytesUploaded?: number}
   | {
       kind: 'quota_exceeded';
-      cap: 'count' | 'size' | 'monthly';
+      // Phase 409: 'connection' is the 100 MB limit of the public
+      // address's front door (Cloudflare refuses a bigger body before
+      // the server sees it), not a quota of the shop's.
+      cap: 'count' | 'size' | 'monthly' | 'connection';
       message: string;
     }
   | {kind: 'unknown'; message: string};

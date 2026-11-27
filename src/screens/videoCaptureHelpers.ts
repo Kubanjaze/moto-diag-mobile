@@ -11,7 +11,13 @@
 // shape structurally (typeof check, no value imports) so it lives
 // here cleanly.
 
-import type {RecordingError} from '../types/video';
+import {isProblemDetail} from '../api/errors';
+import {
+  CONNECTION_UPLOAD_LIMIT_MB,
+  MAX_VIDEOS_PER_SESSION,
+  VIDEO_TOO_LARGE_FOR_CONNECTION,
+  type RecordingError,
+} from '../types/video';
 
 /** Format milliseconds as `m:ss`. Used for the elapsed-time
  *  counter during recording AND for the saved-state duration
@@ -94,4 +100,77 @@ export function classifyVisionCameraError(err: unknown): RecordingError {
     return {kind: 'codec_error', message};
   }
   return {kind: 'unknown', message};
+}
+
+// ---------------------------------------------------------------
+// Upload errors (moved from VideoCaptureScreen.tsx in Phase 409, so
+// their tests import them without vision-camera)
+// ---------------------------------------------------------------
+
+/** Render the cap-disambiguated copy for a quota_exceeded error.
+ *  Backend's ProblemDetail.detail string usually carries human-
+ *  readable context; we surface it after the cap-specific lead. */
+export function quotaExceededCopy(
+  cap: 'count' | 'size' | 'monthly' | 'connection',
+  serverMessage: string,
+): string {
+  if (cap === 'connection') {
+    // Phase 409: the public address's own limit, in plain words.
+    return (
+      `This video is over ${CONNECTION_UPLOAD_LIMIT_MB} MB, which is more than ` +
+      'the app can send over the internet for now. Record a shorter clip ' +
+      '(under about a minute) and try again. The video is still saved on this phone.'
+    );
+  }
+  const lead =
+    cap === 'count'
+      ? `Session is at its ${MAX_VIDEOS_PER_SESSION}-video limit. Delete a video to record more.`
+      : cap === 'size'
+        ? 'Session is at its 500 MB limit. Delete a video to free space.'
+        : 'Monthly upload limit reached. Upgrade your plan or wait until next month.';
+  return serverMessage ? `${lead}\n\n${serverMessage}` : lead;
+}
+
+// ---------------------------------------------------------------
+// Upload-error classification helpers
+// ---------------------------------------------------------------
+
+/** Classify an addRecording rejection into the discriminated union
+ *  RecordingError kinds. The backend returns:
+ *
+ *    402 ProblemDetail with title "video-quota-exceeded" — count or
+ *        monthly cap (the detail string disambiguates).
+ *    413 ProblemDetail with title "video-too-large" — per-video size.
+ *    Other 4xx — generic upload_failed (treat as retryable).
+ *    Network / timeout / 5xx — generic upload_failed.
+ *
+ *  Per Q3 sign-off, the cap field on quota_exceeded is REQUIRED.
+ *  We extract it from the title (count/size/monthly) so the UI
+ *  copy doesn't have to parse the detail string. */
+export function classifyUploadError(err: unknown): RecordingError {
+  if (isProblemDetail(err)) {
+    const title = err.title ?? '';
+    const detail = err.detail ?? '';
+    const message = detail || title;
+    if (title === VIDEO_TOO_LARGE_FOR_CONNECTION) {
+      return {kind: 'quota_exceeded', cap: 'connection', message: ''};
+    }
+    if (err.status === 413 || title === 'video-too-large') {
+      return {kind: 'quota_exceeded', cap: 'size', message};
+    }
+    if (err.status === 402 || title === 'video-quota-exceeded') {
+      // Backend's title doesn't disambiguate count-vs-monthly directly;
+      // detail string conventionally includes "monthly" for the
+      // monthly-cap case. Default to count when ambiguous.
+      const cap: 'count' | 'monthly' = /monthly/i.test(detail)
+        ? 'monthly'
+        : 'count';
+      return {kind: 'quota_exceeded', cap, message};
+    }
+    return {kind: 'upload_failed', message: message || 'Upload failed.'};
+  }
+  if (err instanceof Error) {
+    return {kind: 'upload_failed', message: err.message};
+  }
+  return {kind: 'upload_failed', message: String(err)};
 }
